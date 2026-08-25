@@ -1,0 +1,725 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>摩斯二進位字母解碼戰 (Morse Alphabet Cipher)</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        cyber: {
+                            900: '#0B132B',
+                            800: '#1C2541',
+                            700: '#3A506B',
+                            amber: '#FFB703',
+                            green: '#06D6A0',
+                            red: '#EF476F',
+                            cyan: '#00F5D4',
+                            purple: '#7209B7'
+                        }
+                    },
+                    fontFamily: {
+                        mono: ['Courier New', 'monospace'],
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @keyframes pulse-light {
+            0%, 100% { opacity: 0.2; transform: scale(0.95); }
+            50% { opacity: 1; transform: scale(1.15); filter: drop-shadow(0 0 12px #FFB703); }
+        }
+
+        .signal-active {
+            animation: pulse-light 0.2s ease-in-out infinite;
+            background-color: #FFB703 !important;
+            box-shadow: 0 0 15px #FFB703, 0 0 30px #FFB703;
+        }
+
+        .dot-card {
+            transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+            touch-action: manipulation;
+        }
+
+        .dot-card:hover {
+            transform: translateY(-4px);
+        }
+
+        .dot-card.selected {
+            transform: translateY(-8px) scale(1.02);
+            border-color: #06D6A0;
+            box-shadow: 0 10px 25px -5px rgba(6, 214, 160, 0.4);
+            background-color: rgba(6, 214, 160, 0.1);
+        }
+
+        .scanline {
+            background: linear-gradient(
+                to bottom,
+                rgba(255,255,255,0),
+                rgba(255,255,255,0) 50%,
+                rgba(0, 0, 0, 0.35) 50%,
+                rgba(0, 0, 0, 0.35)
+            );
+            background-size: 100% 4px;
+        }
+
+        /* Letter highlight animation */
+        .letter-pop {
+            animation: pop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        @keyframes pop {
+            0% { transform: scale(0.5); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col justify-between font-sans antialiased selection:bg-amber-500 selection:text-slate-950">
+
+    <header class="w-full max-w-5xl mx-auto px-4 py-4 flex flex-col sm:flex-row justify-between items-center gap-4 border-b border-slate-800">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center font-mono font-bold text-amber-400 text-xl shadow-lg shadow-amber-500/10">
+                📻
+            </div>
+            <div>
+                <h1 class="text-xl sm:text-2xl font-black tracking-tight text-amber-400 font-mono">摩斯二進位字母解碼戰</h1>
+                <p class="text-xs text-slate-400">長音＝1 | 短音＝0 | 5音一組＝1個英文字母 (A=1 ~ Z=26)</p>
+            </div>
+        </div>
+
+        <!-- Mode Toggle -->
+        <div class="flex flex-wrap items-center justify-center gap-1.5 bg-slate-900 p-1.5 rounded-xl border border-slate-800">
+            <button id="btn-mode-listen" onclick="switchMode('listen')" class="px-3 py-1.5 rounded-lg text-xs font-semibold transition bg-amber-500 text-slate-950 font-bold shadow">
+                🎧 字母聽音
+            </button>
+            <button id="btn-mode-word" onclick="switchMode('word')" class="px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-slate-200 transition">
+                🔤 單字解碼關卡
+            </button>
+            <button id="btn-mode-transmit" onclick="switchMode('transmit')" class="px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-slate-200 transition">
+                📻 電報發射員
+            </button>
+        </div>
+    </header>
+
+    <main class="w-full max-w-4xl mx-auto px-4 py-6 flex-1 flex flex-col justify-between items-center gap-6">
+
+        <!-- Top Status & Display Box -->
+        <div class="w-full bg-slate-900/80 border border-slate-800 rounded-2xl p-5 backdrop-blur relative overflow-hidden shadow-2xl">
+            <div class="scanline absolute inset-0 pointer-events-none opacity-20"></div>
+            <!-- Mode Title Display -->
+            <div id="target-label" class="text-xs font-mono font-bold text-amber-400/90 mb-3 flex items-center gap-2">
+                ▶ 字母聽音解碼模式 (聽聲音湊出對應 A-Z 字母)
+            </div>
+            <div id="target-display-box" class="flex items-center justify-center sm:justify-start gap-3 flex-wrap">
+                <button id="btn-play-sound" onclick="playCurrentMorseSequence()" class="px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-sm flex items-center gap-2 shadow-lg shadow-amber-500/20 active:scale-95 transition">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15.536a5 5 0 001.414 1.414m2.828-9.9a9 9 0 0112.728 0M12 6v12l-5-5H3V11h4l5-5z"></path></svg>
+                            <span id="btn-play-text">播放摩斯字母音訊 (Space)</span>
+                        </button>
+
+                        <button id="btn-play-full-word" onclick="playFullWordSequence()" class="hidden px-3.5 py-2.5 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs flex items-center gap-1.5 shadow-lg shadow-cyan-600/20 active:scale-95 transition">
+                            🔊 聽完整單字電報
+                        </button>
+                        
+                        <!-- Single Letter Display -->
+                        <div id="target-letter-badge" class="hidden flex items-center gap-2 bg-slate-950 border border-slate-800 px-4 py-1.5 rounded-xl">
+                            <span id="target-letter-text" class="text-3xl sm:text-4xl font-black font-mono text-emerald-400">?</span>
+                            <span id="target-number-subtext" class="text-xs font-mono text-slate-400">(點數 ?)</span>
+                        </div>
+                    </div>
+
+                    <!-- Word Progress Display (for Word Mode) -->
+                    <div id="word-progress-container" class="hidden mt-3 flex flex-col items-start gap-1.5">
+                        <span id="stage-level-text" class="text-[11px] font-mono font-bold text-cyan-400">關卡進度: 1 / 14</span>
+                        <div id="word-letters-boxes" class="flex items-center justify-center sm:justify-start gap-2">
+                            <!-- Letters will be generated dynamically -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Signal Indicators (5 LED Lights) -->
+                <div class="flex flex-col items-center">
+                    <span class="text-[10px] font-mono text-slate-400 uppercase tracking-wider mb-2">二進位訊號燈 (16 - 8 - 4 - 2 - 1)</span>
+                    <div class="flex items-center gap-3 bg-slate-950 px-4 py-2.5 rounded-xl border border-slate-800 shadow-inner">
+                        <div id="led-0" class="w-5 h-5 rounded-full bg-slate-800 border border-slate-700 transition-all duration-150"></div>
+                        <div id="led-1" class="w-5 h-5 rounded-full bg-slate-800 border border-slate-700 transition-all duration-150"></div>
+                        <div id="led-2" class="w-5 h-5 rounded-full bg-slate-800 border border-slate-700 transition-all duration-150"></div>
+                        <div id="led-3" class="w-5 h-5 rounded-full bg-slate-800 border border-slate-700 transition-all duration-150"></div>
+                        <div id="led-4" class="w-5 h-5 rounded-full bg-slate-800 border border-slate-700 transition-all duration-150"></div>
+                    </div>
+                </div>
+
+                <!-- Score / Streak -->
+                <div class="flex items-center gap-4 text-center">
+                    <div>
+                        <span class="text-[10px] font-mono text-slate-400 block uppercase">解碼得分</span>
+                        <span id="score-val" class="text-3xl font-black font-mono text-amber-400">0</span>
+                    </div>
+                    <div class="pl-4 border-l border-slate-800">
+                        <span class="text-[10px] font-mono text-slate-400 block uppercase">連勝</span>
+                        <span id="streak-val" class="text-3xl font-black font-mono text-emerald-400">0</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-4 pt-3 border-t border-slate-800/80 flex flex-wrap items-center justify-between text-xs text-slate-400 gap-2">
+                <div class="flex items-center gap-2">
+                    <span>發音速度：</span>
+                    <button onclick="setSpeed(280)" id="speed-slow" class="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300">慢</button>
+                    <button onclick="setSpeed(180)" id="speed-mid" class="px-2 py-0.5 rounded bg-amber-500/20 text-amber-400 border border-amber-500/40">標準</button>
+                    <button onclick="setSpeed(110)" id="speed-fast" class="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300">快</button>
+                </div>
+                <div class="flex items-center gap-3">
+                    <label class="cursor-pointer flex items-center gap-1.5">
+                        <input type="checkbox" id="chk-show-hint" onchange="toggleHint(this.checked)" class="rounded bg-slate-800 border-slate-700 text-amber-500 focus:ring-0">
+                        <span>顯示波形符號 (長/短)</span>
+                    </label>
+                    <button onclick="toggleAlphabetChart()" class="text-amber-400 hover:underline flex items-center gap-1 font-semibold">
+                        📖 A-Z 密碼表
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Waveform Hint Box -->
+        <div id="morse-visual-box" class="w-full bg-slate-900/40 border border-slate-800/60 rounded-xl p-3 text-center font-mono text-lg tracking-widest text-amber-400 min-h-[48px] flex items-center justify-center gap-3">
+            <span class="text-xs text-slate-500 font-sans">波形聲音提示：</span>
+            <span id="morse-symbols-display" class="font-bold text-xl text-amber-300">---</span>
+        </div>
+
+        <div class="w-full flex flex-col items-center gap-3">
+            <!-- 5 Binary Cards Container -->
+            <div id="cards-container" class="w-full flex justify-center gap-2 sm:gap-4 my-2">
+                <!-- Cards will be dynamically injected here -->
+            </div>
+
+            <!-- Current Sum, Binary & Corresponding Letter Display Bar -->
+            <div class="w-full bg-slate-900/60 border border-slate-800 rounded-xl p-4 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-lg">
+                <div class="flex items-center gap-4">
+                    <div class="flex items-center gap-2">
+                        <span class="text-xs font-mono text-slate-400 uppercase">二進位：</span>
+                        <span id="binary-code-text" class="font-mono text-lg font-bold tracking-widest text-emerald-400">0 0 0 0 0</span>
+                    </div>
+                    <div class="border-l border-slate-800 pl-4 flex items-center gap-2">
+                        <span class="text-xs font-mono text-slate-400 uppercase">點數：</span>
+                        <span id="current-sum-text" class="font-mono text-2xl font-black text-amber-400">0</span>
+                    </div>
+                </div>
+
+                <!-- Live Letter Preview -->
+                <div class="flex items-center gap-2 bg-slate-950 px-3 py-1.5 rounded-lg border border-slate-800">
+                    <span class="text-xs text-slate-400">對應字母：</span>
+                    <span id="current-letter-preview" class="font-mono text-2xl font-black text-cyan-400">-</span>
+                </div>
+
+                <div class="flex items-center gap-2">
+                    <button onclick="clearCards()" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold transition">
+                        清空 (R)
+                    </button>
+                    <button onclick="submitAnswer()" class="px-5 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-sm font-extrabold shadow-lg shadow-emerald-500/20 active:scale-95 transition">
+                        解密解碼 (Enter)
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div id="alphabet-chart-modal" class="hidden w-full bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-2xl">
+            <div class="flex justify-between items-center mb-3 pb-2 border-b border-slate-800">
+                <h3 class="font-mono font-bold text-amber-400 text-sm flex items-center gap-2">
+                    📖 5位元英文字母密碼對照表 (A=1 ~ Z=26)
+                </h3>
+                <button onclick="toggleAlphabetChart()" class="text-slate-400 hover:text-slate-200 text-xs font-mono">✕ 關閉</button>
+            </div>
+            <div id="alphabet-grid" class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-2 text-xs font-mono">
+                <!-- Dynamically populated 26 letters -->
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Word Clear Victory Modal -->
+    <div id="word-clear-modal" class="hidden fixed inset-0 bg-slate-950/85 backdrop-blur-md flex items-center justify-center z-50 p-4">
+        <div class="bg-slate-900 border-2 border-emerald-500/60 rounded-3xl p-6 max-w-sm w-full text-center shadow-2xl transform transition-all scale-100">
+            <div class="text-5xl mb-3 animate-bounce">🎉</div>
+            <h2 class="text-2xl font-black text-emerald-400 mb-1">關卡解碼成功！</h2>
+            <p class="text-xs text-slate-400 mb-4">恭喜破解特工密文單字</p>
+            
+            <div class="bg-slate-950 rounded-2xl p-4 border border-slate-800 mb-5 shadow-inner">
+                <span id="modal-word-display" class="text-4xl font-black font-mono text-amber-400 tracking-widest block mb-1">CODE</span>
+                <span id="modal-word-meaning" class="text-sm font-bold text-emerald-400 font-sans">【密碼 / 程式碼】</span>
+            </div>
+
+            <div class="flex items-center justify-center gap-3">
+                <button onclick="playFullWordSequence()" class="px-3.5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold transition">
+                    🔊 再次複習音訊
+                </button>
+                <button onclick="nextWordStage()" class="px-5 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-sm font-black shadow-lg shadow-emerald-500/30 active:scale-95 transition">
+                    🚀 挑戰下一關
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <footer class="w-full max-w-5xl mx-auto px-4 py-4 text-center text-xs text-slate-600 border-t border-slate-800/60 font-mono">
+        摩斯字母二進位密碼戰 | 鍵盤 1~5 翻牌 • Space 播音 • Enter 送出 • A=1 ~ Z=26
+    </footer>
+
+    <script>
+        // Core Constants & States
+        const cardValues = [16, 8, 4, 2, 1];
+        let cardStates = [false, false, false, false, false];
+        let gameMode = 'listen'; // 'listen', 'word', 'transmit'
+        
+        let targetLetter = 'A';
+        let targetNumber = 1;
+        
+        // Word Mode States with Chinese Meanings
+        const presetWords = [
+            { word: 'CAT', meaning: '貓咪' },
+            { word: 'DOG', meaning: '小狗' },
+            { word: 'SOS', meaning: '緊急求救訊號' },
+            { word: 'CODE', meaning: '密碼 / 程式碼' },
+            { word: 'HERO', meaning: '英雄' },
+            { word: 'RADIO', meaning: '無線電 / 收音機' },
+            { word: 'CYBER', meaning: '賽博 / 網路空間' },
+            { word: 'SMART', meaning: '聰明 / 智慧' },
+            { word: 'ZEBRA', meaning: '斑馬' },
+            { word: 'APPLE', meaning: '蘋果' },
+            { word: 'MAGIC', meaning: '魔法' },
+            { word: 'BRAIN', meaning: '大腦' },
+            { word: 'LIGHT', meaning: '光線 / 燈光' },
+            { word: 'SUPER', meaning: '超級 / 優秀' }
+        ];
+        let currentStageIndex = 0;
+        let currentWordObj = presetWords[0];
+        let wordLetterIndex = 0;
+        let decodedWordState = [];
+
+        let score = 0;
+        let streak = 0;
+        let showHint = false;
+        let unitTime = 180; // ms per dot unit
+
+        // Web Audio Context setup
+        let audioCtx = null;
+
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+        }
+
+        // Helper: Number (1-26) to Letter ('A'-'Z')
+        function numberToLetter(num) {
+            if (num >= 1 && num <= 26) {
+                return String.fromCharCode(64 + num);
+            }
+            return '-';
+        }
+
+        // Helper: Letter ('A'-'Z') to Number (1-26)
+        function letterToNumber(letter) {
+            return letter.charCodeAt(0) - 64;
+        }
+
+        // Set speed
+        function setSpeed(speedMs) {
+            unitTime = speedMs;
+            document.getElementById('speed-slow').className = speedMs === 280 ? "px-2 py-0.5 rounded bg-amber-500/20 text-amber-400 border border-amber-500/40" : "px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300";
+            document.getElementById('speed-mid').className = speedMs === 180 ? "px-2 py-0.5 rounded bg-amber-500/20 text-amber-400 border border-amber-500/40" : "px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300";
+            document.getElementById('speed-fast').className = speedMs === 110 ? "px-2 py-0.5 rounded bg-amber-500/20 text-amber-400 border border-amber-500/40" : "px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300";
+        }
+
+        function toggleHint(enabled) {
+            showHint = enabled;
+            updateMorseVisual();
+        }
+
+        function toggleAlphabetChart() {
+            const chart = document.getElementById('alphabet-chart-modal');
+            chart.classList.toggle('hidden');
+        }
+
+        function playTone(freq, duration) {
+            return new Promise((resolve) => {
+                try {
+                    initAudio();
+                    if (!audioCtx) { resolve(); return; }
+
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+
+                    gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + (duration / 1000));
+
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+
+                    osc.start();
+                    setTimeout(() => {
+                        osc.stop();
+                        resolve();
+                    }, duration);
+                } catch(e) {
+                    resolve();
+                }
+            });
+        }
+
+        async function playMorseSequence(number) {
+            const btn = document.getElementById('btn-play-sound');
+            if (btn) btn.disabled = true;
+
+            // Convert number to 5-bit binary string
+            const binStr = number.toString(2).padStart(5, '0');
+
+            for (let i = 0; i < 5; i++) {
+                const bit = binStr[i];
+                const led = document.getElementById(`led-${i}`);
+
+                if (led) led.classList.add('signal-active');
+
+                if (bit === '1') {
+                    // Dah (Long Tone - High pitch)
+                    await playTone(750, unitTime * 2.2);
+                } else {
+                    // Dit (Short Tone - Lower pitch)
+                    await playTone(450, unitTime * 0.8);
+                }
+
+                if (led) led.classList.remove('signal-active');
+                await new Promise(r => setTimeout(r, unitTime * 0.8));
+            }
+
+            if (btn) btn.disabled = false;
+        }
+
+        async function playFullWordSequence() {
+            const btnWord = document.getElementById('btn-play-full-word');
+            if (btnWord) btnWord.disabled = true;
+
+            const word = currentWordObj.word;
+            for (let i = 0; i < word.length; i++) {
+                const num = letterToNumber(word[i]);
+                await playMorseSequence(num);
+                await new Promise(r => setTimeout(r, unitTime * 2.5)); // Pause between letters
+            }
+
+            if (btnWord) btnWord.disabled = false;
+        }
+
+        function playCurrentMorseSequence() {
+            playMorseSequence(targetNumber);
+        }
+
+        function buildDotsHTML(val) {
+            if (val === 16) {
+                return `<div class="w-full h-full grid grid-cols-4 grid-rows-4 gap-1 p-1 place-items-center">
+                    ${'<div class="w-2.5 h-2.5 bg-slate-900 rounded-full"></div>'.repeat(16)}
+                </div>`;
+            } else if (val === 8) {
+                return `<div class="w-full h-full grid grid-cols-2 grid-rows-4 gap-1 p-1 place-items-center">
+                    ${'<div class="w-3 h-3 bg-slate-900 rounded-full"></div>'.repeat(8)}
+                </div>`;
+            } else if (val === 4) {
+                return `<div class="w-full h-full grid grid-cols-2 grid-rows-2 gap-1 p-2 place-items-center">
+                    ${'<div class="w-3.5 h-3.5 bg-slate-900 rounded-full"></div>'.repeat(4)}
+                </div>`;
+            } else if (val === 2) {
+                return `<div class="w-full h-full grid grid-cols-2 grid-rows-2 gap-1 p-2 place-items-center">
+                    <div></div><div class="w-3.5 h-3.5 bg-slate-900 rounded-full"></div>
+                    <div class="w-3.5 h-3.5 bg-slate-900 rounded-full"></div><div></div>
+                </div>`;
+            } else {
+                return `<div class="w-full h-full flex items-center justify-center">
+                    <div class="w-4 h-4 bg-slate-900 rounded-full"></div>
+                </div>`;
+            }
+        }
+
+        function renderCards() {
+            const container = document.getElementById('cards-container');
+            container.innerHTML = '';
+
+            cardValues.forEach((val, idx) => {
+                const cardWrapper = document.createElement('div');
+                cardWrapper.className = 'flex-1 max-w-[110px] aspect-[2/3]';
+
+                cardWrapper.innerHTML = `
+                    <button onclick="toggleCard(${idx})" id="card-${idx}" class="dot-card w-full h-full bg-slate-100 text-slate-900 rounded-2xl border-4 border-slate-300 p-2 flex flex-col justify-between items-center shadow-lg relative overflow-hidden group">
+                        <span class="text-xs font-bold text-slate-500 font-mono">${val}點</span>
+                        ${buildDotsHTML(val)}
+                        <span class="text-[10px] font-mono font-bold bg-slate-200 text-slate-700 px-1.5 py-0.5 rounded">按 ${idx + 1}</span>
+                    </button>
+                `;
+                container.appendChild(cardWrapper);
+            });
+        }
+
+        function renderAlphabetChart() {
+            const grid = document.getElementById('alphabet-grid');
+            grid.innerHTML = '';
+            for (let i = 1; i <= 26; i++) {
+                const letter = numberToLetter(i);
+                const bin = i.toString(2).padStart(5, '0');
+                const item = document.createElement('div');
+                item.className = 'bg-slate-950 border border-slate-800 p-2 rounded-lg flex justify-between items-center';
+                item.innerHTML = `
+                    <span class="text-amber-400 font-bold text-sm">${letter}</span>
+                    <span class="text-slate-400 font-mono">${i}</span>
+                    <span class="text-emerald-400 font-mono text-[10px]">${bin}</span>
+                `;
+                grid.appendChild(item);
+            }
+        }
+
+        function toggleCard(index) {
+            cardStates[index] = !cardStates[index];
+            playTone(cardStates[index] ? 600 : 350, 60);
+            updateUI();
+        }
+
+        function clearCards() {
+            cardStates = [false, false, false, false, false];
+            playTone(300, 80);
+            updateUI();
+        }
+
+        function getCurrentSum() {
+            return cardStates.reduce((sum, active, idx) => active ? sum + cardValues[idx] : sum, 0);
+        }
+
+        function updateUI() {
+            // Update Card visual styles
+            cardValues.forEach((val, idx) => {
+                const cardEl = document.getElementById(`card-${idx}`);
+                if (!cardEl) return;
+                if (cardStates[idx]) {
+                    cardEl.classList.add('selected');
+                    cardEl.classList.remove('bg-slate-100', 'border-slate-300');
+                    cardEl.classList.add('bg-emerald-50', 'border-emerald-500');
+                } else {
+                    cardEl.classList.remove('selected');
+                    cardEl.classList.remove('bg-emerald-50', 'border-emerald-500');
+                    cardEl.classList.add('bg-slate-100', 'border-slate-300');
+                }
+            });
+
+            const currentSum = getCurrentSum();
+            const binStr = cardStates.map(b => b ? '1' : '0').join(' ');
+            document.getElementById('binary-code-text').textContent = binStr;
+            document.getElementById('current-sum-text').textContent = currentSum;
+            document.getElementById('current-letter-preview').textContent = numberToLetter(currentSum);
+
+            updateMorseVisual();
+        }
+
+        function updateMorseVisual() {
+            const visualDisplay = document.getElementById('morse-symbols-display');
+            if (!showHint) {
+                visualDisplay.textContent = '🔒 已隱藏 (勾選上方「顯示波形符號」可看長短音提示)';
+                visualDisplay.className = "text-xs text-slate-500 font-sans italic";
+                return;
+            }
+
+            const binStr = targetNumber.toString(2).padStart(5, '0');
+            const symbols = binStr.split('').map(b => b === '1' ? '➖ (長音)' : '▪ (短音)').join('  ');
+            visualDisplay.textContent = symbols;
+            visualDisplay.className = "font-bold text-lg text-amber-300 font-mono";
+        }
+
+        function nextTarget() {
+            cardStates = [false, false, false, false, false];
+
+            if (gameMode === 'word') {
+                targetLetter = currentWordObj.word[wordLetterIndex];
+                targetNumber = letterToNumber(targetLetter);
+                renderWordProgress();
+            } else {
+                let nextNum;
+                do {
+                    nextNum = Math.floor(Math.random() * 26) + 1; // 1 to 26 (A-Z)
+                } while (nextNum === targetNumber);
+
+                targetNumber = nextNum;
+                targetLetter = numberToLetter(targetNumber);
+            }
+
+            updateUI();
+
+            const letterBadge = document.getElementById('target-letter-badge');
+            const btnPlay = document.getElementById('btn-play-sound');
+
+            if (gameMode === 'listen') {
+                letterBadge.classList.add('hidden');
+                btnPlay.classList.remove('hidden');
+                setTimeout(() => playCurrentMorseSequence(), 300);
+            } else if (gameMode === 'word') {
+                letterBadge.classList.add('hidden');
+                btnPlay.classList.remove('hidden');
+                setTimeout(() => playCurrentMorseSequence(), 300);
+            } else {
+                // transmit mode
+                document.getElementById('target-letter-text').textContent = targetLetter;
+                document.getElementById('target-number-subtext').textContent = `(點數 ${targetNumber})`;
+                letterBadge.classList.remove('hidden');
+                btnPlay.classList.add('hidden');
+            }
+        }
+
+        function renderWordProgress() {
+            const container = document.getElementById('word-letters-boxes');
+            const stageText = document.getElementById('stage-level-text');
+            if (!container) return;
+            
+            container.innerHTML = '';
+            stageText.textContent = `🎯 關卡進度：第 ${currentStageIndex + 1} / ${presetWords.length} 關`;
+
+            const word = currentWordObj.word;
+            for (let i = 0; i < word.length; i++) {
+                const charBox = document.createElement('div');
+                const isDecoded = decodedWordState[i];
+                const isCurrent = i === wordLetterIndex;
+
+                charBox.className = `w-11 h-13 rounded-xl border-2 font-mono text-2xl font-black flex items-center justify-center transition-all ${
+                    isDecoded 
+                        ? 'bg-emerald-500/20 border-emerald-500 text-emerald-400 letter-pop' 
+                        : isCurrent 
+                            ? 'bg-amber-500/20 border-amber-500 text-amber-400 animate-pulse' 
+                            : 'bg-slate-950 border-slate-800 text-slate-600'
+                }`;
+
+                charBox.textContent = isDecoded ? word[i] : (isCurrent ? '?' : '_');
+                container.appendChild(charBox);
+            }
+        }
+
+        function startNewWordStage(index = 0) {
+            currentStageIndex = index % presetWords.length;
+            currentWordObj = presetWords[currentStageIndex];
+            wordLetterIndex = 0;
+            decodedWordState = new Array(currentWordObj.word.length).fill(false);
+            
+            document.getElementById('word-clear-modal').classList.add('hidden');
+            nextTarget();
+        }
+
+        function nextWordStage() {
+            startNewWordStage(currentStageIndex + 1);
+        }
+
+        function submitAnswer() {
+            const userSum = getCurrentSum();
+
+            if (userSum === targetNumber) {
+                // Correct Answer!
+                score += 10;
+                streak += 1;
+                document.getElementById('score-val').textContent = score;
+                document.getElementById('streak-val').textContent = streak;
+
+                // Tone effect
+                playTone(523, 80).then(() => playTone(659, 80)).then(() => playTone(784, 150));
+
+                if (gameMode === 'word') {
+                    decodedWordState[wordLetterIndex] = true;
+                    wordLetterIndex++;
+
+                    if (wordLetterIndex >= currentWordObj.word.length) {
+                        // Entire Word Fully Solved! Clear Stage!
+                        score += 50; // Big Bonus for completing full word
+                        document.getElementById('score-val').textContent = score;
+                        
+                        // Victory Fanfare
+                        setTimeout(() => {
+                            playTone(784, 100).then(() => playTone(880, 100)).then(() => playTone(1046, 300));
+                            
+                            // Show Stage Clear Modal
+                            document.getElementById('modal-word-display').textContent = currentWordObj.word;
+                            document.getElementById('modal-word-meaning').textContent = `【${currentWordObj.meaning}】`;
+                            document.getElementById('word-clear-modal').classList.remove('hidden');
+                        }, 500);
+                    } else {
+                        setTimeout(() => nextTarget(), 500);
+                    }
+                } else {
+                    setTimeout(() => nextTarget(), 500);
+                }
+            } else {
+                // Wrong Answer
+                streak = 0;
+                document.getElementById('streak-val').textContent = streak;
+                playTone(200, 250);
+
+                const sumEl = document.getElementById('current-sum-text');
+                sumEl.classList.add('text-rose-500');
+                setTimeout(() => sumEl.classList.remove('text-rose-500'), 500);
+            }
+        }
+
+        function switchMode(mode) {
+            gameMode = mode;
+            const btnListen = document.getElementById('btn-mode-listen');
+            const btnWord = document.getElementById('btn-mode-word');
+            const btnTransmit = document.getElementById('btn-mode-transmit');
+            const targetLabel = document.getElementById('target-label');
+            const wordProgress = document.getElementById('word-progress-container');
+            const btnFullWord = document.getElementById('btn-play-full-word');
+
+            // Reset tab styles
+            btnListen.className = "px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-slate-200 transition";
+            btnWord.className = "px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-slate-200 transition";
+            btnTransmit.className = "px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-slate-200 transition";
+            if (wordProgress) wordProgress.classList.add('hidden');
+            if (btnFullWord) btnFullWord.classList.add('hidden');
+
+            if (mode === 'listen') {
+                btnListen.className = "px-3 py-1.5 rounded-lg text-xs font-semibold transition bg-amber-500 text-slate-950 font-bold shadow";
+                if (targetLabel) targetLabel.textContent = "▶ 字母聽音解碼模式 (聽聲音湊出對應 A-Z 字母)";
+                nextTarget();
+            } else if (mode === 'word') {
+                btnWord.className = "px-3 py-1.5 rounded-lg text-xs font-semibold transition bg-amber-500 text-slate-950 font-bold shadow";
+                if (targetLabel) targetLabel.textContent = "▶ 特工密語關卡 (答對整組英文單字才算過關！)";
+                if (wordProgress) wordProgress.classList.remove('hidden');
+                if (btnFullWord) btnFullWord.classList.remove('hidden');
+                startNewWordStage(0);
+            } else {
+                btnTransmit.className = "px-3 py-1.5 rounded-lg text-xs font-semibold transition bg-amber-500 text-slate-950 font-bold shadow";
+                if (targetLabel) targetLabel.textContent = "▶ 電報發射員模式 (根據目標字母發射二進位摩斯電報)";
+                nextTarget();
+            }
+        }
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key >= '1' && e.key <= '5') {
+                toggleCard(parseInt(e.key) - 1);
+            } else if (e.key.toLowerCase() === 'r') {
+                clearCards();
+            } else if (e.key === 'Enter') {
+                submitAnswer();
+            } else if (e.key === ' ') {
+                e.preventDefault();
+                if (gameMode === 'listen' || gameMode === 'word') {
+                    playCurrentMorseSequence();
+                } else {
+                    playMorseSequence(getCurrentSum());
+                }
+            }
+        });
+
+        // Application initialization
+        window.onload = function() {
+            renderCards();
+            renderAlphabetChart();
+            nextTarget();
+        };
+    </script>
+</body>
+</html>

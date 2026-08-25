@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>亂碼解碼實驗室</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        cyber: {
+                            900: '#0B132B',
+                            800: '#1C2541',
+                            700: '#3A506B',
+                            amber: '#FFB703',
+                            green: '#06D6A0',
+                            red: '#EF476F',
+                            cyan: '#00F5D4',
+                            purple: '#7209B7'
+                        }
+                    },
+                    fontFamily: {
+                        mono: ['Courier New', 'monospace'],
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .letter-tile {
+            cursor: grab;
+            user-select: none;
+            touch-action: manipulation;
+            transition: all 0.15s ease;
+        }
+        .letter-tile:active {
+            cursor: grabbing;
+            transform: scale(1.1);
+        }
+        .letter-tile.selected {
+            ring: 3px solid #00F5D4;
+            transform: translateY(-4px) scale(1.05);
+            background-color: #00F5D4 !important;
+            color: #0B132B !important;
+        }
+        .drop-slot {
+            transition: all 0.2s ease;
+        }
+        .drop-slot.drag-over {
+            border-color: #00F5D4 !important;
+            background-color: rgba(0, 245, 212, 0.15) !important;
+            transform: scale(1.03);
+        }
+        
+        /* Glitch text effect for scrambled deciphering */
+        .glitch-text {
+            animation: glitch-anim 0.2s infinite;
+            color: #EF476F !important;
+            text-shadow: 2px 0 #00F5D4, -2px 0 #7209B7;
+        }
+
+        @keyframes glitch-anim {
+            0% { transform: translate(0); }
+            25% { transform: translate(-2px, 1px); }
+            50% { transform: translate(2px, -1px); }
+            75% { transform: translate(-1px, -2px); }
+            100% { transform: translate(0); }
+        }
+
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: rgba(15, 23, 42, 0.6);
+            border-radius: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #475569;
+        }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col justify-between font-sans antialiased selection:bg-amber-500 selection:text-slate-950">
+
+    <header class="w-full max-w-6xl mx-auto px-4 py-4 flex flex-col sm:flex-row justify-between items-center gap-3 border-b border-slate-800">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-cyan-500/20 border border-cyan-500/40 flex items-center justify-center font-mono font-bold text-cyan-400 text-xl shadow-lg shadow-cyan-500/10">
+                🔀
+            </div>
+            <div>
+                <h1 class="text-xl sm:text-2xl font-black tracking-tight text-cyan-400 font-mono">亂碼解碼實驗室</h1>
+                <p class="text-xs text-slate-400">當發送端與接收端的二進位編碼表不同時，訊息將被解讀為亂碼！</p>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-2">
+            <span class="text-xs font-mono bg-slate-900 border border-slate-800 text-amber-400 px-3 py-1.5 rounded-xl">
+                長音=1 | 短音=0 | 5bits (16-8-4-2-1)
+            </span>
+        </div>
+    </header>
+
+    <main class="w-full max-w-6xl mx-auto px-4 py-6 flex-1 flex flex-col gap-8">
+
+        <!-- SECTION 1: Drag & Drop Custom Cipher Table Building -->
+        <section class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-2xl backdrop-blur relative">
+            <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-3 pb-4 border-b border-slate-800 mb-4">
+                <div>
+                    <h2 class="text-base font-bold font-mono text-cyan-400 flex items-center gap-2">
+                        🖐️ 學生自訂編碼表 (拖曳字母卡片至點數卡槽)
+                    </h2>
+                    <p class="text-xs text-slate-400 mt-1">
+                        請將上方字母卡片 **拖曳** 至下方相對應的點數/二進位卡槽，或在手機上 **點擊字母再點擊卡槽** 設定對照關係。
+                    </p>
+                </div>
+
+                <!-- Quick Preset Controls -->
+                <div class="flex flex-wrap items-center gap-2">
+                    <button onclick="presetTable('standard')" class="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs text-slate-200 font-mono transition">
+                        標準 (A=1)
+                    </button>
+                    <button onclick="presetTable('reverse')" class="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs text-slate-200 font-mono transition">
+                        反轉 (A=26)
+                    </button>
+                    <button onclick="presetTable('caesar')" class="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs text-slate-200 font-mono transition">
+                        凱撒+3
+                    </button>
+                    <button onclick="presetTable('random')" class="px-2.5 py-1.5 rounded-lg bg-purple-500/20 border border-purple-500/40 hover:bg-purple-500/30 text-xs text-purple-300 font-mono transition">
+                        🎲 隨機打亂
+                    </button>
+                    <button onclick="clearTable()" class="px-2.5 py-1.5 rounded-lg bg-rose-500/20 border border-rose-500/40 hover:bg-rose-500/30 text-xs text-rose-300 font-mono transition">
+                        🧹 清空
+                    </button>
+                </div>
+            </div>
+
+            <!-- Unassigned Alphabet Pool -->
+            <div class="mb-5 bg-slate-950/80 p-3.5 rounded-xl border border-slate-800 shadow-inner">
+                <div class="flex justify-between items-center mb-2">
+                    <span class="text-xs font-mono text-slate-400 uppercase font-bold tracking-wider">🔤 字母卡片庫 (未指派卡片)：</span>
+                    <span id="unassigned-count" class="text-xs font-mono text-amber-400">26 個可用</span>
+                </div>
+                <div id="letters-pool" class="flex flex-wrap gap-1.5 min-h-[44px] items-center">
+                    <!-- Letter tiles rendered dynamically -->
+                </div>
+            </div>
+
+            <!-- 26 Binary / Number Slots Grid -->
+            <div>
+                <span class="block text-xs font-mono text-slate-400 uppercase font-bold tracking-wider mb-2">📦 二進位點數卡槽 (1 ~ 26 號)：</span>
+                <div id="slots-grid" class="grid grid-cols-3 sm:grid-cols-6 md:grid-cols-9 lg:grid-cols-13 gap-2 custom-scrollbar max-h-[320px] overflow-y-auto p-1">
+                    <!-- 26 Slots rendered dynamically -->
+                </div>
+            </div>
+        </section>
+
+        <section class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-2xl relative overflow-hidden">
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 pb-3 border-b border-slate-800 mb-4">
+                <div>
+                    <h2 class="text-base font-bold font-mono text-amber-400 flex items-center gap-2">
+                        🎯 雙方電報傳輸與亂碼解碼關卡
+                    </h2>
+                    <p class="text-xs text-slate-400 mt-0.5">系統隨機出題，點擊下方「顯示解碼答案」按鈕測試雙方對照表是否能正確通訊！</p>
+                </div>
+                <button onclick="generateRandomChallenge()" class="px-3 py-1.5 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-amber-300 font-mono font-bold text-xs transition flex items-center gap-1.5">
+                    🎲 換一個隨機單字
+                </button>
+            </div>
+
+            <!-- Control Bar -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-5">
+                <!-- Target Word Input / Display -->
+                <div class="bg-slate-950 p-3 rounded-xl border border-slate-800 flex flex-col justify-between">
+                    <label class="block text-xs font-mono text-slate-400 mb-1">1. 傳送單字目標：</label>
+                    <div class="flex items-center gap-2">
+                        <input type="text" id="target-word-input" value="CODE" uppercase maxlength="8" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-amber-400 font-mono font-black tracking-widest text-lg focus:outline-none focus:border-amber-500 uppercase">
+                        <span id="target-meaning-badge" class="text-xs text-emerald-400 font-bold whitespace-nowrap bg-emerald-950/60 px-2.5 py-1.5 rounded-lg border border-emerald-800/60">【密碼】</span>
+                    </div>
+                </div>
+
+                <!-- Sender Table Option -->
+                <div class="bg-slate-950 p-3 rounded-xl border border-slate-800 flex flex-col justify-between">
+                    <label class="block text-xs font-mono text-slate-400 mb-1">2. 發送端使用的對照表：</label>
+                    <select id="sender-table-select" onchange="resetChallengeResult()" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-2 text-xs font-mono text-slate-200 focus:outline-none focus:border-cyan-500">
+                        <option value="standard">標準對照表 (Standard A=1)</option>
+                        <option value="custom" selected>學生拖曳對照表 (Custom Table)</option>
+                    </select>
+                </div>
+
+                <!-- Receiver Table Option -->
+                <div class="bg-slate-950 p-3 rounded-xl border border-slate-800 flex flex-col justify-between">
+                    <label class="block text-xs font-mono text-slate-400 mb-1">3. 接收端使用的解碼表：</label>
+                    <select id="receiver-table-select" onchange="resetChallengeResult()" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-2 text-xs font-mono text-slate-200 focus:outline-none focus:border-cyan-500">
+                        <option value="standard" selected>標準對照表 (Standard A=1)</option>
+                        <option value="custom">學生拖曳對照表 (Custom Table)</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Action Button Area -->
+            <div class="flex flex-wrap items-center gap-3 mb-6">
+                <button id="btn-reveal-answer" onclick="revealAndSimulate()" class="px-6 py-3 rounded-xl bg-gradient-to-r from-amber-500 to-emerald-500 hover:from-amber-400 hover:to-emerald-400 text-slate-950 font-black text-sm shadow-xl shadow-amber-500/20 active:scale-95 transition flex items-center gap-2">
+                    🚀 進行電報傳輸與顯示解碼答案
+                </button>
+                <span class="text-xs text-slate-400 font-mono">（點擊按鈕後會播放電報音效並揭曉接收端獲得的文字/亂碼）</span>
+            </div>
+
+            <!-- Result Cards Grid (Hidden or Masked initially) -->
+            <div class="border-t border-slate-800 pt-4">
+                <div class="flex justify-between items-center mb-3">
+                    <span class="text-xs font-mono text-slate-400 uppercase tracking-wider font-bold">傳輸與解碼結果 (Transmission & Decoded Output)</span>
+                    <span id="sim-status-badge" class="text-xs font-mono px-3 py-1 rounded-full bg-slate-800 text-slate-400">
+                        🔒 尚未進行解碼測試
+                    </span>
+                </div>
+
+                <!-- Dynamic Comparison Cards -->
+                <div id="sim-result-grid" class="flex flex-wrap gap-3 justify-start min-h-[110px] items-center">
+                    <div class="text-sm text-slate-500 italic py-6 w-full text-center bg-slate-950/40 rounded-xl border border-dashed border-slate-800">
+                        請點擊上方「🚀 進行電報傳輸與顯示解碼答案」按鈕開始測試...
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <footer class="w-full max-w-6xl mx-auto px-4 py-4 text-center text-xs text-slate-600 border-t border-slate-800/60 font-mono">
+        亂碼解碼實驗室 | 拖曳字母自訂編碼表 • 驗證多重編碼協定 (Protocol Mismatch)
+    </footer>
+
+    <script>
+        const presetWords = [
+            { word: 'CODE', meaning: '密碼 / 程式' },
+            { word: 'HERO', meaning: '英雄' },
+            { word: 'RADIO', meaning: '無線電' },
+            { word: 'CYBER', meaning: '賽博 / 網路' },
+            { word: 'SMART', meaning: '智慧' },
+            { word: 'APPLE', meaning: '蘋果' },
+            { word: 'BRAIN', meaning: '大腦' },
+            { word: 'LIGHT', meaning: '光線' },
+            { word: 'SUPER', meaning: '超級' },
+            { word: 'DOG', meaning: '小狗' },
+            { word: 'CAT', meaning: '貓咪' },
+            { word: 'SOS', meaning: '緊急求救' }
+        ];
+
+        // Custom Table Mapping: Slot Index (1 to 26) -> Letter ('A' to 'Z') or null
+        // And reverse: Letter -> Slot Index
+        let slotToLetter = new Array(27).fill(null); 
+        let selectedTileForTouch = null; // For touch / click click fallback
+
+        // Standard Table: A->1, B->2 ... Z->26
+        const standardMap = {};
+        for (let i = 1; i <= 26; i++) {
+            standardMap[String.fromCharCode(64 + i)] = i;
+        }
+
+        // Web Audio API
+        let audioCtx = null;
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+        }
+
+        function playTone(freq, duration) {
+            return new Promise((resolve) => {
+                try {
+                    initAudio();
+                    if (!audioCtx) { resolve(); return; }
+
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+
+                    gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + (duration / 1000));
+
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+
+                    osc.start();
+                    setTimeout(() => {
+                        osc.stop();
+                        resolve();
+                    }, duration);
+                } catch(e) {
+                    resolve();
+                }
+            });
+        }
+
+        async function playMorseTone(number) {
+            const binStr = number.toString(2).padStart(5, '0');
+            const unitTime = 120;
+            for (let i = 0; i < 5; i++) {
+                if (binStr[i] === '1') {
+                    await playTone(750, unitTime * 2);
+                } else {
+                    await playTone(450, unitTime * 0.8);
+                }
+                await new Promise(r => setTimeout(r, unitTime * 0.6));
+            }
+        }
+
+        function renderLettersPool() {
+            const pool = document.getElementById('letters-pool');
+            pool.innerHTML = '';
+
+            let unassignedCount = 0;
+            for (let i = 1; i <= 26; i++) {
+                const char = String.fromCharCode(64 + i);
+                const isAssigned = slotToLetter.includes(char);
+
+                if (!isAssigned) {
+                    unassignedCount++;
+                    const tile = document.createElement('div');
+                    tile.draggable = true;
+                    tile.dataset.char = char;
+                    tile.className = `letter-tile bg-cyan-500 text-slate-950 font-black font-mono text-sm w-9 h-9 rounded-xl flex items-center justify-center shadow-lg shadow-cyan-500/20 hover:bg-cyan-400 ${selectedTileForTouch === char ? 'selected' : ''}`;
+                    tile.textContent = char;
+
+                    // Drag events
+                    tile.addEventListener('dragstart', handleDragStart);
+
+                    // Touch / Click fallback
+                    tile.addEventListener('click', () => handleTileClick(char));
+
+                    pool.appendChild(tile);
+                }
+            }
+
+            document.getElementById('unassigned-count').textContent = `${unassignedCount} 個可用`;
+        }
+
+        function renderSlotsGrid() {
+            const grid = document.getElementById('slots-grid');
+            grid.innerHTML = '';
+
+            for (let slotNum = 1; slotNum <= 26; slotNum++) {
+                const charInSlot = slotToLetter[slotNum];
+                const binStr = slotNum.toString(2).padStart(5, '0');
+
+                const slotEl = document.createElement('div');
+                slotEl.dataset.slot = slotNum;
+                slotEl.className = `drop-slot bg-slate-950 border-2 ${charInSlot ? 'border-emerald-500/80 bg-emerald-950/20' : 'border-slate-800 hover:border-slate-700'} rounded-xl p-1.5 flex flex-col items-center justify-between min-h-[85px] relative group`;
+
+                // Drag Target Events
+                slotEl.addEventListener('dragover', handleDragOver);
+                slotEl.addEventListener('dragleave', handleDragLeave);
+                slotEl.addEventListener('drop', handleDrop);
+                slotEl.addEventListener('click', () => handleSlotClick(slotNum));
+
+                slotEl.innerHTML = `
+                    <div class="flex justify-between items-center w-full px-1">
+                        <span class="text-[10px] font-mono text-slate-400 font-bold">${slotNum}</span>
+                        <span class="text-[9px] font-mono text-emerald-400/80">${binStr}</span>
+                    </div>
+
+                    <!-- Slot Content -->
+                    <div class="my-1 flex items-center justify-center w-full flex-1">
+                        ${charInSlot ? `
+                            <div class="letter-tile bg-emerald-400 text-slate-950 font-black font-mono text-base w-8 h-8 rounded-lg flex items-center justify-center shadow">
+                                ${charInSlot}
+                            </div>
+                        ` : `
+                            <div class="border-2 border-dashed border-slate-800 rounded-lg w-8 h-8 flex items-center justify-center text-slate-600 font-mono text-xs">
+                                +
+                            </div>
+                        `}
+                    </div>
+
+                    ${charInSlot ? `
+                        <button onclick="event.stopPropagation(); unassignSlot(${slotNum})" class="text-[9px] text-slate-500 hover:text-rose-400 font-mono transition">
+                            ✕ 移除
+                        </button>
+                    ` : `
+                        <span class="text-[9px] text-slate-600 font-mono">空卡槽</span>
+                    `}
+                `;
+
+                grid.appendChild(slotEl);
+            }
+        }
+
+        // Drag & Drop Event Handlers
+        let draggedChar = null;
+
+        function handleDragStart(e) {
+            draggedChar = e.target.dataset.char;
+            e.dataTransfer.setData('text/plain', draggedChar);
+        }
+
+        function handleDragOver(e) {
+            e.preventDefault();
+            e.currentTarget.classList.add('drag-over');
+        }
+
+        function handleDragLeave(e) {
+            e.currentTarget.classList.remove('drag-over');
+        }
+
+        function handleDrop(e) {
+            e.preventDefault();
+            e.currentTarget.classList.remove('drag-over');
+            const slotNum = parseInt(e.currentTarget.dataset.slot, 10);
+            const char = e.dataTransfer.getData('text/plain') || draggedChar;
+
+            if (char && slotNum) {
+                assignCharToSlot(char, slotNum);
+            }
+        }
+
+        // Touch/Click selection handlers
+        function handleTileClick(char) {
+            if (selectedTileForTouch === char) {
+                selectedTileForTouch = null;
+            } else {
+                selectedTileForTouch = char;
+            }
+            renderLettersPool();
+        }
+
+        function handleSlotClick(slotNum) {
+            if (selectedTileForTouch) {
+                assignCharToSlot(selectedTileForTouch, slotNum);
+                selectedTileForTouch = null;
+            }
+        }
+
+        function assignCharToSlot(char, targetSlot) {
+            // Clear existing slot if char was already assigned elsewhere
+            const existingSlot = slotToLetter.indexOf(char);
+            if (existingSlot !== -1) {
+                slotToLetter[existingSlot] = null;
+            }
+
+            slotToLetter[targetSlot] = char;
+            playTone(587, 60);
+            refreshTableUI();
+        }
+
+        function unassignSlot(slotNum) {
+            slotToLetter[slotNum] = null;
+            playTone(300, 60);
+            refreshTableUI();
+        }
+
+        function refreshTableUI() {
+            renderLettersPool();
+            renderSlotsGrid();
+            resetChallengeResult();
+        }
+
+        function presetTable(type) {
+            slotToLetter = new Array(27).fill(null);
+
+            if (type === 'standard') {
+                for (let i = 1; i <= 26; i++) {
+                    slotToLetter[i] = String.fromCharCode(64 + i);
+                }
+            } else if (type === 'reverse') {
+                for (let i = 1; i <= 26; i++) {
+                    slotToLetter[i] = String.fromCharCode(64 + (27 - i));
+                }
+            } else if (type === 'caesar') {
+                for (let i = 1; i <= 26; i++) {
+                    const charCode = ((i + 2) % 26);
+                    slotToLetter[i] = String.fromCharCode(65 + charCode);
+                }
+            } else if (type === 'random') {
+                const chars = Array.from({length: 26}, (_, i) => String.fromCharCode(65 + i)).sort(() => Math.random() - 0.5);
+                for (let i = 1; i <= 26; i++) {
+                    slotToLetter[i] = chars[i - 1];
+                }
+            }
+
+            refreshTableUI();
+        }
+
+        function clearTable() {
+            slotToLetter = new Array(27).fill(null);
+            refreshTableUI();
+        }
+
+        // Get Mapping Object (Letter -> Slot Number)
+        function getCustomMapFromSlots() {
+            const mapObj = {};
+            for (let slotNum = 1; slotNum <= 26; slotNum++) {
+                const char = slotToLetter[slotNum];
+                if (char) {
+                    mapObj[char] = slotNum;
+                }
+            }
+            return mapObj;
+        }
+
+        function invertMap(mapObj) {
+            const inverted = {};
+            for (const [letter, val] of Object.entries(mapObj)) {
+                if (!inverted[val]) {
+                    inverted[val] = letter;
+                }
+            }
+            return inverted;
+        }
+
+        function generateRandomChallenge() {
+            const randomObj = presetWords[Math.floor(Math.random() * presetWords.length)];
+            document.getElementById('target-word-input').value = randomObj.word;
+            document.getElementById('target-meaning-badge').textContent = `【${randomObj.meaning}】`;
+            resetChallengeResult();
+        }
+
+        function resetChallengeResult() {
+            const resultGrid = document.getElementById('sim-result-grid');
+            const statusBadge = document.getElementById('sim-status-badge');
+
+            statusBadge.textContent = '🔒 尚未進行解碼測試';
+            statusBadge.className = 'text-xs font-mono px-3 py-1 rounded-full bg-slate-800 text-slate-400';
+
+            resultGrid.innerHTML = `
+                <div class="text-sm text-slate-500 italic py-6 w-full text-center bg-slate-950/40 rounded-xl border border-dashed border-slate-800">
+                    請點擊上方「🚀 進行電報傳輸與顯示解碼答案」按鈕開始測試...
+                </div>
+            `;
+        }
+
+        async function revealAndSimulate() {
+            const inputEl = document.getElementById('target-word-input');
+            const senderType = document.getElementById('sender-table-select').value;
+            const receiverType = document.getElementById('receiver-table-select').value;
+            const resultGrid = document.getElementById('sim-result-grid');
+            const statusBadge = document.getElementById('sim-status-badge');
+            const btnReveal = document.getElementById('btn-reveal-answer');
+
+            const rawText = inputEl.value.toUpperCase().replace(/[^A-Z]/g, '');
+            if (!rawText) {
+                resultGrid.innerHTML = '<div class="text-xs text-rose-400 py-2 w-full text-center">請輸入至少一個英文字母 (A-Z)！</div>';
+                return;
+            }
+
+            btnReveal.disabled = true;
+            btnReveal.classList.add('opacity-50');
+
+            // Sender & Receiver Table preparation
+            const customMap = getCustomMapFromSlots();
+            const senderTable = senderType === 'custom' ? customMap : standardMap;
+            const receiverTable = receiverType === 'custom' ? customMap : standardMap;
+            const receiverInverted = invertMap(receiverTable);
+
+            resultGrid.innerHTML = '';
+            statusBadge.textContent = '⚡ 正在發射摩斯電報並即時解碼...';
+            statusBadge.className = 'text-xs font-mono px-3 py-1 rounded-full bg-amber-500/20 text-amber-400 border border-amber-500/40 animate-pulse';
+
+            let matchCount = 0;
+
+            for (let i = 0; i < rawText.length; i++) {
+                const origChar = rawText[i];
+                // 1. Sender encodes letter
+                const sendVal = senderTable[origChar] || (origChar.charCodeAt(0) - 64);
+                const binStr = sendVal.toString(2).padStart(5, '0');
+
+                // 2. Play Morse audio
+                await playMorseTone(sendVal);
+
+                // 3. Receiver decodes 5-bit code using its own table
+                const recvChar = receiverInverted[sendVal] || '?';
+                const isMatch = origChar === recvChar;
+                if (isMatch) matchCount++;
+
+                const card = document.createElement('div');
+                card.className = `p-3 rounded-xl border flex flex-col items-center gap-1.5 min-w-[95px] font-mono transition-all transform scale-95 opacity-0 ${
+                    isMatch 
+                        ? 'bg-emerald-950/40 border-emerald-500/60 text-emerald-300' 
+                        : 'bg-rose-950/50 border-rose-500/70 text-rose-300 glitch-text'
+                }`;
+
+                card.innerHTML = `
+                    <div class="text-[10px] text-slate-400 font-sans">發送: <span class="font-bold text-amber-400 text-sm font-mono">${origChar}</span></div>
+                    <div class="bg-slate-950 px-2 py-0.5 rounded text-[11px] font-mono text-cyan-400 border border-slate-800">${binStr}</div>
+                    <div class="text-[10px] text-slate-400 font-sans">解讀: <span class="font-black text-lg font-mono ${isMatch ? 'text-emerald-400' : 'text-rose-400'}">${recvChar}</span></div>
+                    <span class="text-[9px] px-2 py-0.5 rounded font-bold ${isMatch ? 'bg-emerald-500/20 text-emerald-400' : 'bg-rose-500/20 text-rose-400'}">
+                        ${isMatch ? '✓ 正確解讀' : '✕ 變成亂碼'}
+                    </span>
+                `;
+
+                resultGrid.appendChild(card);
+
+                // Trigger animation fade in
+                setTimeout(() => {
+                    card.classList.remove('scale-95', 'opacity-0');
+                    card.classList.add('scale-100', 'opacity-100');
+                }, 50);
+
+                await new Promise(r => setTimeout(r, 150));
+            }
+
+            // Final Status
+            if (matchCount === rawText.length) {
+                statusBadge.textContent = '🟢 雙方編碼表完全一致，訊息完美解讀！';
+                statusBadge.className = 'text-xs font-mono px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/40';
+            } else {
+                const errorRate = Math.round((1 - matchCount / rawText.length) * 100);
+                statusBadge.textContent = `⚠️ 編碼表不匹配！訊息出現亂碼 (錯誤率 ${errorRate}%)`;
+                statusBadge.className = 'text-xs font-mono px-3 py-1 rounded-full bg-rose-500/20 text-rose-400 border border-rose-500/40';
+            }
+
+            btnReveal.disabled = false;
+            btnReveal.classList.remove('opacity-50');
+        }
+
+        window.onload = function() {
+            presetTable('standard');
+            generateRandomChallenge();
+        };
+    </script>
+</body>
+</html>
