@@ -1,0 +1,749 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>進位解密大作戰 - 2進位轉8/16進位</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&family=Noto+Sans+TC:wght@400;500;700;900&display=swap');
+        
+        body {
+            font-family: 'Fredoka', 'Noto Sans TC', sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #312e81 100%);
+            min-height: 100vh;
+            color: #f8fafc;
+        }
+
+        .dot-card {
+            transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .dot-card.active {
+            background: #ffffff;
+            border-color: #38bdf8;
+            box-shadow: 0 10px 20px -5px rgba(56, 189, 248, 0.4);
+            transform: translateY(-4px);
+        }
+
+        .dot-card.inactive {
+            background: #1e293b;
+            border-color: #334155;
+            opacity: 0.6;
+        }
+
+        .dot {
+            width: 8px;
+            height: 8px;
+            background-color: #0f172a;
+            border-radius: 50%;
+            margin: auto;
+        }
+
+        .dot-card.inactive .dot {
+            background-color: #64748b;
+            opacity: 0.3;
+        }
+
+        /* Dot Grid Layouts */
+        .grid-1 { display: grid; grid-template-columns: 1fr; align-content: center; }
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; align-content: center; }
+        .grid-4 { display: grid; grid-template-columns: repeat(2, 1fr); grid-template-rows: repeat(2, 1fr); gap: 4px; align-content: center; }
+        .grid-8 { display: grid; grid-template-columns: repeat(2, 1fr); grid-template-rows: repeat(4, 1fr); gap: 3px; align-content: center; }
+
+        @keyframes pulseGlow {
+            0%, 100% { border-color: rgba(251, 191, 36, 0.8); box-shadow: 0 0 15px rgba(245, 158, 11, 0.3); }
+            50% { border-color: rgba(245, 158, 11, 1); box-shadow: 0 0 25px rgba(245, 158, 11, 0.6); }
+        }
+
+        .converted-group {
+            animation: pulseGlow 2.5s infinite ease-in-out;
+        }
+    </style>
+</head>
+<body class="flex flex-col min-h-screen">
+
+    <!-- Header -->
+    <header class="bg-slate-950/80 backdrop-blur-md border-b border-indigo-900/50 sticky top-0 z-50">
+        <div class="max-w-6xl mx-auto px-4 py-4 flex flex-wrap justify-between items-center gap-3">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-amber-400 to-amber-500 flex items-center justify-center text-slate-950 font-black text-xl shadow-lg shadow-amber-500/20">
+                    <i class="fa-solid fa-shapes"></i>
+                </div>
+                <div>
+                    <h1 class="font-black text-xl sm:text-2xl tracking-wide bg-gradient-to-r from-amber-300 via-cyan-200 to-indigo-200 bg-clip-text text-transparent">
+                        進位解密大作戰
+                    </h1>
+                    <p class="text-xs text-indigo-300">2 進位點數牌 ➔ 8 進位 / 16 進位 直覺對照實驗室</p>
+                </div>
+            </div>
+
+            <!-- Quick Presets -->
+            <div class="flex items-center gap-2">
+                <button onclick="handlePreset('clear')" class="px-3 py-1.5 text-xs font-bold bg-slate-800 hover:bg-slate-700 text-indigo-200 rounded-xl border border-slate-700 transition">
+                    <i class="fa-solid fa-rotate-left mr-1"></i>清空 (全 0)
+                </button>
+                <button onclick="handlePreset('full')" class="px-3 py-1.5 text-xs font-bold bg-slate-800 hover:bg-slate-700 text-indigo-200 rounded-xl border border-slate-700 transition">
+                    全開 / 最大值
+                </button>
+                <button onclick="handlePreset('random')" class="px-3 py-1.5 text-xs font-bold bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 rounded-xl border border-amber-500/40 transition">
+                    🎲 隨機產生
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-grow max-w-5xl w-full mx-auto p-4 sm:p-6 flex flex-col gap-6">
+
+        <!-- Unified Interactive Section: Direction & Target Base Selection -->
+        <section class="bg-slate-900/90 backdrop-blur-md p-5 sm:p-6 rounded-3xl border border-indigo-900/60 shadow-2xl space-y-6">
+            
+            <!-- Target Base & Direction Selector Header -->
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-slate-800 pb-4">
+                <div class="flex items-center gap-3">
+                    <span class="w-8 h-8 rounded-xl bg-amber-500/20 border border-amber-500/40 text-amber-300 font-extrabold text-base flex items-center justify-center">
+                        <i class="fa-solid fa-arrow-right-arrow-left"></i>
+                    </span>
+                    <div>
+                        <h2 class="font-bold text-lg text-white">轉換方向與進位選擇</h2>
+                        <p class="text-xs text-slate-400">選擇轉換方向後設定數值，點擊轉換即可透過點數牌進行解密</p>
+                    </div>
+                </div>
+
+                <!-- Mode Controls -->
+                <div class="flex flex-wrap items-center gap-2">
+                    <!-- Direction Switch -->
+                    <div class="inline-flex bg-slate-950 p-1.5 rounded-2xl border border-slate-800 text-xs font-bold gap-1">
+                        <button id="dir-btn-binToOther" onclick="setDirection('binToOther')" class="px-3 py-1.5 rounded-xl transition-all bg-indigo-600 text-white shadow-md">
+                            2進位 ➔ 8/16進位
+                        </button>
+                        <button id="dir-btn-otherToBin" onclick="setDirection('otherToBin')" class="px-3 py-1.5 rounded-xl transition-all text-slate-400 hover:text-white">
+                            8/16進位 ➔ 2進位
+                        </button>
+                    </div>
+
+                    <!-- Base Switch -->
+                    <div class="inline-flex bg-slate-950 p-1.5 rounded-2xl border border-slate-800 text-xs font-bold gap-1">
+                        <button id="mode-btn-8" onclick="setConversionTarget(8)" class="px-3 py-1.5 rounded-xl transition-all bg-amber-500 text-slate-950 shadow-md">
+                            8 進位
+                        </button>
+                        <button id="mode-btn-16" onclick="setConversionTarget(16)" class="px-3 py-1.5 rounded-xl transition-all text-slate-400 hover:text-white">
+                            16 進位
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Grouping Rule Hint Badge -->
+            <div class="flex flex-wrap items-center justify-between gap-2">
+                <span id="group-rule-badge" class="text-xs font-bold px-3 py-1.5 rounded-xl bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                    8 進位模式：從右至左，每 3 張牌劃為一組 (點數 4 - 2 - 1)
+                </span>
+                <div class="flex items-center gap-2">
+                    <span id="current-val-label" class="text-xs text-slate-400 font-medium">當前二進位：</span>
+                    <span id="binary-str-display" class="font-mono font-black text-lg sm:text-xl tracking-widest text-cyan-300 bg-slate-950 px-3 py-1 rounded-lg border border-slate-800">
+                        00000000
+                    </span>
+                    <span id="current-val-sub" class="text-xs text-cyan-400 font-bold font-mono">₂</span>
+                </div>
+            </div>
+
+            <!-- Input Controls Area (Dynamic: Binary Bits or Base Digits Pickers) -->
+            <div id="input-controls-area" class="bg-slate-950/60 p-4 rounded-2xl border border-slate-800 flex flex-col items-center gap-3">
+                <!-- Rendered dynamically by JavaScript -->
+            </div>
+
+            <!-- Prominent Convert Action Button -->
+            <div class="flex justify-center py-1">
+                <button id="convert-action-btn" onclick="doConversion()" class="px-8 py-3.5 rounded-2xl bg-gradient-to-r from-amber-400 via-amber-500 to-orange-500 hover:from-amber-300 hover:to-orange-400 text-slate-950 font-black text-lg sm:text-xl shadow-xl shadow-amber-500/25 border-2 border-amber-300 transform active:scale-95 transition-all flex items-center gap-3">
+                    <i class="fa-solid fa-wand-magic-sparkles text-xl"></i>
+                    <span>✨ 開始進位轉換</span>
+                </button>
+            </div>
+
+            <!-- Integrated Dot Cards & Bit Buttons Grouping Wrapper -->
+            <div id="dot-cards-group-wrapper" class="flex flex-wrap justify-center gap-3 sm:gap-5 py-2 min-h-[220px]">
+                <!-- Dynamically rendered by JavaScript on Conversion -->
+            </div>
+
+            <!-- Summary Formula & Equation Box -->
+            <div id="summary-box" class="bg-slate-950/90 p-5 rounded-2xl border border-indigo-900/80 flex flex-wrap items-center justify-between gap-4 transition-all opacity-40">
+                <div class="space-y-1">
+                    <span class="text-xs font-bold text-indigo-400 uppercase tracking-wider">轉換數學等式 (Formula)</span>
+                    <div id="equation-text" class="text-base sm:text-lg font-mono font-bold text-slate-200">
+                        請按下「✨ 開始進位轉換」按鈕查看解密結果
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-4">
+                    <div class="text-right">
+                        <span class="text-xs text-slate-400 block font-semibold">10 進位總點數</span>
+                        <span id="decimal-sum-text" class="text-2xl font-black text-cyan-400">?</span>
+                    </div>
+                    <div class="h-8 w-px bg-slate-800"></div>
+                    <div class="text-right">
+                        <span class="text-xs text-slate-400 block font-semibold" id="target-base-label">8 進位解密結果</span>
+                        <span id="final-result-text" class="text-3xl font-black text-amber-400 font-mono">?</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-slate-950/90 border-t border-slate-800 py-4 text-center text-xs text-slate-500">
+        <p>進位解密大作戰 — 2 進位 ⇄ 8/16 進位點數牌雙向教學實驗室</p>
+    </footer>
+
+    <script>
+        // State variables
+        let direction = 'binToOther'; // 'binToOther' | 'otherToBin'
+        let targetBase = 8; // 8 or 16
+        let binaryBits = [0, 0, 0, 0, 0, 0, 0, 0, 0]; // 9 bits for Base 8 (3 x 3), 8 bits for Base 16
+        let octalDigits = [0, 0, 0]; // [digit2 (0-7), digit1 (0-7), digit0 (0-7)]
+        let hexDigits = [0, 0]; // [highHex (0-15), lowHex (0-15)]
+        let hasConverted = false;
+
+        // Web Audio API Sound Effects
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+        function playSound(type) {
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            const now = audioCtx.currentTime;
+
+            if (type === 'toggle') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(400, now);
+                osc.frequency.exponentialRampToValueAtTime(800, now + 0.05);
+                gain.gain.setValueAtTime(0.15, now);
+                gain.gain.linearRampToValueAtTime(0.01, now + 0.05);
+                osc.start(now);
+                osc.stop(now + 0.05);
+            } else if (type === 'convert') {
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(523.25, now);
+                osc.frequency.setValueAtTime(659.25, now + 0.08);
+                osc.frequency.setValueAtTime(783.99, now + 0.16);
+                gain.gain.setValueAtTime(0.2, now);
+                gain.gain.linearRampToValueAtTime(0.01, now + 0.28);
+                osc.start(now);
+                osc.stop(now + 0.28);
+            }
+        }
+
+        function setDirection(dir) {
+            playSound('toggle');
+            direction = dir;
+            hasConverted = false;
+
+            const btnBin = document.getElementById('dir-btn-binToOther');
+            const btnOther = document.getElementById('dir-btn-otherToBin');
+
+            if (dir === 'binToOther') {
+                btnBin.className = "px-3 py-1.5 rounded-xl transition-all bg-indigo-600 text-white shadow-md font-bold";
+                btnOther.className = "px-3 py-1.5 rounded-xl transition-all text-slate-400 hover:text-white font-bold";
+            } else {
+                btnOther.className = "px-3 py-1.5 rounded-xl transition-all bg-indigo-600 text-white shadow-md font-bold";
+                btnBin.className = "px-3 py-1.5 rounded-xl transition-all text-slate-400 hover:text-white font-bold";
+            }
+
+            renderInputControls();
+            renderUnconvertedState();
+        }
+
+        function setConversionTarget(base) {
+            playSound('toggle');
+            targetBase = base;
+            hasConverted = false;
+
+            if (targetBase === 8) {
+                if (binaryBits.length !== 9) binaryBits = [0, 0, 0, 0, 0, 0, 0, 0, 0];
+            } else {
+                if (binaryBits.length !== 8) binaryBits = [0, 0, 0, 0, 0, 0, 0, 0];
+            }
+
+            const btn8 = document.getElementById('mode-btn-8');
+            const btn16 = document.getElementById('mode-btn-16');
+
+            if (base === 8) {
+                btn8.className = "px-3 py-1.5 rounded-xl transition-all bg-amber-500 text-slate-950 shadow-md font-bold";
+                btn16.className = "px-3 py-1.5 rounded-xl transition-all text-slate-400 hover:text-white font-bold";
+            } else {
+                btn16.className = "px-3 py-1.5 rounded-xl transition-all bg-purple-500 text-white shadow-md font-bold";
+                btn8.className = "px-3 py-1.5 rounded-xl transition-all text-slate-400 hover:text-white font-bold";
+            }
+
+            renderInputControls();
+            renderUnconvertedState();
+        }
+
+        // Preset handlers (Clear, Full, Random)
+        function handlePreset(type) {
+            playSound('toggle');
+            hasConverted = false;
+
+            const bitLen = targetBase === 8 ? 9 : 8;
+
+            if (direction === 'binToOther') {
+                if (type === 'clear') binaryBits = new Array(bitLen).fill(0);
+                else if (type === 'full') binaryBits = new Array(bitLen).fill(1);
+                else if (type === 'random') binaryBits = Array.from({ length: bitLen }, () => Math.random() < 0.5 ? 0 : 1);
+            } else {
+                if (targetBase === 8) {
+                    if (type === 'clear') octalDigits = [0, 0, 0];
+                    else if (type === 'full') octalDigits = [7, 7, 7];
+                    else if (type === 'random') {
+                        octalDigits = [
+                            Math.floor(Math.random() * 8),
+                            Math.floor(Math.random() * 8),
+                            Math.floor(Math.random() * 8)
+                        ];
+                    }
+                } else {
+                    if (type === 'clear') hexDigits = [0, 0];
+                    else if (type === 'full') hexDigits = [15, 15];
+                    else if (type === 'random') {
+                        hexDigits = [
+                            Math.floor(Math.random() * 16),
+                            Math.floor(Math.random() * 16)
+                        ];
+                    }
+                }
+            }
+
+            renderInputControls();
+            renderUnconvertedState();
+        }
+
+        // Bit toggle for Binary -> Other
+        function toggleBit(index) {
+            playSound('toggle');
+            binaryBits[index] = binaryBits[index] === 0 ? 1 : 0;
+            hasConverted = false;
+            renderInputControls();
+            renderUnconvertedState();
+        }
+
+        // Octal/Hex Digit Selectors
+        function setOctalDigit(groupIndex, val) {
+            playSound('toggle');
+            octalDigits[groupIndex] = val;
+            hasConverted = false;
+            renderInputControls();
+            renderUnconvertedState();
+        }
+
+        function setHexDigit(groupIndex, val) {
+            playSound('toggle');
+            hexDigits[groupIndex] = val;
+            hasConverted = false;
+            renderInputControls();
+            renderUnconvertedState();
+        }
+
+        function renderInputControls() {
+            const container = document.getElementById('input-controls-area');
+            const binaryStrDisplay = document.getElementById('binary-str-display');
+            const currentValLabel = document.getElementById('current-val-label');
+            const currentValSub = document.getElementById('current-val-sub');
+
+            if (direction === 'binToOther') {
+                currentValLabel.innerText = "當前二進位：";
+                binaryStrDisplay.innerText = binaryBits.join('');
+                currentValSub.innerText = "₂";
+
+                const bitLen = binaryBits.length;
+                let html = `<span class="text-xs font-bold text-slate-400">點擊下方按鈕切換 ${bitLen}-bit 二進位數值（0 或 1）：</span>`;
+                html += `<div class="flex flex-wrap justify-center gap-2 sm:gap-3">`;
+                binaryBits.forEach((bitVal, bitIndex) => {
+                    const btnBg = bitVal === 1 
+                        ? 'bg-cyan-500 text-slate-950 border-cyan-300 shadow-lg shadow-cyan-500/30 font-black' 
+                        : 'bg-slate-800 text-slate-400 border-slate-700 hover:bg-slate-700 font-bold';
+
+                    const bitNum = (bitLen - 1) - bitIndex;
+                    html += `
+                        <div class="flex flex-col items-center gap-1 select-none">
+                            <span class="text-[10px] sm:text-xs font-mono text-slate-400">Bit ${bitNum}</span>
+                            <button onclick="toggleBit(${bitIndex})" class="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl border-2 text-xl font-bold flex items-center justify-center transition-all transform active:scale-90 ${btnBg}">
+                                ${bitVal}
+                            </button>
+                        </div>
+                    `;
+                });
+                html += `</div>`;
+                container.innerHTML = html;
+
+            } else {
+                // otherToBin Mode
+                if (targetBase === 8) {
+                    const octalStr = octalDigits.join('');
+                    currentValLabel.innerText = "當前八進位：";
+                    binaryStrDisplay.innerText = octalStr;
+                    currentValSub.innerText = "₈";
+
+                    let html = `<span class="text-xs font-bold text-slate-400">請從下拉式選單選擇各組的 8 進位數字 (0~7)：</span>`;
+                    html += `<div class="flex flex-wrap justify-center gap-4 sm:gap-6 w-full items-center py-2">`;
+                    
+                    const groupNames = ['第 3 組 (0~7)', '第 2 組 (0~7)', '第 1 組 (0~7)'];
+                    const maxVals = [7, 7, 7];
+
+                    [0, 1, 2].forEach((grpIdx) => {
+                        html += `
+                            <div class="flex flex-col items-center gap-2 bg-slate-900/90 p-3 sm:p-4 rounded-2xl border border-amber-500/30 shadow-md">
+                                <span class="text-xs font-bold text-amber-300">${groupNames[grpIdx]}</span>
+                                <select onchange="setOctalDigit(${grpIdx}, parseInt(this.value))" class="bg-slate-950 text-amber-300 font-mono font-black text-xl px-4 py-2 rounded-xl border border-amber-500/50 focus:outline-none focus:ring-2 focus:ring-amber-400 cursor-pointer shadow-inner">
+                        `;
+                        for (let v = 0; v <= maxVals[grpIdx]; v++) {
+                            const isSelected = octalDigits[grpIdx] === v ? 'selected' : '';
+                            html += `<option value="${v}" ${isSelected}>${v}</option>`;
+                        }
+                        html += `</select></div>`;
+                    });
+
+                    html += `</div>`;
+                    container.innerHTML = html;
+
+                } else {
+                    // 16-bit Hex Mode
+                    const hexChars = ['0','1','2','3','4','5','6','7','8','9','A','B','C','D','E','F'];
+                    const hexStr = hexDigits.map(v => hexChars[v]).join('');
+                    currentValLabel.innerText = "當前十六進位：";
+                    binaryStrDisplay.innerText = hexStr;
+                    currentValSub.innerText = "₁₆";
+
+                    let html = `<span class="text-xs font-bold text-slate-400">請從下拉式選單選擇高位組與低位組的 16 進位數字 (0~F)：</span>`;
+                    html += `<div class="flex flex-wrap justify-center gap-4 sm:gap-6 w-full items-center py-2">`;
+
+                    const groupNames = ['高位組 (Left)', '低位組 (Right)'];
+                    [0, 1].forEach((grpIdx) => {
+                        html += `
+                            <div class="flex flex-col items-center gap-2 bg-slate-900/90 p-3 sm:p-4 rounded-2xl border border-purple-500/30 shadow-md">
+                                <span class="text-xs font-bold text-purple-300">${groupNames[grpIdx]}</span>
+                                <select onchange="setHexDigit(${grpIdx}, parseInt(this.value))" class="bg-slate-950 text-purple-300 font-mono font-black text-xl px-4 py-2 rounded-xl border border-purple-500/50 focus:outline-none focus:ring-2 focus:ring-purple-400 cursor-pointer shadow-inner">
+                        `;
+                        for (let v = 0; v < 16; v++) {
+                            const isSelected = hexDigits[grpIdx] === v ? 'selected' : '';
+                            html += `<option value="${v}" ${isSelected}>${hexChars[v]} (${v}點)</option>`;
+                        }
+                        html += `</select></div>`;
+                    });
+
+                    html += `</div>`;
+                    container.innerHTML = html;
+                }
+            }
+        }
+
+        function renderUnconvertedState() {
+            const wrapper = document.getElementById('dot-cards-group-wrapper');
+            const groupBadge = document.getElementById('group-rule-badge');
+            const targetBaseLabel = document.getElementById('target-base-label');
+            const summaryBox = document.getElementById('summary-box');
+
+            if (direction === 'binToOther') {
+                if (targetBase === 8) {
+                    groupBadge.innerText = "8 進位模式：從右至左每 3 位為一組 (點數 4 - 2 - 1)";
+                    groupBadge.className = "text-xs font-bold px-3 py-1.5 rounded-xl bg-amber-500/20 text-amber-300 border border-amber-500/30";
+                    targetBaseLabel.innerText = "8 進位解密結果";
+                } else {
+                    groupBadge.innerText = "16 進位模式：從右至左每 4 位為一組 (點數 8 - 4 - 2 - 1)";
+                    groupBadge.className = "text-xs font-bold px-3 py-1.5 rounded-xl bg-purple-500/20 text-purple-300 border border-purple-500/30";
+                    targetBaseLabel.innerText = "16 進位解密結果";
+                }
+            } else {
+                if (targetBase === 8) {
+                    groupBadge.innerText = "8進位轉2進位：將每個 8 進位數字拆解為 3 張點數牌 (4 - 2 - 1)";
+                    groupBadge.className = "text-xs font-bold px-3 py-1.5 rounded-xl bg-amber-500/20 text-amber-300 border border-amber-500/30";
+                    targetBaseLabel.innerText = "二進位解密結果";
+                } else {
+                    groupBadge.innerText = "16進位轉2進位：將每個 16 進位數字拆解為 4 張點數牌 (8 - 4 - 2 - 1)";
+                    groupBadge.className = "text-xs font-bold px-3 py-1.5 rounded-xl bg-purple-500/20 text-purple-300 border border-purple-500/30";
+                    targetBaseLabel.innerText = "二進位解密結果";
+                }
+            }
+
+            wrapper.innerHTML = `
+                <div class="w-full flex flex-col items-center justify-center py-10 px-4 text-center border-2 border-dashed border-slate-800 rounded-2xl bg-slate-950/40 space-y-3">
+                    <div class="w-12 h-12 rounded-full bg-amber-500/10 text-amber-400 flex items-center justify-center text-2xl animate-pulse">
+                        <i class="fa-solid fa-hand-pointer"></i>
+                    </div>
+                    <p class="text-sm sm:text-base font-bold text-slate-300">
+                        設定好數值後，請點擊中央的 <span class="text-amber-400">「✨ 開始進位轉換」</span> 按鈕
+                    </p>
+                    <p class="text-xs text-slate-500">系統將為您顯示點數牌拆解、點數加總與轉換結果</p>
+                </div>
+            `;
+
+            summaryBox.classList.add('opacity-40');
+            document.getElementById('equation-text').innerText = '請按下「✨ 開始進位轉換」按鈕查看解密結果';
+            document.getElementById('decimal-sum-text').innerText = '?';
+            document.getElementById('final-result-text').innerText = '?';
+        }
+
+        function doConversion() {
+            playSound('convert');
+            hasConverted = true;
+            renderUnifiedBoard();
+        }
+
+        function generateBitColumnHTML(bitVal, weight, isActive) {
+            let gridClass = 'grid-1';
+            if (weight === 2) gridClass = 'grid-2';
+            else if (weight === 4) gridClass = 'grid-4';
+            else if (weight === 8) gridClass = 'grid-8';
+
+            let dotsHTML = '';
+            for (let i = 0; i < weight; i++) {
+                dotsHTML += `<div class="dot"></div>`;
+            }
+
+            const cardStateClass = isActive ? 'active' : 'inactive';
+            const badgeText = isActive ? `+${weight}點` : '0點';
+            const badgeBg = isActive ? 'bg-cyan-100 text-cyan-800 font-bold' : 'bg-slate-800 text-slate-500';
+
+            return `
+                <div class="flex flex-col items-center gap-1 select-none">
+                    <span class="text-[10px] sm:text-xs font-mono ${isActive ? 'text-cyan-300 font-bold' : 'text-slate-500'}">
+                        Bit (${weight}點)
+                    </span>
+                    <!-- Integrated Dot Card -->
+                    <div class="dot-card ${cardStateClass} w-11 h-18 sm:w-14 sm:h-22 rounded-xl border-2 p-1 flex flex-col justify-between items-center">
+                        <span class="text-[9px] font-black font-mono ${isActive ? 'text-slate-800' : 'text-slate-500'}">${weight}點牌</span>
+                        <div class="w-full h-8 sm:h-10 ${gridClass} my-auto">
+                            ${dotsHTML}
+                        </div>
+                        <span class="text-[9px] px-1 py-0.5 rounded-full ${badgeBg}">
+                            ${badgeText}
+                        </span>
+                    </div>
+                    <!-- Binary Bit Result -->
+                    <span class="text-sm font-black font-mono ${isActive ? 'text-cyan-300' : 'text-slate-500'} bg-slate-950 px-2 py-0.5 rounded border border-slate-800">
+                        ${bitVal}
+                    </span>
+                </div>
+            `;
+        }
+
+        function renderUnifiedBoard() {
+            if (!hasConverted) return;
+
+            const wrapper = document.getElementById('dot-cards-group-wrapper');
+            const summaryBox = document.getElementById('summary-box');
+            summaryBox.classList.remove('opacity-40');
+
+            let html = '';
+
+            if (direction === 'binToOther') {
+                // 2 -> 8 / 16
+                let groupResultsList = [];
+
+                if (targetBase === 8) {
+                    const groups = [
+                        { name: '第 3 組', indices: [0, 1, 2], weights: [4, 2, 1] },
+                        { name: '第 2 組', indices: [3, 4, 5], weights: [4, 2, 1] },
+                        { name: '第 1 組', indices: [6, 7, 8], weights: [4, 2, 1] }
+                    ];
+
+                    groups.forEach((grp) => {
+                        let groupSum = 0;
+                        let columnsHTML = '';
+
+                        grp.indices.forEach((bitIdx, i) => {
+                            const bitVal = binaryBits[bitIdx];
+                            const weight = grp.weights[i];
+                            const isActive = bitVal === 1;
+
+                            if (isActive) groupSum += weight;
+
+                            columnsHTML += generateBitColumnHTML(bitVal, weight, isActive);
+                        });
+
+                        groupResultsList.push(groupSum.toString());
+
+                        html += `
+                            <div class="relative p-3 rounded-2xl border-2 border-amber-500/50 bg-amber-950/20 flex flex-col items-center gap-2 converted-group shadow-lg">
+                                <div class="absolute -top-3 left-3 px-2 py-0.5 rounded-md border text-[11px] font-extrabold bg-amber-950 text-amber-300 border-amber-500/50">
+                                    ${grp.name} (權重 4-2-1)
+                                </div>
+                                <div class="flex gap-2 sm:gap-3 mt-2">
+                                    ${columnsHTML}
+                                </div>
+                                <div class="w-full text-center pt-2 mt-1 border-t border-amber-500/30 flex flex-col items-center">
+                                    <span class="text-[11px] text-slate-300 font-semibold">本組點數和 =</span>
+                                    <span class="text-2xl font-black text-amber-400 font-mono">${groupSum}</span>
+                                </div>
+                            </div>
+                        `;
+                    });
+
+                } else {
+                    const groups = [
+                        { name: '高位組 (Left)', indices: [0, 1, 2, 3], weights: [8, 4, 2, 1] },
+                        { name: '低位組 (Right)', indices: [4, 5, 6, 7], weights: [8, 4, 2, 1] }
+                    ];
+
+                    groups.forEach((grp) => {
+                        let groupSum = 0;
+                        let columnsHTML = '';
+
+                        grp.indices.forEach((bitIdx, i) => {
+                            const bitVal = binaryBits[bitIdx];
+                            const weight = grp.weights[i];
+                            const isActive = bitVal === 1;
+
+                            if (isActive) groupSum += weight;
+
+                            columnsHTML += generateBitColumnHTML(bitVal, weight, isActive);
+                        });
+
+                        let hexChar = groupSum.toString(16).toUpperCase();
+                        let displayChar = groupSum >= 10 ? `${hexChar} (${groupSum})` : groupSum;
+
+                        groupResultsList.push(hexChar);
+
+                        html += `
+                            <div class="relative p-3 rounded-2xl border-2 border-purple-500/50 bg-purple-950/20 flex flex-col items-center gap-2 converted-group shadow-lg">
+                                <div class="absolute -top-3 left-3 px-2 py-0.5 rounded-md border text-[11px] font-extrabold bg-purple-950 text-purple-300 border-purple-500/50">
+                                    ${grp.name} (權重 8-4-2-1)
+                                </div>
+                                <div class="flex gap-2 sm:gap-3 mt-2">
+                                    ${columnsHTML}
+                                </div>
+                                <div class="w-full text-center pt-2 mt-1 border-t border-purple-500/30 flex flex-col items-center">
+                                    <span class="text-[11px] text-slate-300 font-semibold">本組點數和 =</span>
+                                    <span class="text-2xl font-black text-purple-300 font-mono">${displayChar}</span>
+                                </div>
+                            </div>
+                        `;
+                    });
+                }
+
+                wrapper.innerHTML = html;
+
+                const binaryStr = binaryBits.join('');
+                const totalDecimalSum = parseInt(binaryStr, 2);
+                const finalResultStr = groupResultsList.join('');
+
+                document.getElementById('decimal-sum-text').innerText = totalDecimalSum;
+                document.getElementById('final-result-text').innerText = finalResultStr + (targetBase === 8 ? '₈' : '₁₆');
+                document.getElementById('equation-text').innerText = 
+                    `${binaryStr}₂ = (${finalResultStr})${targetBase === 8 ? '₈' : '₁₆'} = 十進位 ${totalDecimalSum} 點`;
+
+            } else {
+                // Other -> Binary
+                let generatedBits = [];
+                let totalDecimalSum = 0;
+
+                if (targetBase === 8) {
+                    const groups = [
+                        { name: '第 3 組', digit: octalDigits[0], weights: [4, 2, 1] },
+                        { name: '第 2 組', digit: octalDigits[1], weights: [4, 2, 1] },
+                        { name: '第 1 組', digit: octalDigits[2], weights: [4, 2, 1] }
+                    ];
+
+                    groups.forEach((grp) => {
+                        let remaining = grp.digit;
+                        let columnsHTML = '';
+
+                        grp.weights.forEach((weight) => {
+                            const isActive = remaining >= weight;
+                            const bitVal = isActive ? 1 : 0;
+                            if (isActive) remaining -= weight;
+
+                            generatedBits.push(bitVal);
+                            columnsHTML += generateBitColumnHTML(bitVal, weight, isActive);
+                        });
+
+                        html += `
+                            <div class="relative p-3 rounded-2xl border-2 border-amber-500/50 bg-amber-950/20 flex flex-col items-center gap-2 converted-group shadow-lg">
+                                <div class="absolute -top-3 left-3 px-2 py-0.5 rounded-md border text-[11px] font-extrabold bg-amber-950 text-amber-300 border-amber-500/50">
+                                    ${grp.name}：數字 ${grp.digit}
+                                </div>
+                                <div class="flex gap-2 sm:gap-3 mt-2">
+                                    ${columnsHTML}
+                                </div>
+                                <div class="w-full text-center pt-2 mt-1 border-t border-amber-500/30 flex flex-col items-center">
+                                    <span class="text-[11px] text-slate-300 font-semibold">拆解點數 =</span>
+                                    <span class="text-xs font-mono text-amber-300 font-bold">${grp.digit} 點</span>
+                                </div>
+                            </div>
+                        `;
+                    });
+
+                    wrapper.innerHTML = html;
+
+                    const octalStr = octalDigits.join('');
+                    const resultBinStr = generatedBits.join('');
+                    totalDecimalSum = parseInt(resultBinStr, 2);
+
+                    document.getElementById('decimal-sum-text').innerText = totalDecimalSum;
+                    document.getElementById('final-result-text').innerText = resultBinStr + '₂';
+                    document.getElementById('equation-text').innerText = 
+                        `(${octalStr})₈ = ${resultBinStr}₂ = 十進位 ${totalDecimalSum} 點`;
+
+                } else {
+                    const hexChars = ['0','1','2','3','4','5','6','7','8','9','A','B','C','D','E','F'];
+                    const groups = [
+                        { name: '高位組 (Left)', digitVal: hexDigits[0], char: hexChars[hexDigits[0]], weights: [8, 4, 2, 1] },
+                        { name: '低位組 (Right)', digitVal: hexDigits[1], char: hexChars[hexDigits[1]], weights: [8, 4, 2, 1] }
+                    ];
+
+                    groups.forEach((grp) => {
+                        let remaining = grp.digitVal;
+                        let columnsHTML = '';
+
+                        grp.weights.forEach((weight) => {
+                            const isActive = remaining >= weight;
+                            const bitVal = isActive ? 1 : 0;
+                            if (isActive) remaining -= weight;
+
+                            generatedBits.push(bitVal);
+                            columnsHTML += generateBitColumnHTML(bitVal, weight, isActive);
+                        });
+
+                        html += `
+                            <div class="relative p-3 rounded-2xl border-2 border-purple-500/50 bg-purple-950/20 flex flex-col items-center gap-2 converted-group shadow-lg">
+                                <div class="absolute -top-3 left-3 px-2 py-0.5 rounded-md border text-[11px] font-extrabold bg-purple-950 text-purple-300 border-purple-500/50">
+                                    ${grp.name}：數字 ${grp.char} (${grp.digitVal}點)
+                                </div>
+                                <div class="flex gap-2 sm:gap-3 mt-2">
+                                    ${columnsHTML}
+                                </div>
+                                <div class="w-full text-center pt-2 mt-1 border-t border-purple-500/30 flex flex-col items-center">
+                                    <span class="text-[11px] text-slate-300 font-semibold">拆解點數 =</span>
+                                    <span class="text-xs font-mono text-purple-300 font-bold">${grp.digitVal} 點</span>
+                                </div>
+                            </div>
+                        `;
+                    });
+
+                    wrapper.innerHTML = html;
+
+                    const hexStr = hexDigits.map(v => hexChars[v]).join('');
+                    const resultBinStr = generatedBits.join('');
+                    totalDecimalSum = parseInt(resultBinStr, 2);
+
+                    document.getElementById('decimal-sum-text').innerText = totalDecimalSum;
+                    document.getElementById('final-result-text').innerText = resultBinStr + '₂';
+                    document.getElementById('equation-text').innerText = 
+                        `(${hexStr})₁₆ = ${resultBinStr}₂ = 十進位 ${totalDecimalSum} 點`;
+                }
+            }
+        }
+
+        // Initialize App on window load
+        window.onload = function() {
+            renderInputControls();
+            renderUnconvertedState();
+        };
+    </script>
+</body>
+</html>

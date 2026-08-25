@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>二進位點數卡片遊戲 (0~31)</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f0f9ff',
+                            100: '#e0f2fe',
+                            500: '#0284c7',
+                            600: '#0369a1',
+                            700: '#075985',
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Card Flip & Hover Animations */
+        .card-container {
+            perspective: 1000px;
+        }
+        
+        .dot-card {
+            transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.25s ease, border-color 0.25s ease;
+            user-select: none;
+            touch-action: manipulation;
+        }
+
+        .dot-card:hover {
+            transform: translateY(-6px);
+        }
+
+        .dot-card.selected {
+            transform: translateY(-12px) scale(1.03);
+            border-color: #0284c7;
+            box-shadow: 0 20px 25px -5px rgba(2, 132, 199, 0.3), 0 8px 10px -6px rgba(2, 132, 199, 0.2);
+        }
+
+        .dot-card:active {
+            transform: translateY(-2px) scale(0.98);
+        }
+
+        /* Confetti canvas overlay */
+        #confetti-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            pointer-events: none;
+            z-index: 100;
+        }
+
+        /* Custom pulse animation for successful match */
+        @keyframes success-pop {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+
+        .animate-success {
+            animation: success-pop 0.4s ease-out;
+        }
+    </style>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col justify-between font-sans antialiased overflow-x-hidden selection:bg-sky-500 selection:text-white">
+
+    <canvas id="confetti-canvas"></canvas>
+
+    <!-- Header Navigation -->
+    <header class="w-full max-w-5xl mx-auto px-4 py-4 sm:py-6 flex flex-col sm:flex-row justify-between items-center gap-4 border-b border-slate-800">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-sky-500 to-indigo-500 flex items-center justify-center font-bold text-xl shadow-lg shadow-sky-500/20">
+                31
+            </div>
+            <div>
+                <h1 class="text-xl sm:text-2xl font-black tracking-tight text-white">點數湊數字小遊戲</h1>
+                <p class="text-xs text-slate-400">神奇的 5 張二進位點數卡 (16, 8, 4, 2, 1)</p>
+            </div>
+        </div>
+
+        <!-- Mode Toggle & Hint Buttons -->
+        <div class="flex flex-wrap items-center justify-center gap-2 bg-slate-800/80 p-1.5 rounded-xl border border-slate-700/60 backdrop-blur">
+            <div class="flex items-center gap-1 bg-slate-900/60 p-1 rounded-lg border border-slate-700/50">
+                <button id="btn-cards-5" onclick="setCardCountMode(5)" class="px-2.5 py-1 rounded-md text-xs font-bold transition-all bg-sky-500 text-white shadow">
+                    5張 (0~31)
+                </button>
+                <button id="btn-cards-8" onclick="setCardCountMode(8)" class="px-2.5 py-1 rounded-md text-xs font-bold text-slate-400 hover:text-white transition-all">
+                    8張 (0~255)
+                </button>
+            </div>
+            
+            <div class="h-4 w-px bg-slate-700 hidden sm:block"></div>
+
+            <button id="btn-mode-practice" onclick="setGameMode('practice')" class="px-3 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition-all bg-sky-500 text-white shadow">
+                🎯 自由練習
+            </button>
+            <button id="btn-mode-time" onclick="setGameMode('time')" class="px-3 py-1.5 rounded-lg text-xs sm:text-sm font-semibold text-slate-300 hover:text-white transition-all">
+                ⚡ 60秒挑戰
+            </button>
+        </div>
+    </header>
+
+    <main class="w-full max-w-5xl mx-auto px-4 py-6 flex-1 flex flex-col justify-center items-center gap-6 sm:gap-8">
+        
+        <!-- Score & Status Dashboard -->
+        <div class="w-full max-w-2xl bg-slate-800/60 border border-slate-700/60 rounded-2xl p-4 sm:p-6 backdrop-blur shadow-2xl flex flex-col sm:flex-row items-center justify-between gap-4">
+            
+            <!-- Target Number -->
+            <div class="text-center sm:text-left flex-1">
+                <span class="text-xs uppercase tracking-wider text-sky-400 font-bold block mb-1">目標數字 (Target)</span>
+                <div class="flex items-baseline justify-center sm:justify-start gap-2">
+                    <span id="target-number" class="text-5xl sm:text-6xl font-black text-white tracking-tight">--</span>
+                    <span id="range-display" class="text-xs text-slate-400">/ 範圍 0~31</span>
+                </div>
+            </div>
+
+            <!-- Current Sum & Status -->
+            <div class="flex items-center gap-6">
+                <div class="text-center">
+                    <span class="text-xs uppercase tracking-wider text-slate-400 font-bold block mb-1">目前點數和</span>
+                    <span id="current-sum" class="text-4xl sm:text-5xl font-black text-amber-400">0</span>
+                </div>
+
+                <div id="time-challenge-box" class="hidden text-center pl-4 border-l border-slate-700">
+                    <span class="text-xs uppercase tracking-wider text-rose-400 font-bold block mb-1">剩餘時間</span>
+                    <span id="timer-display" class="text-3xl font-black text-rose-400">60s</span>
+                </div>
+
+                <div id="score-box" class="hidden text-center pl-4 border-l border-slate-700">
+                    <span class="text-xs uppercase tracking-wider text-emerald-400 font-bold block mb-1">得分</span>
+                    <span id="score-display" class="text-3xl font-black text-emerald-400">0</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Binary Bits visual display indicator -->
+        <div class="flex items-center justify-center gap-2 sm:gap-3 bg-slate-800/40 px-4 py-2 rounded-full border border-slate-700/50 text-xs sm:text-sm">
+            <span class="text-slate-400">二進位碼 (Binary):</span>
+            <span id="binary-code" class="font-mono font-bold tracking-widest text-sky-400 text-base">0 0 0 0 0</span>
+        </div>
+
+        <!-- Dynamic Cards Container -->
+        <div id="cards-container" class="w-full flex flex-wrap justify-center items-center gap-2 sm:gap-3 my-2 px-1">
+            <!-- Cards generated dynamically via JavaScript -->
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="flex flex-wrap items-center justify-center gap-3 mt-2">
+            <button onclick="clearCards()" class="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs sm:text-sm font-semibold transition border border-slate-700 active:scale-95 flex items-center gap-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                清空選牌 (R)
+            </button>
+
+            <button id="btn-next-target" onclick="nextTarget()" class="px-5 py-2.5 rounded-xl bg-sky-600 hover:bg-sky-500 text-white text-xs sm:text-sm font-bold shadow-lg shadow-sky-600/30 transition active:scale-95 flex items-center gap-2">
+                換下一題
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path></svg>
+            </button>
+        </div>
+
+        <!-- How to play Accordion / Explanation -->
+        <div class="w-full max-w-2xl bg-slate-800/30 rounded-2xl p-4 border border-slate-800 text-slate-400 text-xs sm:text-sm leading-relaxed">
+            <h3 class="font-bold text-slate-200 mb-1 flex items-center gap-1.5">
+                <span>💡 遊戲與數學觀念說明</span>
+            </h3>
+            <p id="explanation-text">這 5 張卡片的點數分別是 <b>16、8、4、2、1</b>（即 2 的 0 到 4 次方）。使用這五張卡片「選與不選」的組合，剛好能精準組合成 <b>0 至 31</b> 之間的每一個整數！這正是電腦底層「<b>二進位 (Binary)</b>」運算的基本原理。</p>
+        </div>
+    </main>
+
+    <footer id="footer-text" class="w-full max-w-5xl mx-auto px-4 py-4 text-center text-xs text-slate-500 border-t border-slate-800/60">
+        點擊卡片或按下鍵盤 1~5 翻牌 | 二進位點數湊數遊戲
+    </footer>
+
+    <script>
+        // Game State Variables
+        const CARD_SETS = {
+            5: [16, 8, 4, 2, 1],
+            8: [128, 64, 32, 16, 8, 4, 2, 1]
+        };
+
+        let cardCountMode = 5; // 5 or 8
+        let cardValues = CARD_SETS[5];
+        let cardStates = [false, false, false, false, false];
+        let targetNumber = 0;
+        let gameMode = 'practice'; // 'practice' or 'time'
+        let timeRemaining = 60;
+        let timerInterval = null;
+        let score = 0;
+        let isGameActive = true;
+
+        // Switch Card Count Mode (5 cards vs 8 cards)
+        function setCardCountMode(count) {
+            if (cardCountMode === count) return;
+            cardCountMode = count;
+            cardValues = CARD_SETS[count];
+            cardStates = new Array(count).fill(false);
+
+            // Update mode selector UI
+            const btn5 = document.getElementById('btn-cards-5');
+            const btn8 = document.getElementById('btn-cards-8');
+            if (count === 5) {
+                btn5.className = "px-2.5 py-1 rounded-md text-xs font-bold transition-all bg-sky-500 text-white shadow";
+                btn8.className = "px-2.5 py-1 rounded-md text-xs font-bold text-slate-400 hover:text-white transition-all";
+                document.getElementById('range-display').textContent = '/ 範圍 0~31';
+                document.getElementById('explanation-text').innerHTML = '這 5 張卡片的點數分別是 <b>16、8、4、2、1</b>（即 2 的 0 到 4 次方）。使用這五張卡片「選與不選」的組合，剛好能精準組合成 <b>0 至 31</b> 之間的每一個整數！';
+                document.getElementById('footer-text').textContent = '點擊卡片或按下鍵盤 1~5 翻牌 | 二進位點數湊數遊戲';
+            } else {
+                btn8.className = "px-2.5 py-1 rounded-md text-xs font-bold transition-all bg-sky-500 text-white shadow";
+                btn5.className = "px-2.5 py-1 rounded-md text-xs font-bold text-slate-400 hover:text-white transition-all";
+                document.getElementById('range-display').textContent = '/ 範圍 0~255';
+                document.getElementById('explanation-text').innerHTML = '這 8 張卡片的點數分別是 <b>128、64、32、16、8、4、2、1</b>（即 2 的 0 到 7 次方，代表 1 個 Byte/8 位元）。能精準組合成 <b>0 至 255</b> 之間的每一個整數！';
+                document.getElementById('footer-text').textContent = '點擊卡片或按下鍵盤 1~8 翻牌 | 二進位點數湊數遊戲';
+            }
+
+            renderCardElements();
+            if (gameMode === 'time') {
+                startTimeChallenge();
+            } else {
+                nextTarget();
+            }
+        }
+
+        // Build Dots layout inside card based on dot count
+        function buildDotsHTML(val) {
+            let dotsCount = val;
+            let gridCols = 'grid-cols-4';
+            let dotSize = 'w-2.5 h-2.5 sm:w-3 sm:h-3';
+
+            if (val === 128) {
+                gridCols = 'grid-cols-8 grid-rows-16 gap-0.5 p-1';
+                dotSize = 'w-1 h-1 sm:w-1.5 sm:h-1.5';
+            } else if (val === 64) {
+                gridCols = 'grid-cols-8 grid-rows-8 gap-0.5 p-1';
+                dotSize = 'w-1.5 h-1.5 sm:w-2 sm:h-2';
+            } else if (val === 32) {
+                gridCols = 'grid-cols-4 grid-rows-8 gap-0.5 p-1';
+                dotSize = 'w-1.5 h-1.5 sm:w-2 sm:h-2';
+            } else if (val === 16) {
+                gridCols = 'grid-cols-4 grid-rows-4 gap-1 p-1';
+                dotSize = 'w-2.5 h-2.5 sm:w-3.5 sm:h-3.5';
+            } else if (val === 8) {
+                gridCols = 'grid-cols-2 grid-rows-4 gap-1 p-1';
+                dotSize = 'w-3 h-3 sm:w-4 sm:h-4';
+            } else if (val === 4) {
+                gridCols = 'grid-cols-2 grid-rows-2 gap-1 p-2';
+                dotSize = 'w-3.5 h-3.5 sm:w-4 sm:h-4';
+            } else if (val === 2) {
+                return `
+                    <div class="w-full h-full my-1 grid grid-cols-2 grid-rows-2 gap-1 p-2 place-items-center">
+                        <div></div><div class="w-3.5 h-3.5 sm:w-4 sm:h-4 bg-slate-900 rounded-full"></div>
+                        <div class="w-3.5 h-3.5 sm:w-4 sm:h-4 bg-slate-900 rounded-full"></div><div></div>
+                    </div>
+                `;
+            } else if (val === 1) {
+                return `
+                    <div class="w-full h-full my-1 flex items-center justify-center">
+                        <div class="w-4 h-4 sm:w-5 sm:h-5 bg-slate-900 rounded-full"></div>
+                    </div>
+                `;
+            }
+
+            let dotsHtml = '';
+            for (let i = 0; i < dotsCount; i++) {
+                dotsHtml += `<div class="${dotSize} bg-slate-900 rounded-full"></div>`;
+            }
+
+            return `<div class="w-full h-full my-1 grid ${gridCols} place-items-center">${dotsHtml}</div>`;
+        }
+
+        // Render card buttons into container
+        function renderCardElements() {
+            const container = document.getElementById('cards-container');
+            container.innerHTML = '';
+
+            const is8Mode = cardCountMode === 8;
+            const cardWidthClass = is8Mode 
+                ? 'w-[22%] sm:w-[11%] max-w-[100px] aspect-[2/3.2]' 
+                : 'flex-1 max-w-[130px] aspect-[2/3]';
+
+            cardValues.forEach((val, idx) => {
+                const cardWrapper = document.createElement('div');
+                cardWrapper.className = `card-container ${cardWidthClass}`;
+
+                cardWrapper.innerHTML = `
+                    <button onclick="toggleCard(${idx})" id="card-${idx}" class="dot-card w-full h-full bg-slate-100 text-slate-900 rounded-xl sm:rounded-2xl border-2 sm:border-4 border-slate-300 p-1 sm:p-2.5 flex flex-col justify-between items-center shadow-lg relative overflow-hidden group">
+                        <span class="text-[10px] sm:text-xs font-bold text-slate-500 self-start group-hover:text-sky-600 transition-colors">${val}點</span>
+                        ${buildDotsHTML(val)}
+                        <span class="key-badge text-[9px] sm:text-xs font-mono font-semibold bg-slate-200 text-slate-600 px-1 rounded">按 ${idx + 1}</span>
+                    </button>
+                `;
+                container.appendChild(cardWrapper);
+            });
+        }
+
+        // Audio Context Synthesizer (No external audio files needed)
+        let audioCtx = null;
+
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+        }
+
+        // Sound effect helper
+        function playSound(type) {
+            try {
+                initAudio();
+                if (!audioCtx) return;
+
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+
+                const now = audioCtx.currentTime;
+
+                if (type === 'clickOn') {
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(523.25, now);
+                    osc.frequency.exponentialRampToValueAtTime(659.25, now + 0.08);
+                    gain.gain.setValueAtTime(0.15, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.08);
+                    osc.start(now);
+                    osc.stop(now + 0.08);
+                } else if (type === 'clickOff') {
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(329.63, now);
+                    osc.frequency.exponentialRampToValueAtTime(261.63, now + 0.08);
+                    gain.gain.setValueAtTime(0.1, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.08);
+                    osc.start(now);
+                    osc.stop(now + 0.08);
+                } else if (type === 'success') {
+                    const notes = [523.25, 659.25, 783.99, 1046.50];
+                    notes.forEach((freq, idx) => {
+                        const noteOsc = audioCtx.createOscillator();
+                        const noteGain = audioCtx.createGain();
+                        noteOsc.type = 'triangle';
+                        noteOsc.frequency.setValueAtTime(freq, now + idx * 0.06);
+                        noteGain.gain.setValueAtTime(0.2, now + idx * 0.06);
+                        noteGain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.06 + 0.25);
+                        noteOsc.connect(noteGain);
+                        noteGain.connect(audioCtx.destination);
+                        noteOsc.start(now + idx * 0.06);
+                        noteOsc.stop(now + idx * 0.06 + 0.25);
+                    });
+                }
+            } catch (e) {}
+        }
+
+        // Toggle Card Selection
+        function toggleCard(index) {
+            if (!isGameActive || index < 0 || index >= cardValues.length) return;
+
+            cardStates[index] = !cardStates[index];
+            playSound(cardStates[index] ? 'clickOn' : 'clickOff');
+            updateUI();
+            checkMatch();
+        }
+
+        // Clear all card selections
+        function clearCards() {
+            if (!isGameActive) return;
+            cardStates = new Array(cardCountMode).fill(false);
+            playSound('clickOff');
+            updateUI();
+            checkMatch();
+        }
+
+        // Compute current sum of selected cards
+        function getCurrentSum() {
+            return cardStates.reduce((sum, active, idx) => active ? sum + cardValues[idx] : sum, 0);
+        }
+
+        // Check if current sum matches target
+        function checkMatch() {
+            const currentSum = getCurrentSum();
+            if (currentSum === targetNumber && isGameActive) {
+                onSuccessMatch();
+            }
+        }
+
+        // Success Handler
+        function onSuccessMatch() {
+            playSound('success');
+            triggerConfetti();
+
+            const sumEl = document.getElementById('current-sum');
+            sumEl.classList.add('animate-success');
+            setTimeout(() => sumEl.classList.remove('animate-success'), 400);
+
+            if (gameMode === 'time') {
+                score += 10;
+                document.getElementById('score-display').textContent = score;
+                setTimeout(() => nextTarget(), 400);
+            } else {
+                setTimeout(() => nextTarget(), 600);
+            }
+        }
+
+        // Generate next target number
+        function nextTarget() {
+            const maxVal = Math.pow(2, cardCountMode);
+            let nextNum;
+            do {
+                nextNum = Math.floor(Math.random() * maxVal);
+            } while (nextNum === targetNumber && Math.random() > 0.1);
+
+            targetNumber = nextNum;
+            cardStates = new Array(cardCountMode).fill(false);
+            updateUI();
+        }
+
+        // Update UI Elements based on state
+        function updateUI() {
+            document.getElementById('target-number').textContent = targetNumber;
+            const currentSum = getCurrentSum();
+            const sumEl = document.getElementById('current-sum');
+            sumEl.textContent = currentSum;
+
+            if (currentSum === targetNumber) {
+                sumEl.className = "text-4xl sm:text-5xl font-black text-emerald-400";
+            } else if (currentSum > targetNumber) {
+                sumEl.className = "text-4xl sm:text-5xl font-black text-rose-400";
+            } else {
+                sumEl.className = "text-4xl sm:text-5xl font-black text-amber-400";
+            }
+
+            // Update Card visual styles
+            cardValues.forEach((val, idx) => {
+                const cardEl = document.getElementById(`card-${idx}`);
+                if (!cardEl) return;
+                if (cardStates[idx]) {
+                    cardEl.classList.add('selected');
+                    cardEl.classList.remove('bg-slate-100', 'border-slate-300');
+                    cardEl.classList.add('bg-sky-50', 'border-sky-500');
+                } else {
+                    cardEl.classList.remove('selected');
+                    cardEl.classList.remove('bg-sky-50', 'border-sky-500');
+                    cardEl.classList.add('bg-slate-100', 'border-slate-300');
+                }
+            });
+
+            // Update binary indicator text
+            const binaryStr = cardStates.map(b => b ? '1' : '0').join(' ');
+            document.getElementById('binary-code').textContent = binaryStr;
+        }
+
+        // Mode Switching
+        function setGameMode(mode) {
+            gameMode = mode;
+            const btnPractice = document.getElementById('btn-mode-practice');
+            const btnTime = document.getElementById('btn-mode-time');
+            const timeBox = document.getElementById('time-challenge-box');
+            const scoreBox = document.getElementById('score-box');
+
+            if (mode === 'practice') {
+                btnPractice.className = "px-3 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition-all bg-sky-500 text-white shadow";
+                btnTime.className = "px-3 py-1.5 rounded-lg text-xs sm:text-sm font-semibold text-slate-300 hover:text-white transition-all";
+                timeBox.classList.add('hidden');
+                scoreBox.classList.add('hidden');
+                
+                clearInterval(timerInterval);
+                isGameActive = true;
+                nextTarget();
+            } else {
+                btnTime.className = "px-3 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition-all bg-rose-500 text-white shadow";
+                btnPractice.className = "px-3 py-1.5 rounded-lg text-xs sm:text-sm font-semibold text-slate-300 hover:text-white transition-all";
+                timeBox.classList.remove('hidden');
+                scoreBox.classList.remove('hidden');
+                
+                startTimeChallenge();
+            }
+        }
+
+        // Start Time Challenge Mode
+        function startTimeChallenge() {
+            score = 0;
+            timeRemaining = 60;
+            isGameActive = true;
+
+            document.getElementById('score-display').textContent = score;
+            document.getElementById('timer-display').textContent = `${timeRemaining}s`;
+
+            clearInterval(timerInterval);
+            nextTarget();
+
+            timerInterval = setInterval(() => {
+                timeRemaining--;
+                document.getElementById('timer-display').textContent = `${timeRemaining}s`;
+
+                if (timeRemaining <= 0) {
+                    clearInterval(timerInterval);
+                    endGameChallenge();
+                }
+            }, 1000);
+        }
+
+        // Game Over Handler for Time Challenge
+        function endGameChallenge() {
+            isGameActive = false;
+            playSound('clickOff');
+            
+            const modal = document.createElement('div');
+            modal.id = 'game-over-modal';
+            modal.className = "fixed inset-0 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 z-50";
+            modal.innerHTML = `
+                <div class="bg-slate-800 border border-slate-700 rounded-3xl p-6 sm:p-8 max-w-sm w-full text-center shadow-2xl animate-success">
+                    <div class="text-5xl mb-3">⏰</div>
+                    <h2 class="text-2xl font-black text-white mb-2">時間到！挑戰結束</h2>
+                    <p class="text-slate-400 text-sm mb-4">你在 60 秒內 (${cardCountMode}張牌模式) 總共得分：</p>
+                    <div class="text-5xl font-black text-emerald-400 mb-6">${score} <span class="text-sm font-normal text-slate-400">分</span></div>
+                    <button onclick="closeModalAndRestart()" class="w-full py-3 rounded-xl bg-sky-500 hover:bg-sky-400 text-white font-bold transition shadow-lg shadow-sky-500/30">
+                        再試一次 🔄
+                    </button>
+                </div>
+            `;
+            document.body.appendChild(modal);
+        }
+
+        function closeModalAndRestart() {
+            const modal = document.getElementById('game-over-modal');
+            if (modal) modal.remove();
+            startTimeChallenge();
+        }
+
+        // Keyboard support (1~8 keys and R key)
+        document.addEventListener('keydown', (e) => {
+            if (e.key >= '1' && e.key <= '8') {
+                const index = parseInt(e.key) - 1;
+                toggleCard(index);
+            } else if (e.key.toLowerCase() === 'r') {
+                clearCards();
+            } else if (e.key === 'Enter' || e.key === ' ') {
+                nextTarget();
+            }
+        });
+
+        // Confetti Particle System
+        const canvas = document.getElementById('confetti-canvas');
+        const ctx = canvas.getContext('2d');
+        let particles = [];
+
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        function triggerConfetti() {
+            const colors = ['#0284c7', '#38bdf8', '#34d399', '#f43f5e', '#fbbf24', '#a855f7'];
+            for (let i = 0; i < 40; i++) {
+                particles.push({
+                    x: canvas.width / 2,
+                    y: canvas.height / 2 - 50,
+                    vx: (Math.random() - 0.5) * 16,
+                    vy: (Math.random() - 0.8) * 14,
+                    size: Math.random() * 8 + 4,
+                    color: colors[Math.floor(Math.random() * colors.length)],
+                    life: 1.0,
+                    decay: Math.random() * 0.02 + 0.015,
+                    rotation: Math.random() * Math.PI * 2,
+                    rotSpeed: (Math.random() - 0.5) * 0.2
+                });
+            }
+        }
+
+        function renderParticles() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            particles.forEach((p, idx) => {
+                p.x += p.vx;
+                p.y += p.vy;
+                p.vy += 0.3;
+                p.life -= p.decay;
+                p.rotation += p.rotSpeed;
+
+                ctx.save();
+                ctx.translate(p.x, p.y);
+                ctx.rotate(p.rotation);
+                ctx.globalAlpha = Math.max(0, p.life);
+                ctx.fillStyle = p.color;
+                ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size);
+                ctx.restore();
+
+                if (p.life <= 0) {
+                    particles.splice(idx, 1);
+                }
+            });
+
+            requestAnimationFrame(renderParticles);
+        }
+        renderParticles();
+
+        // Initialize Game on Load
+        window.onload = function() {
+            renderCardElements();
+            nextTarget();
+        };
+    </script>
+</body>
+</html>
