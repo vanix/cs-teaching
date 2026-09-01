@@ -1,0 +1,969 @@
+<!DOCTYPE html>
+<html lang="zh-TW" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>二進位邏輯運算大冒險 - Bitwise Logic Gates Master</title>
+    <meta name="description" content="學習 AND、OR、NOT、XOR 等位元邏輯運算，透過互動遊戲理解計算機概論核心概念。">
+    <meta name="keywords" content="二進位, 邏輯運算, AND, OR, XOR, 位元, 計算機概論, 遊戲學習">
+    <meta name="robots" content="index, follow">
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8522276249008152" crossorigin="anonymous"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        cyber: {
+                            950: '#060913',
+                            900: '#0B1120',
+                            800: '#15213B',
+                            700: '#22345C',
+                            cyan: '#06B6D4',
+                            purple: '#8B5CF6',
+                            emerald: '#10B981',
+                            amber: '#F59E0B',
+                            rose: '#F43F5E'
+                        }
+                    },
+                    fontFamily: {
+                        mono: ['Courier New', 'Consolas', 'monospace'],
+                        sans: ['Inter', 'system-ui', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @keyframes pulse-glow {
+            0%, 100% { box-shadow: 0 0 15px rgba(6, 182, 212, 0.4); }
+            50% { box-shadow: 0 0 30px rgba(6, 182, 212, 0.8); }
+        }
+        .glow-cyan { animation: pulse-glow 2s infinite; }
+
+        /* 電流流動動畫 */
+        @keyframes signal-flow {
+            from { stroke-dashoffset: 24; }
+            to { stroke-dashoffset: 0; }
+        }
+        .wire-on {
+            stroke: #06B6D4;
+            stroke-dasharray: 6 6;
+            animation: signal-flow 0.5s linear infinite;
+            filter: drop-shadow(0 0 6px #06B6D4);
+        }
+        .wire-off {
+            stroke: #334155;
+            stroke-dasharray: none;
+        }
+
+        .wire-out-on {
+            stroke: #10B981;
+            stroke-dasharray: 6 6;
+            animation: signal-flow 0.5s linear infinite;
+            filter: drop-shadow(0 0 8px #10B981);
+        }
+
+        .bit-btn-active {
+            background-color: #06B6D4 !important;
+            color: #060913 !important;
+            box-shadow: 0 0 12px rgba(6, 182, 212, 0.6);
+        }
+
+        .tt-highlight {
+            background-color: rgba(6, 182, 212, 0.25) !important;
+            border-left: 3px solid #06B6D4;
+        }
+    </style>
+</head>
+<body class="bg-cyber-950 text-slate-100 min-h-screen flex flex-col justify-between font-sans antialiased selection:bg-cyan-500 selection:text-slate-950">
+
+    <!-- 頂部頁首 -->
+    <header class="w-full max-w-5xl mx-auto px-4 py-4 border-b border-slate-800/80 flex flex-col sm:flex-row justify-between items-center gap-3">
+        <div class="flex items-center gap-3">
+            <a href="index.html" class="text-xs text-sky-400 hover:text-sky-300 transition flex items-center gap-1">
+                ← 回到首頁
+            </a>
+            <div class="w-11 h-11 rounded-xl bg-purple-500/10 border border-purple-500/40 flex items-center justify-center text-purple-400 font-mono text-2xl shadow-lg shadow-purple-500/10">
+                ⚡
+            </div>
+            <div>
+                <h1 class="text-xl sm:text-2xl font-black tracking-tight font-mono text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-cyan-400 to-emerald-400">
+                    二進位邏輯運算大冒險
+                </h1>
+                <p class="text-xs text-slate-400">Bitwise Logic Gates Master • AND, OR, NOT, XOR</p>
+            </div>
+        </div>
+
+        <!-- 儀表板：分數與連擊 -->
+        <div class="flex items-center gap-4 bg-cyber-900 border border-slate-800 px-4 py-2 rounded-xl font-mono text-xs shadow-inner">
+            <div class="flex flex-col items-end">
+                <span class="text-slate-400 text-[10px]">總積分 SCORE</span>
+                <span id="score-display" class="text-cyan-400 text-lg font-bold">0</span>
+            </div>
+            <div class="h-6 w-px bg-slate-800"></div>
+            <div class="flex flex-col items-end">
+                <span class="text-slate-400 text-[10px]">連勝 COMBO</span>
+                <span id="combo-display" class="text-amber-400 text-lg font-bold">0x</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- 主遊戲內容 -->
+    <main class="w-full max-w-5xl mx-auto px-4 py-6 flex-1 flex flex-col gap-6">
+
+        <!-- 模式切換分頁標籤 -->
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 bg-cyber-900/90 p-1.5 rounded-2xl border border-slate-800 text-xs sm:text-sm font-bold font-mono">
+            <button id="tab-mode-4" onclick="switchGateMode(4)" class="py-2.5 px-3 rounded-xl transition-all flex items-center justify-center gap-1.5 bg-emerald-500 text-slate-950 shadow-md">
+                <span>🎬 動畫圖解教學</span>
+            </button>
+            <button id="tab-mode-1" onclick="switchGateMode(1)" class="py-2.5 px-3 rounded-xl transition-all flex items-center justify-center gap-1.5 text-slate-400 hover:text-slate-200">
+                <span>⚡ 1-Bit 邏輯快答</span>
+            </button>
+            <button id="tab-mode-2" onclick="switchGateMode(2)" class="py-2.5 px-3 rounded-xl transition-all flex items-center justify-center gap-1.5 text-slate-400 hover:text-slate-200">
+                <span>🧮 4-Bit 陣列運算</span>
+            </button>
+            <button id="tab-mode-3" onclick="switchGateMode(3)" class="py-2.5 px-3 rounded-xl transition-all flex items-center justify-center gap-1.5 text-slate-400 hover:text-slate-200">
+                <span>🧩 邏輯閘解鎖電路</span>
+            </button>
+        </div>
+
+        <!-- 模式四：🎬 視覺動畫示範 (Animated Logic Studio) -->
+        <section id="gate-mode-4" class="flex flex-col gap-5">
+            <div class="bg-cyber-900 border border-slate-800 rounded-2xl p-5 shadow-2xl flex flex-col gap-5">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center pb-3 border-b border-slate-800 font-mono gap-2">
+                    <div>
+                        <h2 class="text-base font-bold text-emerald-400 flex items-center gap-2">
+                            🎬 動態邏輯電路圖解示範
+                        </h2>
+                        <p class="text-xs text-slate-400 mt-0.5">點選邏輯閘與訊號開關，觀看訊號流動與輸出判斷動畫！</p>
+                    </div>
+
+                    <!-- 邏輯閘切換器 -->
+                    <div class="flex items-center gap-1 bg-slate-950 p-1 rounded-xl border border-slate-800 text-xs font-bold">
+                        <button id="anim-btn-AND" onclick="setAnimGate('AND')" class="px-3 py-1.5 rounded-lg bg-cyan-500 text-slate-950 transition">AND 閘</button>
+                        <button id="anim-btn-OR" onclick="setAnimGate('OR')" class="px-3 py-1.5 rounded-lg hover:bg-slate-800 text-slate-300 transition">OR 閘</button>
+                        <button id="anim-btn-NOT" onclick="setAnimGate('NOT')" class="px-3 py-1.5 rounded-lg hover:bg-slate-800 text-slate-300 transition">NOT 閘</button>
+                        <button id="anim-btn-XOR" onclick="setAnimGate('XOR')" class="px-3 py-1.5 rounded-lg hover:bg-slate-800 text-slate-300 transition">XOR 閘</button>
+                    </div>
+                </div>
+
+                <!-- 互動動畫畫布區 -->
+                <div class="bg-slate-950 p-6 rounded-2xl border border-slate-800 flex flex-col items-center justify-center gap-6 relative overflow-hidden font-mono">
+
+                    <!-- 自動播放 controls -->
+                    <div class="flex items-center gap-3 w-full justify-between border-b border-slate-800/80 pb-3">
+                        <div class="flex items-center gap-2">
+                            <span class="text-xs text-slate-400">目前示範：</span>
+                            <span id="anim-gate-title" class="px-2.5 py-0.5 rounded bg-purple-500/20 text-purple-300 border border-purple-500/40 text-xs font-bold">
+                                AND 邏輯閘 (交集/且)
+                            </span>
+                        </div>
+                        <button id="anim-autoplay-btn" onclick="toggleAutoPlay()" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-amber-400 border border-slate-700 text-xs font-bold flex items-center gap-1 transition">
+                            <span>▶ 自動示範所有組合</span>
+                        </button>
+                    </div>
+
+                    <!-- SVG 動態電路圖 -->
+                    <div class="w-full max-w-xl py-2 flex justify-center">
+                        <svg viewBox="0 0 520 220" class="w-full h-auto max-h-[260px] overflow-visible">
+                            <!-- 背景電路底板線格 -->
+                            <defs>
+                                <pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse">
+                                    <path d="M 20 0 L 0 0 0 20" fill="none" stroke="#1e293b" stroke-width="0.5"/>
+                                </pattern>
+                            </defs>
+                            <rect width="520" height="220" fill="url(#grid)" rx="12"/>
+
+                            <!-- 輸入 A 導線 -->
+                            <path id="wire-a" d="M 90 70 L 210 70" fill="none" stroke-width="5" class="wire-off"/>
+                            <!-- 輸入 B 導線 (NOT 閘時隱藏) -->
+                            <path id="wire-b" d="M 90 150 L 210 150" fill="none" stroke-width="5" class="wire-off"/>
+                            
+                            <!-- 輸出 導線 -->
+                            <path id="wire-out" d="M 310 110 L 410 110" fill="none" stroke-width="5" class="wire-off"/>
+
+                            <!-- 輸入 A 開關節點 -->
+                            <g transform="translate(40, 45)" class="cursor-pointer" onclick="toggleAnimInput('a')">
+                                <rect width="50" height="50" rx="10" fill="#0f172a" stroke="#06B6D4" stroke-width="2"/>
+                                <text x="25" y="24" text-anchor="middle" fill="#94a3b8" font-size="10" font-weight="bold">IN A</text>
+                                <text id="svg-text-a" x="25" y="42" text-anchor="middle" fill="#06B6D4" font-size="16" font-weight="black">0</text>
+                            </g>
+
+                            <!-- 輸入 B 開關節點 -->
+                            <g id="svg-group-b" transform="translate(40, 125)" class="cursor-pointer" onclick="toggleAnimInput('b')">
+                                <rect width="50" height="50" rx="10" fill="#0f172a" stroke="#06B6D4" stroke-width="2"/>
+                                <text x="25" y="24" text-anchor="middle" fill="#94a3b8" font-size="10" font-weight="bold">IN B</text>
+                                <text id="svg-text-b" x="25" y="42" text-anchor="middle" fill="#06B6D4" font-size="16" font-weight="black">0</text>
+                            </g>
+
+                            <!-- 邏輯閘核心晶片 (閘體外框) -->
+                            <g transform="translate(210, 60)">
+                                <rect width="100" height="100" rx="16" fill="#0b1120" stroke="#8B5CF6" stroke-width="2"/>
+                                <text id="svg-gate-name" x="50" y="48" text-anchor="middle" fill="#c084fc" font-size="20" font-weight="black">AND</text>
+                                <text id="svg-gate-sub" x="50" y="70" text-anchor="middle" fill="#64748b" font-size="10">GATE</text>
+                            </g>
+
+                            <!-- 輸出 LED 燈 -->
+                            <g transform="translate(410, 85)">
+                                <circle id="svg-led-glow" cx="25" cy="25" r="30" fill="#10B981" fill-opacity="0"/>
+                                <circle id="svg-led-bulb" cx="25" cy="25" r="22" fill="#1e293b" stroke="#475569" stroke-width="2"/>
+                                <text id="svg-text-out" x="25" y="31" text-anchor="middle" fill="#64748b" font-size="16" font-weight="black">0</text>
+                                <text x="25" y="-6" text-anchor="middle" fill="#94a3b8" font-size="10" font-weight="bold">OUTPUT</text>
+                            </g>
+                        </svg>
+                    </div>
+
+                    <!-- 即時運算字幕註解 -->
+                    <div id="anim-explanation" class="w-full bg-slate-900 border border-slate-800 p-3.5 rounded-xl text-xs text-center text-slate-300 font-mono">
+                        輸入 A=0, B=0 ➔ AND 閘要求兩者皆為 1 ➔ 輸出電位為 0 (不亮燈)
+                    </div>
+
+                    <!-- 該邏輯閘的小型真值表與當前亮燈列標示 -->
+                    <div class="w-full max-w-md bg-slate-900/80 rounded-xl p-3 border border-slate-800">
+                        <div class="text-[11px] font-bold text-slate-400 mb-2 text-center">📊 當前邏輯閘真值狀態對照 (Truth Table)</div>
+                        <div id="anim-tt-container" class="space-y-1 text-xs font-mono">
+                            <!-- 動態生成真值表 -->
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </section>
+
+        <!-- 模式一：1-Bit 邏輯快答 -->
+        <section id="gate-mode-1" class="hidden flex-col gap-5">
+            <div class="bg-cyber-900 border border-slate-800 rounded-2xl p-5 shadow-2xl relative overflow-hidden flex flex-col gap-5">
+                <div class="flex justify-between items-center pb-3 border-b border-slate-800 font-mono">
+                    <div>
+                        <h2 class="text-base font-bold text-purple-400">⚡ 1-Bit 單位元基礎運算測試</h2>
+                        <p class="text-xs text-slate-400 mt-0.5">請根據給予的位元與邏輯閘，回答正確的輸出結果 (0 或 1)！</p>
+                    </div>
+                    <span id="m1-badge" class="px-2.5 py-1 rounded-md bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 text-xs font-bold">
+                        第 1 / 5 題
+                    </span>
+                </div>
+
+                <!-- 核心運算卡片 -->
+                <div class="bg-slate-950 p-6 sm:p-8 rounded-2xl border border-slate-800 flex flex-col items-center justify-center gap-6">
+                    <div class="flex items-center justify-center gap-3 sm:gap-6 font-mono">
+                        <div id="m1-input-a" class="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-cyber-800 border-2 border-cyan-500/50 flex items-center justify-center text-2xl sm:text-3xl font-black text-cyan-300 shadow-lg">
+                            1
+                        </div>
+                        <div id="m1-gate-type" class="px-4 py-2 rounded-xl bg-purple-500/20 border border-purple-400 text-purple-300 text-lg sm:text-xl font-extrabold tracking-wider">
+                            AND
+                        </div>
+                        <div id="m1-input-b" class="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-cyber-800 border-2 border-cyan-500/50 flex items-center justify-center text-2xl sm:text-3xl font-black text-cyan-300 shadow-lg">
+                            0
+                        </div>
+                        <span class="text-2xl font-bold text-slate-500">=</span>
+                        <div class="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-slate-900 border-2 border-dashed border-amber-400/60 flex items-center justify-center text-2xl sm:text-3xl font-black text-amber-400 animate-pulse">
+                            ?
+                        </div>
+                    </div>
+
+                    <div class="text-xs text-slate-400 font-mono" id="m1-hint-text">
+                        AND 閘：唯有當兩者皆為 1 時，輸出才為 1
+                    </div>
+
+                    <!-- 答案選擇按鈕 (0 或 1) -->
+                    <div class="flex gap-4 w-full max-w-xs">
+                        <button onclick="submitMode1Answer(0)" class="flex-1 py-4 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 hover:border-cyan-400 text-2xl font-mono font-black text-slate-200 transition active:scale-95 shadow-lg">
+                            0 (Off)
+                        </button>
+                        <button onclick="submitMode1Answer(1)" class="flex-1 py-4 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 hover:border-emerald-400 text-2xl font-mono font-black text-emerald-400 transition active:scale-95 shadow-lg">
+                            1 (On)
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 模式二：4-Bit 陣列運算 -->
+        <section id="gate-mode-2" class="hidden flex-col gap-5">
+            <div class="bg-cyber-900 border border-slate-800 rounded-2xl p-5 shadow-2xl flex flex-col gap-5">
+                <div class="pb-3 border-b border-slate-800 font-mono flex justify-between items-center">
+                    <div>
+                        <h2 class="text-base font-bold text-cyan-400">🧮 4-Bit 矩陣邏輯運算 (Bitwise Operation)</h2>
+                        <p class="text-xs text-slate-400 mt-0.5">點擊下方按鈕填入正確的 4-Bit 輸出二進位結果，解鎖數據庫！</p>
+                    </div>
+                    <button onclick="initMode2()" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 font-mono text-xs border border-slate-700">
+                        🔄 換一題
+                    </button>
+                </div>
+
+                <!-- 4-Bit 計算板 -->
+                <div class="bg-slate-950 p-6 rounded-2xl border border-slate-800 flex flex-col items-center gap-6 font-mono">
+                    <div class="flex items-center gap-3">
+                        <span class="text-xs text-slate-400">目前邏輯閘指示：</span>
+                        <span id="m2-gate-display" class="px-3 py-1 rounded-md bg-purple-500/20 text-purple-300 border border-purple-500/40 text-sm font-bold">
+                            XOR 邏輯運算
+                        </span>
+                    </div>
+
+                    <!-- Bit 矩陣對齊區 -->
+                    <div class="flex flex-col gap-3 text-lg sm:text-2xl font-black">
+                        <!-- Input A -->
+                        <div class="flex items-center gap-2">
+                            <span class="text-xs text-slate-500 w-12 text-right">輸入 A:</span>
+                            <div id="m2-bits-a" class="flex gap-2">
+                                <!-- 動態生成 4 個 bit -->
+                            </div>
+                        </div>
+
+                        <!-- 閘門符號列 -->
+                        <div class="flex items-center gap-2 border-b border-slate-800 pb-2">
+                            <span id="m2-gate-op" class="text-xs text-purple-400 w-12 text-right font-bold">XOR</span>
+                            <div id="m2-bits-b" class="flex gap-2">
+                                <!-- 動態生成 4 個 bit -->
+                            </div>
+                        </div>
+
+                        <!-- 玩家填答 Output -->
+                        <div class="flex items-center gap-2 pt-1">
+                            <span class="text-xs text-amber-400 w-12 text-right font-bold">輸出:</span>
+                            <div id="m2-bits-out" class="flex gap-2">
+                                <!-- 玩家點擊可切換 0/1 的 4 位元按鈕 -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 驗證提交按鈕 -->
+                    <button onclick="submitMode2Answer()" class="px-8 py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-emerald-500 text-slate-950 font-mono font-extrabold text-sm shadow-lg hover:brightness-110 transition active:scale-95">
+                        🚀 驗證 4-Bit 運算結果
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- 模式三：邏輯閘解鎖電路 -->
+        <section id="gate-mode-3" class="hidden flex-col gap-5">
+            <div class="bg-cyber-900 border border-slate-800 rounded-2xl p-5 shadow-2xl flex flex-col gap-5">
+                <div class="pb-3 border-b border-slate-800 font-mono flex justify-between items-center">
+                    <div>
+                        <h2 class="text-base font-bold text-emerald-400">🧩 邏輯閘配對闖關</h2>
+                        <p class="text-xs text-slate-400 mt-0.5">根據已知輸入與輸出目標，選擇正確的邏輯閘填補電路缺口！</p>
+                    </div>
+                    <button onclick="initMode3()" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 font-mono text-xs border border-slate-700">
+                        🔄 換一題
+                    </button>
+                </div>
+
+                <!-- 模擬電路圖 -->
+                <div class="bg-slate-950 p-6 rounded-2xl border border-slate-800 flex flex-col items-center justify-center gap-6 font-mono">
+                    <div class="flex items-center justify-center gap-3 sm:gap-6">
+                        <!-- 左側輸入 -->
+                        <div class="flex flex-col gap-4">
+                            <div class="flex items-center gap-2">
+                                <span class="text-xs text-slate-500">In 1:</span>
+                                <div id="m3-in1" class="w-10 h-10 rounded-xl bg-cyber-800 border border-cyan-500/50 flex items-center justify-center text-lg font-bold text-cyan-300">
+                                    1
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-2" id="m3-in2-box">
+                                <span class="text-xs text-slate-500">In 2:</span>
+                                <div id="m3-in2" class="w-10 h-10 rounded-xl bg-cyber-800 border border-cyan-500/50 flex items-center justify-center text-lg font-bold text-cyan-300">
+                                    1
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 導線 -->
+                        <div class="text-slate-600 text-xl font-bold">➔</div>
+
+                        <!-- 槽位 (選定的邏輯閘) -->
+                        <div id="m3-selected-gate-slot" class="px-6 py-4 rounded-2xl bg-slate-900 border-2 border-dashed border-purple-400/80 text-purple-300 font-black text-xl flex items-center justify-center min-w-[100px]">
+                            ? 閘
+                        </div>
+
+                        <!-- 導線 -->
+                        <div class="text-slate-600 text-xl font-bold">➔</div>
+
+                        <!-- 右側目標 Output -->
+                        <div class="flex flex-col items-center gap-1">
+                            <span class="text-[10px] text-amber-400">目標 Output</span>
+                            <div id="m3-target-out" class="w-12 h-12 rounded-xl bg-amber-500/10 border-2 border-amber-400 flex items-center justify-center text-2xl font-black text-amber-300 shadow-lg shadow-amber-500/10">
+                                0
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 可選邏輯閘門選項按鈕 -->
+                    <div class="flex flex-wrap justify-center gap-3 w-full max-w-md pt-2">
+                        <button onclick="selectGateForMode3('AND')" class="px-5 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 hover:border-purple-400 text-purple-300 font-bold transition">
+                            AND 閘
+                        </button>
+                        <button onclick="selectGateForMode3('OR')" class="px-5 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 hover:border-purple-400 text-purple-300 font-bold transition">
+                            OR 閘
+                        </button>
+                        <button onclick="selectGateForMode3('NOT')" class="px-5 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 hover:border-purple-400 text-purple-300 font-bold transition">
+                            NOT 閘
+                        </button>
+                        <button onclick="selectGateForMode3('XOR')" class="px-5 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 hover:border-purple-400 text-purple-300 font-bold transition">
+                            XOR 閘
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 📚 邏輯閘 Truth Table 真值手冊 (可折疊對照) -->
+        <section class="bg-cyber-900/90 border border-slate-800 rounded-2xl p-4 font-mono text-xs">
+            <details class="group">
+                <summary class="cursor-pointer text-slate-300 font-bold flex justify-between items-center select-none">
+                    <span class="flex items-center gap-2">
+                        <span>📚 邏輯閘真值對照手冊 (Truth Tables)</span>
+                    </span>
+                    <span class="text-cyan-400 group-open:rotate-180 transition-transform">▼</span>
+                </summary>
+                
+                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 mt-4 pt-3 border-t border-slate-800 text-[11px]">
+                    <!-- AND -->
+                    <div class="bg-slate-950 p-3 rounded-xl border border-slate-800/80">
+                        <div class="font-bold text-cyan-400 mb-1">AND 閘 (且)</div>
+                        <div class="text-slate-400 mb-2 text-[10px]">兩者皆 1 時，結果才為 1</div>
+                        <div class="space-y-0.5 text-slate-300">
+                            <div>0 & 0 = <strong class="text-cyan-300">0</strong></div>
+                            <div>0 & 1 = <strong class="text-cyan-300">0</strong></div>
+                            <div>1 & 0 = <strong class="text-cyan-300">0</strong></div>
+                            <div>1 & 1 = <strong class="text-emerald-400">1</strong></div>
+                        </div>
+                    </div>
+
+                    <!-- OR -->
+                    <div class="bg-slate-950 p-3 rounded-xl border border-slate-800/80">
+                        <div class="font-bold text-purple-400 mb-1">OR 閘 (或)</div>
+                        <div class="text-slate-400 mb-2 text-[10px]">只要有一個為 1，結果即為 1</div>
+                        <div class="space-y-0.5 text-slate-300">
+                            <div>0 | 0 = <strong class="text-cyan-300">0</strong></div>
+                            <div>0 | 1 = <strong class="text-emerald-400">1</strong></div>
+                            <div>1 | 0 = <strong class="text-emerald-400">1</strong></div>
+                            <div>1 | 1 = <strong class="text-emerald-400">1</strong></div>
+                        </div>
+                    </div>
+
+                    <!-- NOT -->
+                    <div class="bg-slate-950 p-3 rounded-xl border border-slate-800/80">
+                        <div class="font-bold text-amber-400 mb-1">NOT 閘 (反相)</div>
+                        <div class="text-slate-400 mb-2 text-[10px]">單一輸入，將 0 變 1、1 變 0</div>
+                        <div class="space-y-0.5 text-slate-300">
+                            <div>~ 0 = <strong class="text-emerald-400">1</strong></div>
+                            <div>~ 1 = <strong class="text-cyan-300">0</strong></div>
+                        </div>
+                    </div>
+
+                    <!-- XOR -->
+                    <div class="bg-slate-950 p-3 rounded-xl border border-slate-800/80">
+                        <div class="font-bold text-emerald-400 mb-1">XOR 閘 (互斥或)</div>
+                        <div class="text-slate-400 mb-2 text-[10px]">兩者相異 (一0一1) 時為 1，相同時為 0</div>
+                        <div class="space-y-0.5 text-slate-300">
+                            <div>0 ^ 0 = <strong class="text-cyan-300">0</strong></div>
+                            <div>0 ^ 1 = <strong class="text-emerald-400">1</strong></div>
+                            <div>1 ^ 0 = <strong class="text-emerald-400">1</strong></div>
+                            <div>1 ^ 1 = <strong class="text-cyan-300">0</strong></div>
+                        </div>
+                    </div>
+                </div>
+            </details>
+        </section>
+
+    </main>
+
+    <!-- Toast 提示容器 -->
+    <div id="toast" class="fixed bottom-5 right-5 z-50 transform translate-y-20 opacity-0 transition-all duration-300 pointer-events-none bg-slate-900 border border-cyan-500/50 text-cyan-300 font-mono text-xs px-4 py-2.5 rounded-xl shadow-2xl flex items-center gap-2">
+        <span id="toast-icon">✨</span>
+        <span id="toast-msg">提示訊息</span>
+    </div>
+
+    <!-- 頁尾 -->
+    <footer class="w-full max-w-5xl mx-auto px-4 py-4 text-center text-xs text-slate-600 border-t border-slate-800/60 font-mono">
+        二進位邏輯運算大冒險 | Binary Logic Gates Game
+    </footer>
+
+    <script>
+        // 全域遊戲狀態
+        let currentMode = 4; // 預設打開動畫示範
+        let totalScore = 0;
+        let comboCount = 0;
+
+        // Web Audio 音效產生器
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        function playSound(type) {
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+
+            const now = audioCtx.currentTime;
+            if (type === 'correct') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(523.25, now);
+                osc.frequency.exponentialRampToValueAtTime(1046.50, now + 0.15);
+                gain.gain.setValueAtTime(0.15, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
+                osc.start(now);
+                osc.stop(now + 0.15);
+            } else if (type === 'wrong') {
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(180, now);
+                osc.frequency.exponentialRampToValueAtTime(90, now + 0.2);
+                gain.gain.setValueAtTime(0.2, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
+                osc.start(now);
+                osc.stop(now + 0.2);
+            } else if (type === 'click') {
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(440, now);
+                gain.gain.setValueAtTime(0.05, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.05);
+                osc.start(now);
+                osc.stop(now + 0.05);
+            }
+        }
+
+        function showToast(msg, icon = '✨') {
+            const toast = document.getElementById('toast');
+            document.getElementById('toast-msg').textContent = msg;
+            document.getElementById('toast-icon').textContent = icon;
+            toast.classList.remove('translate-y-20', 'opacity-0');
+            toast.classList.add('translate-y-0', 'opacity-100');
+            setTimeout(() => {
+                toast.classList.remove('translate-y-0', 'opacity-100');
+                toast.classList.add('translate-y-20', 'opacity-0');
+            }, 2000);
+        }
+
+        function addScore(points) {
+            comboCount++;
+            const earned = points * Math.min(comboCount, 5);
+            totalScore += earned;
+            document.getElementById('score-display').textContent = totalScore;
+            document.getElementById('combo-display').textContent = `${comboCount}x`;
+            playSound('correct');
+        }
+
+        function resetCombo() {
+            comboCount = 0;
+            document.getElementById('combo-display').textContent = '0x';
+            playSound('wrong');
+        }
+
+        // 分頁模式切換
+        function switchGateMode(mode) {
+            playSound('click');
+            currentMode = mode;
+
+            // 切換離場時若在自動播放，停止 timer
+            if (mode !== 4 && autoPlayTimer) {
+                clearInterval(autoPlayTimer);
+                autoPlayTimer = null;
+                document.getElementById('anim-autoplay-btn').innerHTML = `<span>▶ 自動示範所有組合</span>`;
+            }
+
+            for (let i = 1; i <= 4; i++) {
+                const btn = document.getElementById(`tab-mode-${i}`);
+                const sec = document.getElementById(`gate-mode-${i}`);
+                if (i === mode) {
+                    btn.className = (i === 4) ?
+                        "py-2.5 px-3 rounded-xl transition-all flex items-center justify-center gap-1.5 bg-emerald-500 text-slate-950 shadow-md font-bold" :
+                        "py-2.5 px-3 rounded-xl transition-all flex items-center justify-center gap-1.5 bg-purple-500 text-slate-950 shadow-md font-bold";
+                    sec.classList.remove('hidden');
+                    sec.classList.add('flex');
+                } else {
+                    btn.className = "py-2.5 px-3 rounded-xl transition-all flex items-center justify-center gap-1.5 text-slate-400 hover:text-slate-200 font-bold";
+                    sec.classList.add('hidden');
+                    sec.classList.remove('flex');
+                }
+            }
+
+            if (mode === 1) initMode1();
+            if (mode === 2) initMode2();
+            if (mode === 3) initMode3();
+            if (mode === 4) renderAnimStudio();
+        }
+
+        // ----------------- 模式四：🎬 視覺動畫圖解邏輯 -----------------
+        let animState = {
+            gate: 'AND',
+            inA: 0,
+            inB: 0,
+            isAutoPlaying: false
+        };
+        let autoPlayTimer = null;
+
+        const ANIM_TITLES = {
+            'AND': 'AND 邏輯閘 (交集/且)',
+            'OR': 'OR 邏輯閘 (聯集/或)',
+            'NOT': 'NOT 邏輯閘 (反相器)',
+            'XOR': 'XOR 邏輯閘 (互斥或)'
+        };
+
+        const ANIM_EXPLANATIONS = {
+            'AND': {
+                '0-0': '輸入 A=0, B=0 ➔ AND 閘要求「兩者皆為 1」➔ 輸出電位為 0 (不亮燈)',
+                '0-1': '輸入 A=0, B=1 ➔ 僅 B 通電，未滿足兩者皆為 1 ➔ 輸出電位為 0 (不亮燈)',
+                '1-0': '輸入 A=1, B=0 ➔ 僅 A 通電，未滿足兩者皆為 1 ➔ 輸出電位為 0 (不亮燈)',
+                '1-1': '輸入 A=1, B=1 ➔ 兩條導線皆為高電位 1！ ➔ 輸出高電位 1 (亮燈亮起！✨)'
+            },
+            'OR': {
+                '0-0': '輸入 A=0, B=0 ➔ 兩條導線皆無電流 ➔ 輸出電位為 0 (不亮燈)',
+                '0-1': '輸入 A=0, B=1 ➔ B 通電成功！OR 閘滿足「任一為 1」 ➔ 輸出高電位 1 (亮燈！)',
+                '1-0': '輸入 A=1, B=0 ➔ A 通電成功！OR 閘滿足「任一為 1」 ➔ 輸出高電位 1 (亮燈！)',
+                '1-1': '輸入 A=1, B=1 ➔ 兩者皆通電！滿足「任一為 1」 ➔ 輸出高電位 1 (亮燈！)'
+            },
+            'NOT': {
+                '0-x': '輸入 A=0 ➔ NOT 閘進行反相翻轉 (0 變 1) ➔ 輸出高電位 1 (亮燈！)',
+                '1-x': '輸入 A=1 ➔ NOT 閘進行反相翻轉 (1 變 0) ➔ 輸出電位為 0 (熄滅)'
+            },
+            'XOR': {
+                '0-0': '輸入 A=0, B=0 ➔ 兩者訊號相同 (皆為0) ➔ XOR 反對相同訊號 ➔ 輸出電位 0 (不亮燈)',
+                '0-1': '輸入 A=0, B=1 ➔ 訊號相異 (一0一1)！ ➔ XOR 互斥條件成立！ ➔ 輸出高電位 1 (亮燈！)',
+                '1-0': '輸入 A=1, B=0 ➔ 訊號相異 (一1一0)！ ➔ XOR 互斥條件成立！ ➔ 輸出高電位 1 (亮燈！)',
+                '1-1': '輸入 A=1, B=1 ➔ 兩者訊號相同 (皆為1) ➔ XOR 反對相同訊號 ➔ 輸出電位 0 (不亮燈)'
+            }
+        };
+
+        function setAnimGate(gate) {
+            playSound('click');
+            animState.gate = gate;
+
+            ['AND', 'OR', 'NOT', 'XOR'].forEach(g => {
+                const btn = document.getElementById(`anim-btn-${g}`);
+                if (g === gate) {
+                    btn.className = "px-3 py-1.5 rounded-lg bg-cyan-500 text-slate-950 transition font-bold";
+                } else {
+                    btn.className = "px-3 py-1.5 rounded-lg hover:bg-slate-800 text-slate-300 transition font-bold";
+                }
+            });
+
+            document.getElementById('anim-gate-title').textContent = ANIM_TITLES[gate];
+            document.getElementById('svg-gate-name').textContent = gate;
+
+            // 控制 B 輸入開關隱現
+            const wireB = document.getElementById('wire-b');
+            const groupB = document.getElementById('svg-group-b');
+            if (gate === 'NOT') {
+                wireB.style.display = 'none';
+                groupB.style.display = 'none';
+            } else {
+                wireB.style.display = 'block';
+                groupB.style.display = 'block';
+            }
+
+            renderAnimStudio();
+        }
+
+        function toggleAnimInput(target) {
+            playSound('click');
+            if (target === 'a') animState.inA = animState.inA === 1 ? 0 : 1;
+            if (target === 'b') animState.inB = animState.inB === 1 ? 0 : 1;
+            renderAnimStudio();
+        }
+
+        function toggleAutoPlay() {
+            playSound('click');
+            animState.isAutoPlaying = !animState.isAutoPlaying;
+            const btn = document.getElementById('anim-autoplay-btn');
+
+            if (animState.isAutoPlaying) {
+                btn.innerHTML = `<span>⏸ 停止自動示範</span>`;
+                btn.className = "px-3 py-1.5 rounded-lg bg-amber-500 text-slate-950 text-xs font-bold flex items-center gap-1 transition shadow-lg animate-pulse";
+                let comboIdx = 0;
+                const combos = animState.gate === 'NOT' ? [[0,0], [1,0]] : [[0,0], [0,1], [1,0], [1,1]];
+
+                autoPlayTimer = setInterval(() => {
+                    comboIdx = (comboIdx + 1) % combos.length;
+                    animState.inA = combos[comboIdx][0];
+                    animState.inB = combos[comboIdx][1];
+                    renderAnimStudio();
+                }, 2000);
+            } else {
+                clearInterval(autoPlayTimer);
+                autoPlayTimer = null;
+                btn.innerHTML = `<span>▶ 自動示範所有組合</span>`;
+                btn.className = "px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-amber-400 border border-slate-700 text-xs font-bold flex items-center gap-1 transition";
+            }
+        }
+
+        function renderAnimStudio() {
+            // 計算目前邏輯閘 Output
+            let outBit = 0;
+            const a = animState.inA;
+            const b = animState.inB;
+            const g = animState.gate;
+
+            if (g === 'AND') outBit = (a & b);
+            if (g === 'OR') outBit = (a | b);
+            if (g === 'NOT') outBit = (a === 1 ? 0 : 1);
+            if (g === 'XOR') outBit = (a ^ b);
+
+            // 更新文字與電位
+            document.getElementById('svg-text-a').textContent = a;
+            document.getElementById('svg-text-b').textContent = b;
+            document.getElementById('svg-text-out').textContent = outBit;
+
+            // 導線 A 樣式
+            const wireA = document.getElementById('wire-a');
+            wireA.className.baseVal = a === 1 ? 'wire-on' : 'wire-off';
+
+            // 導線 B 樣式
+            const wireB = document.getElementById('wire-b');
+            wireB.className.baseVal = b === 1 ? 'wire-on' : 'wire-off';
+
+            // 輸出 導線與 LED 燈
+            const wireOut = document.getElementById('wire-out');
+            wireOut.className.baseVal = outBit === 1 ? 'wire-out-on' : 'wire-off';
+
+            const ledGlow = document.getElementById('svg-led-glow');
+            const ledBulb = document.getElementById('svg-led-bulb');
+            const textOut = document.getElementById('svg-text-out');
+
+            if (outBit === 1) {
+                ledGlow.setAttribute('fill-opacity', '0.6');
+                ledBulb.setAttribute('fill', '#10B981');
+                textOut.setAttribute('fill', '#060913');
+            } else {
+                ledGlow.setAttribute('fill-opacity', '0');
+                ledBulb.setAttribute('fill', '#1e293b');
+                textOut.setAttribute('fill', '#64748b');
+            }
+
+            // 更新解說字幕
+            const key = g === 'NOT' ? `${a}-x` : `${a}-${b}`;
+            const expText = ANIM_EXPLANATIONS[g][key] || '運算中...';
+            document.getElementById('anim-explanation').textContent = expText;
+
+            // 渲染與高亮小型 Truth Table
+            renderAnimTruthTable(g, a, b);
+        }
+
+        function renderAnimTruthTable(gate, curA, curB) {
+            const container = document.getElementById('anim-tt-container');
+            let rows = [];
+
+            if (gate === 'AND') {
+                rows = [
+                    { a: 0, b: 0, out: 0 },
+                    { a: 0, b: 1, out: 0 },
+                    { a: 1, b: 0, out: 0 },
+                    { a: 1, b: 1, out: 1 }
+                ];
+            } else if (gate === 'OR') {
+                rows = [
+                    { a: 0, b: 0, out: 0 },
+                    { a: 0, b: 1, out: 1 },
+                    { a: 1, b: 0, out: 1 },
+                    { a: 1, b: 1, out: 1 }
+                ];
+            } else if (gate === 'NOT') {
+                rows = [
+                    { a: 0, b: '-', out: 1 },
+                    { a: 1, b: '-', out: 0 }
+                ];
+            } else if (gate === 'XOR') {
+                rows = [
+                    { a: 0, b: 0, out: 0 },
+                    { a: 0, b: 1, out: 1 },
+                    { a: 1, b: 0, out: 1 },
+                    { a: 1, b: 1, out: 0 }
+                ];
+            }
+
+            container.innerHTML = rows.map(r => {
+                const isActive = (gate === 'NOT') ? (r.a === curA) : (r.a === curA && r.b === curB);
+                return `
+                    <div class="flex justify-between items-center px-3 py-1 rounded transition ${isActive ? 'tt-highlight text-cyan-300 font-bold' : 'text-slate-400 opacity-60'}">
+                        <span>IN A: ${r.a} ${gate !== 'NOT' ? '| IN B: ' + r.b : ''}</span>
+                        <span>OUTPUT ➔ <strong class="${r.out === 1 ? 'text-emerald-400' : 'text-slate-400'}">${r.out}</strong></span>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // ----------------- 模式一：1-Bit 快答邏輯 -----------------
+        let mode1State = {
+            a: 1,
+            b: 0,
+            gate: 'AND',
+            ans: 0,
+            currentQ: 1
+        };
+
+        const GATES = ['AND', 'OR', 'NOT', 'XOR'];
+        const GATE_HINTS = {
+            'AND': 'AND 閘：唯有當兩者皆為 1 時，輸出才為 1',
+            'OR': 'OR 閘：只要有一個為 1，輸出即為 1',
+            'NOT': 'NOT 閘：反相器，將輸入 0 變 1、1 變 0',
+            'XOR': 'XOR 閘：兩者相異 (一0一1) 時為 1，相同時為 0'
+        };
+
+        function initMode1() {
+            mode1State.gate = GATES[Math.floor(Math.random() * GATES.length)];
+            mode1State.a = Math.round(Math.random());
+            mode1State.b = Math.round(Math.random());
+
+            if (mode1State.gate === 'NOT') {
+                mode1State.ans = mode1State.a === 1 ? 0 : 1;
+                document.getElementById('m1-input-b').style.display = 'none';
+            } else {
+                document.getElementById('m1-input-b').style.display = 'flex';
+                if (mode1State.gate === 'AND') mode1State.ans = (mode1State.a & mode1State.b);
+                if (mode1State.gate === 'OR') mode1State.ans = (mode1State.a | mode1State.b);
+                if (mode1State.gate === 'XOR') mode1State.ans = (mode1State.a ^ mode1State.b);
+            }
+
+            document.getElementById('m1-badge').textContent = `第 ${mode1State.currentQ} 題`;
+            document.getElementById('m1-input-a').textContent = mode1State.a;
+            document.getElementById('m1-input-b').textContent = mode1State.b;
+            document.getElementById('m1-gate-type').textContent = mode1State.gate;
+            document.getElementById('m1-hint-text').textContent = GATE_HINTS[mode1State.gate];
+        }
+
+        function submitMode1Answer(selected) {
+            if (selected === mode1State.ans) {
+                addScore(50);
+                showToast("🎯 答對了！邏輯判斷正確", "✨");
+            } else {
+                resetCombo();
+                showToast(`❌ 答錯了！正確解答應為 ${mode1State.ans}`, "⚠️");
+            }
+            mode1State.currentQ++;
+            initMode1();
+        }
+
+        // ----------------- 模式二：4-Bit 矩陣邏輯 -----------------
+        let mode2State = {
+            gate: 'XOR',
+            bitsA: [1, 0, 1, 0],
+            bitsB: [1, 1, 0, 0],
+            userOut: [0, 0, 0, 0]
+        };
+
+        function initMode2() {
+            const gates = ['AND', 'OR', 'XOR'];
+            mode2State.gate = gates[Math.floor(Math.random() * gates.length)];
+            mode2State.bitsA = Array.from({length: 4}, () => Math.round(Math.random()));
+            mode2State.bitsB = Array.from({length: 4}, () => Math.round(Math.random()));
+            mode2State.userOut = [0, 0, 0, 0];
+
+            document.getElementById('m2-gate-display').textContent = `${mode2State.gate} 矩陣邏輯運算`;
+            document.getElementById('m2-gate-op').textContent = mode2State.gate;
+
+            // Render Bits A
+            document.getElementById('m2-bits-a').innerHTML = mode2State.bitsA.map(b => `
+                <div class="w-10 h-10 rounded-lg bg-cyber-800 border border-cyan-500/50 flex items-center justify-center text-cyan-300">
+                    ${b}
+                </div>
+            `).join('');
+
+            // Render Bits B
+            document.getElementById('m2-bits-b').innerHTML = mode2State.bitsB.map(b => `
+                <div class="w-10 h-10 rounded-lg bg-cyber-800 border border-cyan-500/50 flex items-center justify-center text-cyan-300">
+                    ${b}
+                </div>
+            `).join('');
+
+            updateMode2UserBitsUI();
+        }
+
+        function updateMode2UserBitsUI() {
+            document.getElementById('m2-bits-out').innerHTML = mode2State.userOut.map((b, idx) => `
+                <button onclick="toggleMode2Bit(${idx})" class="w-10 h-10 rounded-lg border-2 border-amber-400 font-bold transition flex items-center justify-center ${b === 1 ? 'bit-btn-active' : 'bg-slate-900 text-slate-300'}">
+                    ${b}
+                </button>
+            `).join('');
+        }
+
+        function toggleMode2Bit(idx) {
+            playSound('click');
+            mode2State.userOut[idx] = mode2State.userOut[idx] === 1 ? 0 : 1;
+            updateMode2UserBitsUI();
+        }
+
+        function submitMode2Answer() {
+            let correct = [];
+            for (let i = 0; i < 4; i++) {
+                const a = mode2State.bitsA[i];
+                const b = mode2State.bitsB[i];
+                if (mode2State.gate === 'AND') correct.push(a & b);
+                if (mode2State.gate === 'OR') correct.push(a | b);
+                if (mode2State.gate === 'XOR') correct.push(a ^ b);
+            }
+
+            const isMatch = mode2State.userOut.every((val, i) => val === correct[i]);
+            if (isMatch) {
+                addScore(100);
+                showToast("🎉 完美！4-Bit 位元邏輯全對！+100 分", "🏆");
+                initMode2();
+            } else {
+                resetCombo();
+                showToast(`❌ 運算有誤！正確答案應為：${correct.join('')}`, "⚠️");
+            }
+        }
+
+        // ----------------- 模式三：電路解鎖關卡 -----------------
+        let mode3State = {
+            in1: 1,
+            in2: 1,
+            targetOut: 0,
+            selectedGate: null,
+            correctGate: 'XOR'
+        };
+
+        function initMode3() {
+            const gates = ['AND', 'OR', 'NOT', 'XOR'];
+            mode3State.correctGate = gates[Math.floor(Math.random() * gates.length)];
+            mode3State.in1 = Math.round(Math.random());
+            mode3State.in2 = Math.round(Math.random());
+            mode3State.selectedGate = null;
+
+            if (mode3State.correctGate === 'NOT') {
+                document.getElementById('m3-in2-box').style.display = 'none';
+                mode3State.targetOut = mode3State.in1 === 1 ? 0 : 1;
+            } else {
+                document.getElementById('m3-in2-box').style.display = 'flex';
+                if (mode3State.correctGate === 'AND') mode3State.targetOut = (mode3State.in1 & mode3State.in2);
+                if (mode3State.correctGate === 'OR') mode3State.targetOut = (mode3State.in1 | mode3State.in2);
+                if (mode3State.correctGate === 'XOR') mode3State.targetOut = (mode3State.in1 ^ mode3State.in2);
+            }
+
+            document.getElementById('m3-in1').textContent = mode3State.in1;
+            document.getElementById('m3-in2').textContent = mode3State.in2;
+            document.getElementById('m3-target-out').textContent = mode3State.targetOut;
+            document.getElementById('m3-selected-gate-slot').textContent = '? 閘';
+        }
+
+        function selectGateForMode3(gate) {
+            playSound('click');
+            document.getElementById('m3-selected-gate-slot').textContent = `${gate} 閘`;
+
+            let output = 0;
+            if (gate === 'NOT') {
+                output = mode3State.in1 === 1 ? 0 : 1;
+            } else {
+                if (gate === 'AND') output = (mode3State.in1 & mode3State.in2);
+                if (gate === 'OR') output = (mode3State.in1 | mode3State.in2);
+                if (gate === 'XOR') output = (mode3State.in1 ^ mode3State.in2);
+            }
+
+            if (output === mode3State.targetOut) {
+                addScore(80);
+                showToast(`🎯 答對了！填入 ${gate} 閘成功解開電路！`, "✨");
+                setTimeout(initMode3, 600);
+            } else {
+                resetCombo();
+                showToast(`❌ 電路無法通電！選擇 ${gate} 閘會導出 ${output}，而非目標 ${mode3State.targetOut}`, "⚠️");
+            }
+        }
+
+        // 頁面初始化
+        window.onload = function() {
+            renderAnimStudio();
+        };
+    </script>
+</body>
+</html>

@@ -2,37 +2,55 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
     <loc>https://vanix.github.io/cs-teaching/</loc>
-    <lastmod>2026-08-25</lastmod>
+    <lastmod>2026-09-01</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
   </url>
   <url>
     <loc>https://vanix.github.io/cs-teaching/1_%E6%B9%9B%E9%BB%9E%E6%95%B8.html</loc>
-    <lastmod>2026-08-25</lastmod>
+    <lastmod>2026-09-01</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://vanix.github.io/cs-teaching/2_%E9%80%B2%E4%BD%8D%E6%8F%9B%E7%AE%97.html</loc>
-    <lastmod>2026-08-25</lastmod>
+    <lastmod>2026-09-01</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://vanix.github.io/cs-teaching/3_%E6%91%A9%E6%96%AF%E9%9B%BB%E7%A2%BC%E4%BA%8C%E9%80%B2%E4%BD%8D.html</loc>
-    <lastmod>2026-08-25</lastmod>
+    <loc>https://vanix.github.io/cs-teaching/3_%E4%BA%8C%E9%80%B2%E4%BD%8D%E9%82%8F%E8%BC%AF%E9%81%8B%E7%AE%97.html</loc>
+    <lastmod>2026-09-01</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://vanix.github.io/cs-teaching/4_%E5%AD%97%E6%AF%8D%E8%A7%A3%E7%A2%BC.html</loc>
-    <lastmod>2026-08-25</lastmod>
+    <loc>https://vanix.github.io/cs-teaching/4_%E5%AE%B9%E9%87%8F%E7%89%B9%E5%B7%A5.html</loc>
+    <lastmod>2026-09-01</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://vanix.github.io/cs-teaching/5_%E4%B8%82%E7%A2%BC%E8%A7%A3%E7%A2%BC%E5%AF%A6%E9%A9%97%E5%AE%A4.html</loc>
-    <lastmod>2026-08-25</lastmod>
+    <loc>https://vanix.github.io/cs-teaching/5_%E5%AD%97%E6%AF%8D%E8%A7%A3%E7%A2%BC.html</loc>
+    <lastmod>2026-09-01</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://vanix.github.io/cs-teaching/6_%E4%B8%82%E7%A2%BC%E8%A7%A3%E7%A2%BC%E5%AF%A6%E9%A9%97%E5%AE%A4.html</loc>
+    <lastmod>2026-09-01</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://vanix.github.io/cs-teaching/7_%E5%83%8F%E7%B4%A0%E5%A1%97%E9%B4%89.html</loc>
+    <lastmod>2026-09-01</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://vanix.github.io/cs-teaching/8_%E8%81%B2%E6%B3%A2%E5%8F%96%E6%A8%A3%E8%B7%9F%E9%87%8F%E5%8C%96%E5%AF%A6%E9%A9%97.html</loc>
+    <lastmod>2026-09-01</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>

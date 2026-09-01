@@ -1,0 +1,711 @@
+<!DOCTYPE html>
+<html lang="zh-TW" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>容量特工：Data Capacity Quest - 電腦單位換算大冒險</title>
+    <meta name="description" content="學習 Byte、KB、MB、GB、TB 等電腦容量單位換算，透過冒險遊戲理解資料儲存概念。">
+    <meta name="keywords" content="容量單位, Byte, KB, MB, GB, TB, 計算機概論, 遊戲學習">
+    <meta name="robots" content="index, follow">
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8522276249008152" crossorigin="anonymous"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        cyber: {
+                            950: '#060913',
+                            900: '#0B1120',
+                            800: '#15213B',
+                            700: '#22345C',
+                            cyan: '#06B6D4',
+                            purple: '#8B5CF6',
+                            emerald: '#10B981',
+                            amber: '#F59E0B',
+                            rose: '#F43F5E'
+                        }
+                    },
+                    fontFamily: {
+                        mono: ['Courier New', 'Consolas', 'monospace'],
+                        sans: ['Inter', 'system-ui', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @keyframes pulse-glow {
+            0%, 100% { box-shadow: 0 0 15px rgba(6, 182, 212, 0.4); }
+            50% { box-shadow: 0 0 30px rgba(6, 182, 212, 0.8); }
+        }
+        .glow-cyan { animation: pulse-glow 2s infinite; }
+        
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20%, 60% { transform: translateX(-5px); }
+            40%, 80% { transform: translateX(5px); }
+        }
+        .shake { animation: shake 0.3s ease-in-out; }
+
+        .progress-bar-fill {
+            transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* Drag & Drop Visuals */
+        .dragging { opacity: 0.5; scale: 0.95; }
+        .drag-over { border-color: #06B6D4 !important; background-color: rgba(6, 182, 212, 0.15) !important; }
+    </style>
+</head>
+<body class="bg-cyber-950 text-slate-100 min-h-screen flex flex-col justify-between font-sans antialiased selection:bg-cyan-500 selection:text-slate-950">
+
+    <!-- 頂部標題列 -->
+    <header class="w-full max-w-5xl mx-auto px-4 py-4 border-b border-slate-800/80 flex flex-col sm:flex-row justify-between items-center gap-3">
+        <div class="flex items-center gap-3">
+            <a href="index.html" class="text-xs text-sky-400 hover:text-sky-300 transition flex items-center gap-1">
+                ← 回到首頁
+            </a>
+            <div class="w-11 h-11 rounded-xl bg-cyan-500/10 border border-cyan-500/40 flex items-center justify-center text-cyan-400 font-mono text-2xl shadow-lg shadow-cyan-500/10 glow-cyan">
+                💾
+            </div>
+            <div>
+                <h1 class="text-xl sm:text-2xl font-black tracking-tight font-mono text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-emerald-400 to-purple-400">
+                    容量特工：Data Capacity Quest
+                </h1>
+                <p class="text-xs text-slate-400">電腦儲存容量單位換算闖關遊戲 • B, KB, MB, GB, TB</p>
+            </div>
+        </div>
+
+        <!-- 分數與儀表板 -->
+        <div class="flex items-center gap-4 bg-cyber-900 border border-slate-800 px-4 py-2 rounded-xl font-mono text-xs shadow-inner">
+            <div class="flex flex-col items-end">
+                <span class="text-slate-400 text-[10px]">總積分 SCORE</span>
+                <span id="score-display" class="text-cyan-400 text-lg font-bold">0</span>
+            </div>
+            <div class="h-6 w-px bg-slate-800"></div>
+            <div class="flex flex-col items-end">
+                <span class="text-slate-400 text-[10px]">連勝 COMBO</span>
+                <span id="combo-display" class="text-amber-400 text-lg font-bold">0x</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- 主遊戲區域 -->
+    <main class="w-full max-w-5xl mx-auto px-4 py-6 flex-1 flex flex-col gap-6">
+
+        <!-- 模式選擇分頁導向標籤 -->
+        <div class="grid grid-cols-3 gap-2 bg-cyber-900/90 p-1.5 rounded-2xl border border-slate-800 text-xs sm:text-sm font-bold font-mono">
+            <button id="tab-mode-1" onclick="switchMode(1)" class="py-2.5 px-3 rounded-xl transition-all flex items-center justify-center gap-2 bg-cyan-500 text-slate-950 shadow-md">
+                <span>📦 模式一：檔案塞塞樂</span>
+            </button>
+            <button id="tab-mode-2" onclick="switchMode(2)" class="py-2.5 px-3 rounded-xl transition-all flex items-center justify-center gap-2 text-slate-400 hover:text-slate-200">
+                <span>⚡ 模式二：快問快答</span>
+            </button>
+            <button id="tab-mode-3" onclick="switchMode(3)" class="py-2.5 px-3 rounded-xl transition-all flex items-center justify-center gap-2 text-slate-400 hover:text-slate-200">
+                <span>⚖️ 模式三：消失的硬碟容量</span>
+            </button>
+        </div>
+
+        <section id="game-mode-1" class="flex flex-col gap-5">
+            <div class="bg-cyber-900 border border-slate-800 rounded-2xl p-5 shadow-2xl relative overflow-hidden">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 pb-3 border-b border-slate-800">
+                    <div>
+                        <h2 class="text-base font-bold text-cyan-400 font-mono flex items-center gap-2">
+                            <span>📦 任務目標：精準填滿硬碟容量 (請勿溢出)</span>
+                        </h2>
+                        <p class="text-xs text-slate-400 mt-0.5">將底部的檔案拖拽（或點擊）放入硬碟，計算單位並將剩餘空間歸零！</p>
+                    </div>
+                    <button onclick="initMode1()" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 font-mono text-xs transition border border-slate-700">
+                        🔄 換一題
+                    </button>
+                </div>
+
+                <!-- 硬碟目標容器 (Target Drop Zone) -->
+                <div class="mt-5 bg-slate-950/80 rounded-2xl p-6 border-2 border-dashed border-slate-700 relative flex flex-col items-center justify-center gap-4 transition-all" id="drive-target-zone">
+                    <div class="flex items-center justify-between w-full max-w-lg font-mono">
+                        <span class="text-sm font-bold text-slate-300">儲存硬碟標示容量：</span>
+                        <span id="target-capacity-text" class="text-xl font-extrabold text-cyan-400">2.0 GB</span>
+                    </div>
+
+                    <!-- 進度條 -->
+                    <div class="w-full max-w-lg h-7 bg-slate-900 rounded-full border border-slate-700 p-1 relative overflow-hidden flex items-center">
+                        <div id="drive-progress-bar" class="progress-bar-fill h-full bg-gradient-to-r from-cyan-500 to-emerald-400 rounded-full w-0"></div>
+                        <span id="drive-progress-text" class="absolute inset-0 flex items-center justify-center font-mono text-xs font-black text-slate-100 drop-shadow">
+                            已使用 0 / 2048 MB (0%)
+                        </span>
+                    </div>
+
+                    <!-- 目前放入的檔案清單 -->
+                    <div id="placed-files-container" class="w-full max-w-lg min-h-[50px] bg-cyber-900/60 rounded-xl p-2.5 border border-slate-800/80 flex flex-wrap gap-2 items-center justify-center">
+                        <span class="text-xs text-slate-500 font-mono">尚未放入任何檔案（請拖拽或點擊下方檔案）</span>
+                    </div>
+
+                    <div class="flex justify-between w-full max-w-lg font-mono text-xs">
+                        <span class="text-slate-400">剩餘空間需求：<strong id="remaining-space-text" class="text-amber-400 font-bold">2048 MB</strong></span>
+                        <span id="drive-status-badge" class="text-cyan-400 font-bold">狀態：未填滿</span>
+                    </div>
+                </div>
+
+                <!-- 待選檔案庫 (Available Files) -->
+                <div class="mt-5 flex flex-col gap-2">
+                    <span class="text-xs font-mono font-bold text-slate-400">🗂️ 可用檔案區（點擊或拖拽至上方硬碟）：</span>
+                    <div id="available-files-container" class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                        <!-- 動態生成檔案區塊 -->
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="game-mode-2" class="hidden flex-col gap-5">
+            <div class="bg-cyber-900 border border-slate-800 rounded-2xl p-5 shadow-2xl flex flex-col gap-5 relative overflow-hidden">
+                
+                <!-- 題目頭部資訊 -->
+                <div class="flex justify-between items-center pb-3 border-b border-slate-800 font-mono">
+                    <div class="flex items-center gap-2">
+                        <span id="quiz-badge" class="px-2.5 py-1 rounded-md bg-purple-500/20 text-purple-300 border border-purple-500/30 text-xs font-bold">
+                            第 1 題 / 5 題
+                        </span>
+                        <span class="text-xs text-slate-400">限時回答 (單局 5 題)</span>
+                    </div>
+
+                    <!-- 計時器 -->
+                    <div class="flex items-center gap-2">
+                        <span class="text-xs text-slate-400">⏳ 剩餘時間：</span>
+                        <span id="quiz-timer" class="text-lg font-bold text-rose-400">15s</span>
+                    </div>
+                </div>
+
+                <!-- 題目核心問題區域 -->
+                <div id="quiz-body-container" class="flex flex-col gap-5">
+                    <div class="bg-slate-950 p-6 rounded-2xl border border-slate-800 text-center flex flex-col items-center justify-center gap-3">
+                        <span id="quiz-category" class="text-xs font-mono text-cyan-400 tracking-wider uppercase">容量大小比較</span>
+                        <h3 id="quiz-question-text" class="text-xl sm:text-2xl font-black font-mono text-slate-100">
+                            「1.5 GB」與「1600 MB」哪一個比較大？
+                        </h3>
+                    </div>
+
+                    <!-- 選項列表 (4 選 1 或 2 選 1) -->
+                    <div id="quiz-options-container" class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <!-- 答案按鈕動態生成 -->
+                    </div>
+                </div>
+
+                <!-- 結算彈窗 Overlay (完成 5 題後顯示) -->
+                <div id="quiz-summary-modal" class="hidden absolute inset-0 bg-slate-950/95 backdrop-blur-md z-20 flex flex-col items-center justify-center p-6 text-center font-mono gap-4">
+                    <div class="w-16 h-16 rounded-full bg-cyan-500/20 border border-cyan-400 flex items-center justify-center text-3xl shadow-lg shadow-cyan-500/20">
+                        🏆
+                    </div>
+                    <h3 class="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-emerald-400">
+                        挑戰完成！
+                    </h3>
+                    <p class="text-slate-300 text-sm">
+                        本次 5 題隨機快問快答測試結果：
+                    </p>
+                    <div class="bg-cyber-900 border border-slate-800 rounded-xl p-4 w-full max-w-xs flex justify-around items-center">
+                        <div>
+                            <div class="text-[10px] text-slate-400">答對題數</div>
+                            <div id="summary-correct-count" class="text-xl font-bold text-emerald-400">0 / 5</div>
+                        </div>
+                        <div class="h-8 w-px bg-slate-800"></div>
+                        <div>
+                            <div class="text-[10px] text-slate-400">獲得分數</div>
+                            <div id="summary-score-earned" class="text-xl font-bold text-cyan-400">+0</div>
+                        </div>
+                    </div>
+                    <button onclick="startMode2Quiz()" class="mt-2 px-6 py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-emerald-500 text-slate-950 font-extrabold text-sm shadow-lg hover:brightness-110 active:scale-95 transition">
+                        🔄 再挑戰一局 (新 5 題)
+                    </button>
+                </div>
+
+            </div>
+        </section>
+
+        <section id="game-mode-3" class="hidden flex-col gap-5">
+            <div class="bg-cyber-900 border border-slate-800 rounded-2xl p-5 shadow-2xl flex flex-col gap-5">
+                <div class="pb-3 border-b border-slate-800">
+                    <h2 class="text-base font-bold text-emerald-400 font-mono">
+                        ⚖️ 謎題解析：為什麼買 1 TB 硬碟裝到 Windows 只剩 931 GiB？
+                    </h2>
+                    <p class="text-xs text-slate-400 mt-0.5">
+                        硬碟廠商使用 **十進位 (1000)** 標示容量，而作業系統使用 **二進位 (1024)** 計算容量！
+                    </p>
+                </div>
+
+                <!-- 互動式容量實驗計算器 -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    
+                    <!-- 廠商視角 (十進位) -->
+                    <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 flex flex-col gap-3">
+                        <div class="flex justify-between items-center border-b border-slate-800 pb-2">
+                            <span class="text-xs font-mono font-bold text-cyan-400">🏭 硬碟製造商標示 (SI 單位, 1000進位)</span>
+                            <span class="text-[10px] bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 px-2 py-0.5 rounded">1 KB = 1,000 B</span>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <label class="text-xs font-mono text-slate-300">選擇標示容量：</label>
+                            <select id="sim-capacity-select" onchange="updateMode3Simulator()" class="bg-slate-900 border border-slate-700 text-cyan-300 font-mono text-sm rounded-lg px-3 py-1.5 focus:outline-none focus:border-cyan-500">
+                                <option value="500000000000">500 GB</option>
+                                <option value="1000000000000" selected>1 TB (1,000,000,000,000 Bytes)</option>
+                                <option value="2000000000000">2 TB</option>
+                                <option value="4000000000000">4 TB</option>
+                                <option value="8000000000000">8 TB</option>
+                            </select>
+                        </div>
+                        <div class="bg-cyber-900/80 p-3 rounded-lg border border-slate-800 font-mono text-xs space-y-1">
+                            <div class="text-slate-400">位元組總數 (Bytes)：</div>
+                            <div id="sim-raw-bytes" class="text-slate-100 font-bold text-sm">1,000,000,000,000 Bytes</div>
+                        </div>
+                    </div>
+
+                    <!-- 作業系統視角 (二進位) -->
+                    <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 flex flex-col gap-3">
+                        <div class="flex justify-between items-center border-b border-slate-800 pb-2">
+                            <span class="text-xs font-mono font-bold text-purple-400">💻 Windows 作業系統讀取 (IEC 單位, 1024進位)</span>
+                            <span class="text-[10px] bg-purple-500/10 text-purple-300 border border-purple-500/20 px-2 py-0.5 rounded">1 KiB = 1,024 B</span>
+                        </div>
+                        <div class="space-y-2 font-mono text-xs">
+                            <div class="flex justify-between items-center bg-cyber-900/80 p-2.5 rounded-lg border border-slate-800">
+                                <span class="text-slate-400">除以 1024³ 換算成 GiB：</span>
+                                <span id="sim-gib-result" class="text-purple-400 font-bold text-sm">931.32 GiB</span>
+                            </div>
+                            <div class="flex justify-between items-center bg-cyber-900/80 p-2.5 rounded-lg border border-slate-800">
+                                <span class="text-slate-400">「蒸發」的心理容量差異：</span>
+                                <span id="sim-lost-result" class="text-rose-400 font-bold text-sm">約蒸發 68.68 GB (6.86%)</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 小知識說明與挑戰題 -->
+                <div class="bg-slate-950/90 rounded-xl p-4 border border-slate-800 font-mono text-xs space-y-2">
+                    <div class="text-emerald-400 font-bold flex items-center gap-1.5">
+                        💡 知識筆記：
+                    </div>
+                    <p class="text-slate-300 leading-relaxed">
+                        • 國際電工委員會 (IEC) 正式將 1024 進位命名為：<strong class="text-cyan-300">KiB (Kibibyte)</strong>、<strong class="text-cyan-300">MiB (Mebibyte)</strong>、<strong class="text-cyan-300">GiB (Gibibyte)</strong>。<br>
+                        • 標準十進位 (SI) 單位 1 KB = 1000 B、1 MB = 1000 KB。<br>
+                        • Windows 習慣將 1024 進位稱為 "GB"，因而造成使用者以為容量「縮水」！
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <!-- 單位速查對照表 -->
+        <section class="bg-cyber-900/80 border border-slate-800/80 rounded-2xl p-4 font-mono text-xs">
+            <div class="text-slate-400 font-bold mb-2 flex items-center justify-between">
+                <span>📚 電腦儲存單位進位換算表 (Binary 1024)</span>
+                <span class="text-[10px] text-cyan-400">8 Bits = 1 Byte</span>
+            </div>
+            <div class="grid grid-cols-2 sm:grid-cols-5 gap-2 text-center text-[11px]">
+                <div class="bg-slate-950 p-2 rounded-lg border border-slate-800"><span class="text-cyan-400 font-bold">1 Byte</span> = 8 Bits</div>
+                <div class="bg-slate-950 p-2 rounded-lg border border-slate-800"><span class="text-cyan-400 font-bold">1 KB</span> = 1024 Bytes</div>
+                <div class="bg-slate-950 p-2 rounded-lg border border-slate-800"><span class="text-cyan-400 font-bold">1 MB</span> = 1024 KB</div>
+                <div class="bg-slate-950 p-2 rounded-lg border border-slate-800"><span class="text-cyan-400 font-bold">1 GB</span> = 1024 MB</div>
+                <div class="bg-slate-950 p-2 rounded-lg border border-slate-800"><span class="text-cyan-400 font-bold">1 TB</span> = 1024 GB</div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Toast 通知容器 -->
+    <div id="toast" class="fixed bottom-5 right-5 z-50 transform translate-y-20 opacity-0 transition-all duration-300 pointer-events-none bg-slate-900 border border-cyan-500/50 text-cyan-300 font-mono text-xs px-4 py-2.5 rounded-xl shadow-2xl flex items-center gap-2">
+        <span id="toast-icon">✨</span>
+        <span id="toast-msg">提示訊息</span>
+    </div>
+
+    <!-- 頁尾 -->
+    <footer class="w-full max-w-5xl mx-auto px-4 py-4 text-center text-xs text-slate-600 border-t border-slate-800/60 font-mono">
+        容量特工：Data Capacity Quest | Computer Data Unit Game
+    </footer>
+
+    <script>
+        // 全域遊戲狀態
+        let currentMode = 1;
+        let totalScore = 0;
+        let comboCount = 0;
+
+        // --- Web Audio 簡易音效生成器 (無外部檔案依賴) ---
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        function playSound(type) {
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+
+            const now = audioCtx.currentTime;
+            if (type === 'correct') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(523.25, now); // C5
+                osc.frequency.exponentialRampToValueAtTime(1046.50, now + 0.15); // C6
+                gain.gain.setValueAtTime(0.15, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
+                osc.start(now);
+                osc.stop(now + 0.15);
+            } else if (type === 'wrong') {
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(180, now);
+                osc.frequency.exponentialRampToValueAtTime(90, now + 0.2);
+                gain.gain.setValueAtTime(0.2, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
+                osc.start(now);
+                osc.stop(now + 0.2);
+            } else if (type === 'click') {
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(440, now);
+                gain.gain.setValueAtTime(0.05, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.05);
+                osc.start(now);
+                osc.stop(now + 0.05);
+            }
+        }
+
+        function showToast(msg, icon = '✨') {
+            const toast = document.getElementById('toast');
+            document.getElementById('toast-msg').textContent = msg;
+            document.getElementById('toast-icon').textContent = icon;
+            toast.classList.remove('translate-y-20', 'opacity-0');
+            toast.classList.add('translate-y-0', 'opacity-100');
+            setTimeout(() => {
+                toast.classList.remove('translate-y-0', 'opacity-100');
+                toast.classList.add('translate-y-20', 'opacity-0');
+            }, 2000);
+        }
+
+        function addScore(points) {
+            comboCount++;
+            const earned = points * Math.min(comboCount, 5);
+            totalScore += earned;
+            document.getElementById('score-display').textContent = totalScore;
+            document.getElementById('combo-display').textContent = `${comboCount}x`;
+            playSound('correct');
+        }
+
+        function resetCombo() {
+            comboCount = 0;
+            document.getElementById('combo-display').textContent = '0x';
+            playSound('wrong');
+        }
+
+        // 分頁模式切換
+        function switchMode(mode) {
+            playSound('click');
+            currentMode = mode;
+            for (let i = 1; i <= 3; i++) {
+                const btn = document.getElementById(`tab-mode-${i}`);
+                const sec = document.getElementById(`game-mode-${i}`);
+                if (i === mode) {
+                    btn.className = "py-2.5 px-3 rounded-xl transition-all flex items-center justify-center gap-2 bg-cyan-500 text-slate-950 shadow-md font-bold";
+                    sec.classList.remove('hidden');
+                    sec.classList.add('flex');
+                } else {
+                    btn.className = "py-2.5 px-3 rounded-xl transition-all flex items-center justify-center gap-2 text-slate-400 hover:text-slate-200 font-bold";
+                    sec.classList.add('hidden');
+                    sec.classList.remove('flex');
+                }
+            }
+
+            if (mode === 1) initMode1();
+            if (mode === 2) startMode2Quiz();
+            if (mode === 3) updateMode3Simulator();
+        }
+
+        let mode1State = {
+            targetCapacityMB: 2048,
+            currentPlacedMB: 0,
+            availableFiles: [],
+            placedFiles: []
+        };
+
+        const MODE1_PRESETS = [
+            { name: "1.0 GB 隨身碟", capacityMB: 1024, files: [
+                { label: "512 MB 系統檔", displaySize: "512 MB", mb: 512 },
+                { label: "256 MB 遊戲", displaySize: "256 MB", mb: 256 },
+                { label: "1024 KB 小程式", displaySize: "1024 KB", mb: 1 },
+                { label: "512 KB 設定檔", displaySize: "512 KB", mb: 0.5 },
+                { label: "512 KB 快取檔", displaySize: "512 KB", mb: 0.5 },
+                { label: "256 KB 圖標", displaySize: "256 KB", mb: 0.25 },
+                { label: "256 KB 腳本", displaySize: "256 KB", mb: 0.25 },
+                { label: "256 MB 音樂", displaySize: "256 MB", mb: 256 }
+            ]},
+            { name: "2.0 GB 硬碟", capacityMB: 2048, files: [
+                { label: "1.0 GB 影片", displaySize: "1.0 GB", mb: 1024 },
+                { label: "512 MB 簡報", displaySize: "512 MB", mb: 512 },
+                { label: "1024 KB 驅動程式", displaySize: "1024 KB", mb: 1 },
+                { label: "512 KB 文字檔", displaySize: "512 KB", mb: 0.5 },
+                { label: "512 KB 日誌檔", displaySize: "512 KB", mb: 0.5 },
+                { label: "256 KB 密鑰包", displaySize: "256 KB", mb: 0.25 },
+                { label: "256 KB 網頁模組", displaySize: "256 KB", mb: 0.25 },
+                { label: "512 MB 相簿", displaySize: "512 MB", mb: 512 }
+            ]},
+            { name: "512 MB 記憶卡", capacityMB: 512, files: [
+                { label: "256 MB 錄音檔", displaySize: "256 MB", mb: 256 },
+                { label: "128 MB 簡報", displaySize: "128 MB", mb: 128 },
+                { label: "1024 KB 外掛程式", displaySize: "1024 KB", mb: 1 },
+                { label: "1024 KB 數據檔", displaySize: "1024 KB", mb: 1 },
+                { label: "512 KB 音效檔", displaySize: "512 KB", mb: 0.5 },
+                { label: "512 KB 圖片", displaySize: "512 KB", mb: 0.5 },
+                { label: "256 KB 系統紀錄", displaySize: "256 KB", mb: 0.25 },
+                { label: "128 MB 影片片段", displaySize: "128 MB", mb: 128 }
+            ]}
+        ];
+
+        function initMode1() {
+            const preset = MODE1_PRESETS[Math.floor(Math.random() * MODE1_PRESETS.length)];
+            mode1State.targetCapacityMB = preset.capacityMB;
+            mode1State.currentPlacedMB = 0;
+            mode1State.placedFiles = [];
+            mode1State.availableFiles = [...preset.files].map((f, idx) => ({ ...f, id: idx }));
+
+            document.getElementById('target-capacity-text').textContent = preset.name;
+            updateMode1UI();
+        }
+
+        function updateMode1UI() {
+            const currentMB = mode1State.currentPlacedMB;
+            const targetMB = mode1State.targetCapacityMB;
+            const percent = Math.min(100, Math.round((currentMB / targetMB) * 100));
+
+            // 更新進度條
+            const progressBar = document.getElementById('drive-progress-bar');
+            const progressText = document.getElementById('drive-progress-text');
+            const remainingText = document.getElementById('remaining-space-text');
+            const statusBadge = document.getElementById('drive-status-badge');
+
+            progressBar.style.width = `${percent}%`;
+            progressText.textContent = `已使用 ${currentMB} / ${targetMB} MB (${percent}%)`;
+            
+            const remaining = targetMB - currentMB;
+            remainingText.textContent = `${remaining} MB`;
+
+            if (currentMB === targetMB) {
+                statusBadge.textContent = "🎉 完美填滿！成功清空空間";
+                statusBadge.className = "text-emerald-400 font-bold";
+                progressBar.className = "progress-bar-fill h-full bg-emerald-500 rounded-full";
+            } else if (currentMB > targetMB) {
+                statusBadge.textContent = "⚠️ 容量溢出 (Overflow)！";
+                statusBadge.className = "text-rose-400 font-bold";
+                progressBar.className = "progress-bar-fill h-full bg-rose-500 rounded-full";
+            } else {
+                statusBadge.textContent = "狀態：裝載中...";
+                statusBadge.className = "text-cyan-400 font-bold";
+                progressBar.className = "progress-bar-fill h-full bg-gradient-to-r from-cyan-500 to-emerald-400 rounded-full";
+            }
+
+            // 渲染已放置檔案
+            const placedBox = document.getElementById('placed-files-container');
+            if (mode1State.placedFiles.length === 0) {
+                placedBox.innerHTML = `<span class="text-xs text-slate-500 font-mono">尚未放入任何檔案（請點擊下方檔案）</span>`;
+            } else {
+                placedBox.innerHTML = mode1State.placedFiles.map(file => `
+                    <div onclick="removeFileFromDrive(${file.id})" class="px-3 py-1.5 rounded-lg bg-cyan-950 border border-cyan-500/40 text-cyan-300 font-mono text-xs flex items-center gap-1.5 cursor-pointer hover:bg-rose-950/60 hover:border-rose-500 transition shadow">
+                        <span>📄 ${file.label} (${file.displaySize || file.mb + ' MB'})</span>
+                        <span class="text-rose-400 text-[10px] ml-1">✕ 移除</span>
+                    </div>
+                `).join('');
+            }
+
+            // 渲染可選擇檔案 (不提示 MB 換算結果)
+            const availBox = document.getElementById('available-files-container');
+            availBox.innerHTML = mode1State.availableFiles.map(file => `
+                <div onclick="addFileToDrive(${file.id})" class="p-3 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 hover:border-cyan-500/60 cursor-pointer transition flex flex-col items-center justify-center gap-1 text-center shadow group">
+                    <span class="text-lg group-hover:scale-110 transition-transform">📁</span>
+                    <span class="text-xs font-mono font-bold text-slate-200">${file.label}</span>
+                    <span class="text-[10px] font-mono text-cyan-400 bg-cyan-950/60 px-2 py-0.5 rounded border border-cyan-800">${file.displaySize || file.mb + ' MB'}</span>
+                </div>
+            `).join('');
+        }
+
+        function addFileToDrive(fileId) {
+            const idx = mode1State.availableFiles.findIndex(f => f.id === fileId);
+            if (idx === -1) return;
+
+            const file = mode1State.availableFiles.splice(idx, 1)[0];
+            mode1State.placedFiles.push(file);
+            mode1State.currentPlacedMB += file.mb;
+
+            playSound('click');
+
+            if (mode1State.currentPlacedMB === mode1State.targetCapacityMB) {
+                addScore(100);
+                showToast("🎉 恭喜！精準填滿硬碟空間 +100 分！", "🏆");
+            } else if (mode1State.currentPlacedMB > mode1State.targetCapacityMB) {
+                resetCombo();
+                showToast("⚠️ 檔案太大，硬碟溢出了！請點擊檔案進行移除", "⚠️");
+            }
+
+            updateMode1UI();
+        }
+
+        function removeFileFromDrive(fileId) {
+            const idx = mode1State.placedFiles.findIndex(f => f.id === fileId);
+            if (idx === -1) return;
+
+            const file = mode1State.placedFiles.splice(idx, 1)[0];
+            mode1State.availableFiles.push(file);
+            mode1State.currentPlacedMB -= file.mb;
+            playSound('click');
+            updateMode1UI();
+        }
+
+        let quizTimerInterval = null;
+        let quizTimeLeft = 15;
+
+        // 模式二測驗狀態
+        let quizSession = {
+            currentIndex: 0,
+            questions: [],
+            correctCount: 0,
+            sessionScore: 0
+        };
+
+        // 20 題大題庫
+        const QUIZ_QUESTIONS_POOL = [
+            { cat: "比較大小", q: "請問「1.5 GB」與「1600 MB」，哪一個容量較大？", options: ["1600 MB (相當於 1.56 GB)", "1.5 GB (相當於 1536 MB)", "兩者完全一樣大"], ans: 0 },
+            { cat: "基礎單位換算", q: "請問「1 Byte」等於多少 Bits？", options: ["2 Bits", "8 Bits", "1024 Bits", "1000 Bits"], ans: 1 },
+            { cat: "進位倍數", q: "在二進位 (IEC) 算式中，1 MB 等於多少 KB？", options: ["500 KB", "1000 KB", "1024 KB", "2048 KB"], ans: 2 },
+            { cat: "單位大小排序", q: "請選出由「小到大」排列正確的單位順序：", options: ["Bit < Byte < KB < MB < GB", "Byte < Bit < MB < KB < GB", "KB < MB < Byte < GB < Bit"], ans: 0 },
+            { cat: "實際容量計算", q: "一張 8 GB 的記憶卡，大約可以存幾張 4 MB 的照片？", options: ["約 500 張", "約 1000 張", "約 2048 張", "約 4096 張"], ans: 2 },
+            { cat: "比較大小", q: "請問「2 GB」與「2000 MB」，哪一個容量較大？", options: ["2 GB (相當於 2048 MB)", "2000 MB", "兩者完全一樣大"], ans: 0 },
+            { cat: "比較大小", q: "請問「1000 KB」與「1 MB」，哪一個容量較大？", options: ["1000 KB", "1 MB (相當於 1024 KB)", "兩者完全一樣大"], ans: 1 },
+            { cat: "基礎單位換算", q: "請問「32 Bits」等於多少 Bytes？", options: ["2 Bytes", "4 Bytes", "8 Bytes", "16 Bytes"], ans: 1 },
+            { cat: "進位倍數", q: "請問「2 GB」等於多少 MB？", options: ["1024 MB", "2000 MB", "2048 MB", "4096 MB"], ans: 2 },
+            { cat: "實際容量計算", q: "一個 1 GB 隨身碟存 2 MB 的 MP3 歌曲，大約可存幾首？", options: ["約 256 首", "約 512 首", "約 1000 首", "約 1024 首"], ans: 1 },
+            { cat: "實際容量計算", q: "一個 1 TB 硬碟約可裝滿幾個 1 GB 的遊戲檔？", options: ["1000 個", "1024 個", "2048 個", "4096 個"], ans: 1 },
+            { cat: "基礎單位換算", q: "請問「1024 Bytes」等於多少 KB？", options: ["0.5 KB", "1 KB", "10 KB", "1024 KB"], ans: 1 },
+            { cat: "比較大小", q: "請問「512 MB」與「0.5 GB」，哪一個容量較大？", options: ["512 MB", "0.5 GB", "兩者完全一樣大 (皆為 512 MB)"], ans: 2 },
+            { cat: "比較大小", q: "請問「8192 Bits」與「1 KB」，哪一個容量較大？", options: ["8192 Bits", "1 KB", "兩者完全一樣大 (皆相當於 1024 Bytes)"], ans: 2 },
+            { cat: "單位比較", q: "下列哪一個儲存容量最大？", options: ["2 TB", "2000 GB", "2,000,000 MB", "1.5 TB"], ans: 0 },
+            { cat: "單位比較", q: "下列哪一個儲存容量最小？", options: ["500 Bytes", "1 KB", "1 MB", "1 GB"], ans: 0 },
+            { cat: "實際容量計算", q: "一片 700 MB 的 CD 光碟，能否放得下一部 1 GB 的 HD 影片？", options: ["可以，剛剛好", "可以，還有剩餘空間", "不行，影片太大裝不下"], ans: 2 },
+            { cat: "進位倍數", q: "請問「4 MB」等於多少 KB？", options: ["2048 KB", "4000 KB", "4096 KB", "8192 KB"], ans: 2 },
+            { cat: "比較大小", q: "請問「4096 MB」相當於多少 GB？", options: ["2 GB", "4 GB", "8 GB", "16 GB"], ans: 1 },
+            { cat: "基礎單位換算", q: "電腦儲存與傳輸資料中最根本的「最小單位」是什麼？", options: ["Bit (位元)", "Byte (位元組)", "KB (千位元組)", "Block (磁區)"], ans: 0 }
+        ];
+
+        // 啟動測驗（隨機抽取 5 題不重複題目）
+        function startMode2Quiz() {
+            document.getElementById('quiz-summary-modal').classList.add('hidden');
+            
+            // 隨機打亂題庫並選取前 5 題
+            const shuffled = [...QUIZ_QUESTIONS_POOL].sort(() => 0.5 - Math.random());
+            quizSession.questions = shuffled.slice(0, 5);
+            quizSession.currentIndex = 0;
+            quizSession.correctCount = 0;
+            quizSession.sessionScore = 0;
+
+            loadQuizQuestion();
+        }
+
+        function loadQuizQuestion() {
+            if (quizSession.currentIndex >= 5) {
+                // 5 題結束，顯示結算頁面
+                showQuizSummary();
+                return;
+            }
+
+            clearInterval(quizTimerInterval);
+            quizTimeLeft = 15;
+
+            const q = quizSession.questions[quizSession.currentIndex];
+            document.getElementById('quiz-badge').textContent = `第 ${quizSession.currentIndex + 1} 題 / 5 題`;
+            document.getElementById('quiz-category').textContent = q.cat;
+            document.getElementById('quiz-question-text').textContent = q.q;
+
+            const optsBox = document.getElementById('quiz-options-container');
+            optsBox.innerHTML = q.options.map((opt, idx) => `
+                <button id="quiz-opt-${idx}" onclick="checkQuizAnswer(${idx})" class="p-4 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 hover:border-cyan-400 text-left font-mono text-sm font-bold text-slate-200 transition active:scale-98 shadow">
+                    <span class="text-cyan-400 mr-2">[${String.fromCharCode(65 + idx)}]</span> ${opt}
+                </button>
+            `).join('');
+
+            updateQuizTimerDisplay();
+            quizTimerInterval = setInterval(() => {
+                quizTimeLeft--;
+                updateQuizTimerDisplay();
+                if (quizTimeLeft <= 0) {
+                    clearInterval(quizTimerInterval);
+                    resetCombo();
+                    showToast("⏰ 時間到！本題未作答", "❌");
+                    quizSession.currentIndex++;
+                    setTimeout(loadQuizQuestion, 800);
+                }
+            }, 1000);
+        }
+
+        function updateQuizTimerDisplay() {
+            document.getElementById('quiz-timer').textContent = `${quizTimeLeft}s`;
+        }
+
+        function checkQuizAnswer(selectedIdx) {
+            clearInterval(quizTimerInterval);
+            const q = quizSession.questions[quizSession.currentIndex];
+            
+            // 停用所有選項按鈕，防止重複點擊
+            const buttons = document.querySelectorAll('#quiz-options-container button');
+            buttons.forEach(btn => btn.disabled = true);
+
+            const selectedBtn = document.getElementById(`quiz-opt-${selectedIdx}`);
+
+            if (selectedIdx === q.ans) {
+                quizSession.correctCount++;
+                quizSession.sessionScore += 50;
+                addScore(50);
+                showToast("🎯 答對了！加 50 分", "✨");
+                if (selectedBtn) {
+                    selectedBtn.classList.remove('bg-slate-900', 'border-slate-700');
+                    selectedBtn.classList.add('bg-emerald-950', 'border-emerald-400', 'text-emerald-300');
+                }
+                quizSession.currentIndex++;
+                setTimeout(loadQuizQuestion, 400);
+            } else {
+                resetCombo();
+                showToast(`❌ 答錯了！正確答案是：${q.options[q.ans]}`, "⚠️");
+                if (selectedBtn) {
+                    selectedBtn.classList.remove('bg-slate-900', 'border-slate-700');
+                    selectedBtn.classList.add('bg-rose-950', 'border-rose-500', 'text-rose-300');
+                }
+                const correctBtn = document.getElementById(`quiz-opt-${q.ans}`);
+                if (correctBtn) {
+                    correctBtn.classList.remove('bg-slate-900', 'border-slate-700');
+                    correctBtn.classList.add('bg-emerald-950', 'border-emerald-400', 'text-emerald-300');
+                }
+                quizSession.currentIndex++;
+                setTimeout(loadQuizQuestion, 1200);
+            }
+        }
+
+        function showQuizSummary() {
+            clearInterval(quizTimerInterval);
+            document.getElementById('summary-correct-count').textContent = `${quizSession.correctCount} / 5`;
+            document.getElementById('summary-score-earned').textContent = `+${quizSession.sessionScore}`;
+            document.getElementById('quiz-summary-modal').classList.remove('hidden');
+            playSound('correct');
+        }
+
+        function updateMode3Simulator() {
+            const select = document.getElementById('sim-capacity-select');
+            const bytes = parseFloat(select.value);
+
+            // 十進位顯示
+            document.getElementById('sim-raw-bytes').textContent = `${bytes.toLocaleString()} Bytes`;
+
+            // 二進位換算 (Bytes / 1024^3)
+            const gib = bytes / Math.pow(1024, 3);
+            const advertisedGB = bytes / Math.pow(1000, 3);
+            const diffGB = advertisedGB - gib;
+            const diffPercent = ((diffGB / advertisedGB) * 100).toFixed(2);
+
+            document.getElementById('sim-gib-result').textContent = `${gib.toFixed(2)} GiB`;
+            document.getElementById('sim-lost-result').textContent = `約蒸發 ${diffGB.toFixed(2)} GB (${diffPercent}%)`;
+        }
+
+        // 初始化預設模式一
+        window.onload = function() {
+            initMode1();
+            updateMode3Simulator();
+        };
+    </script>
+</body>
+</html>

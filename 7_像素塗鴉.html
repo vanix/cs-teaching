@@ -1,0 +1,847 @@
+<!DOCTYPE html>
+<html lang="zh-TW" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>像素塗鴉 (8x8 Pixel Doodle)</title>
+    <meta name="description" content="在 8x8 點陣上創造像素圖，理解位元與影像儲存的概念。互動式計算機概論學習遊戲。">
+    <meta name="keywords" content="像素, 點陣圖, 影像儲存, 位元, 計算機概論, 塗鴉, 遊戲學習">
+    <meta name="robots" content="index, follow">
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8522276249008152" crossorigin="anonymous"></script>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        cyber: {
+                            950: '#090D16',
+                            900: '#0F172A',
+                            800: '#1E293B',
+                            700: '#334155',
+                            cyan: '#06B6D4',
+                            emerald: '#10B981',
+                            amber: '#F59E0B',
+                            rose: '#F43F5E'
+                        }
+                    },
+                    fontFamily: {
+                        mono: ['Courier New', 'monospace'],
+                        sans: ['Inter', 'system-ui', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .pixel-cell {
+            user-select: none;
+            touch-action: none;
+            transition: background-color 0.1s ease, transform 0.05s ease;
+        }
+        .pixel-cell:hover {
+            opacity: 0.85;
+            transform: scale(0.96);
+        }
+        .pixel-cell:active {
+            transform: scale(0.9);
+        }
+        
+        .pixel-grid {
+            touch-action: none;
+        }
+
+        /* Checkerboard background for transparent preview */
+        .checkerboard-bg {
+            background-color: #1e293b;
+            background-image: 
+                linear-gradient(45deg, #0f172a 25%, transparent 25%), 
+                linear-gradient(-45deg, #0f172a 25%, transparent 25%), 
+                linear-gradient(45deg, transparent 75%, #0f172a 75%), 
+                linear-gradient(-45deg, transparent 75%, #0f172a 75%);
+            background-size: 16px 16px;
+            background-position: 0 0, 0 8px, 8px -8px, -8px 0px;
+        }
+
+        /* Custom scrollbar for matrix table */
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 5px;
+            height: 5px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: rgba(15, 23, 42, 0.6);
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body class="bg-cyber-950 text-slate-100 min-h-screen flex flex-col justify-between font-sans antialiased selection:bg-cyan-500 selection:text-slate-950">
+
+    <!-- Header Navigation -->
+    <header class="w-full max-w-5xl mx-auto px-4 py-4 border-b border-slate-800/80 flex flex-col sm:flex-row justify-between items-center gap-3">
+        <div class="flex items-center gap-3">
+            <a href="index.html" class="text-xs text-sky-400 hover:text-sky-300 transition flex items-center gap-1">
+                ← 回到首頁
+            </a>
+            <div class="w-10 h-10 rounded-xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400 font-mono text-xl shadow-lg shadow-cyan-500/10">
+                🎨
+            </div>
+            <div>
+                <h1 class="text-xl sm:text-2xl font-black tracking-tight font-mono text-cyan-400">像素塗鴉</h1>
+                <p class="text-xs text-slate-400">8x8 點陣創作器 • 二進位圖像矩陣與 256x256 圖片導出</p>
+            </div>
+        </div>
+
+        <!-- Palette / Color indicator -->
+        <div class="flex flex-wrap items-center gap-2 bg-cyber-900 border border-slate-800 px-3 py-1.5 rounded-xl text-xs font-mono">
+            <!-- Mode Selector -->
+            <div class="flex items-center bg-slate-950 p-1 rounded-lg border border-slate-800 mr-1">
+                <button id="bit-mode-1" onclick="setColorDepth(1)" class="px-2 py-0.5 rounded-md text-[11px] font-bold bg-cyan-500 text-slate-950 transition">1-Bit (雙色)</button>
+                <button id="bit-mode-2" onclick="setColorDepth(2)" class="px-2 py-0.5 rounded-md text-[11px] font-bold text-slate-400 hover:text-white transition">2-Bit (四色)</button>
+            </div>
+
+            <span class="text-slate-400">筆刷：</span>
+            
+            <!-- 1-Bit Brush Toggle -->
+            <button id="brush-1bit-container" onclick="toggleCurrentColor()" class="flex items-center gap-2 px-2.5 py-1 rounded-lg bg-slate-800 border border-slate-700 hover:border-cyan-500 transition">
+                <span id="brush-color-indicator" class="w-3.5 h-3.5 rounded-sm bg-slate-950 border border-slate-500 inline-block"></span>
+                <span id="brush-color-label" class="text-slate-200 font-bold">黑色 (1)</span>
+            </button>
+
+            <!-- 2-Bit 4-Color Swatches Container -->
+            <div id="brush-2bit-container" class="hidden flex items-center gap-1 bg-slate-950 p-1 rounded-lg border border-slate-800">
+                <button onclick="set2BitColor(0)" id="swatch-0" class="w-6 h-6 rounded flex items-center justify-center font-mono text-[9px] font-bold bg-white text-slate-900 border-2 border-cyan-400 shadow" title="白色 (00)">00</button>
+                <button onclick="set2BitColor(1)" id="swatch-1" class="w-6 h-6 rounded flex items-center justify-center font-mono text-[9px] font-bold bg-rose-500 text-white border border-transparent hover:border-white transition" title="紅色 (01)">01</button>
+                <button onclick="set2BitColor(2)" id="swatch-2" class="w-6 h-6 rounded flex items-center justify-center font-mono text-[9px] font-bold bg-emerald-500 text-white border border-transparent hover:border-white transition" title="綠色 (10)">10</button>
+                <button onclick="set2BitColor(3)" id="swatch-3" class="w-6 h-6 rounded flex items-center justify-center font-mono text-[9px] font-bold bg-blue-500 text-white border border-transparent hover:border-white transition" title="藍色 (11)">11</button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main App Container -->
+    <main class="w-full max-w-5xl mx-auto px-4 py-6 flex-1 grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+        <!-- Left Column: Pixel Canvas & Presets (7 cols) -->
+        <section class="lg:col-span-7 flex flex-col items-center gap-5">
+            
+            <!-- Canvas Controls Header -->
+            <div class="w-full flex justify-between items-center bg-cyber-900 border border-slate-800 p-3 rounded-2xl">
+                <div class="flex items-center gap-2">
+                    <span class="text-xs font-mono font-bold text-slate-300">8×8 畫布</span>
+                    <span id="matrix-bits-label" class="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-800 text-cyan-400 border border-slate-700">64 Bits</span>
+                </div>
+
+                <div class="flex items-center gap-1.5">
+                    <button id="toggle-digits-btn" onclick="toggleDigits()" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-mono text-slate-300 transition" title="開關像素數字顯示">
+                        🔢 顯示數字
+                    </button>
+                    <button onclick="invertCanvas()" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-mono text-slate-300 transition" title="反轉顏色">
+                        🔄 反轉
+                    </button>
+                    <button onclick="clearCanvas()" class="px-2.5 py-1 rounded-lg bg-rose-500/20 hover:bg-rose-500/30 border border-rose-500/40 text-xs font-mono text-rose-300 transition" title="清除全部格子">
+                        🧹 清空
+                    </button>
+                </div>
+            </div>
+
+            <!-- 8x8 Pixel Grid Wrapper -->
+            <div class="relative p-3 bg-slate-950 border-2 border-slate-800 rounded-2xl shadow-inner">
+                <div id="pixel-grid-container" class="pixel-grid grid grid-cols-8 gap-1.5 w-[280px] h-[280px] sm:w-[330px] sm:h-[330px] select-none">
+                    <!-- 64 pixels rendered dynamically -->
+                </div>
+            </div>
+
+            <!-- Presets Palette Bar -->
+            <div class="w-full bg-cyber-950/80 p-3 rounded-xl border border-slate-800/80 flex flex-col gap-2">
+                <span class="text-[11px] font-mono text-slate-400 font-bold tracking-wider uppercase flex items-center justify-between">
+                    <span>🎨 快速載入預設圖案：</span>
+                    <span class="text-[10px] text-cyan-400">點擊載入</span>
+                </span>
+                <div class="flex flex-wrap gap-1.5 justify-start">
+                    <button onclick="loadPreset('heart')" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-mono text-slate-200 transition">❤️ 愛心</button>
+                    <button onclick="loadPreset('smile')" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-mono text-slate-200 transition">😊 笑臉</button>
+                    <button onclick="loadPreset('invader')" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-mono text-slate-200 transition">👾 外星人</button>
+                    <button onclick="loadPreset('ghost')" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-mono text-slate-200 transition">👻 幽靈</button>
+                    <button onclick="loadPreset('sword')" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-mono text-slate-200 transition">⚔️ 寶劍</button>
+                    <button onclick="loadPreset('skull')" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-mono text-slate-200 transition">💀 骷髏</button>
+                    <button onclick="loadPreset('checker')" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-mono text-slate-200 transition">🏁 棋盤</button>
+                </div>
+            </div>
+
+        </section>
+
+        <!-- Right Column: Export Actions & Matrix Inspector (5 cols) -->
+        <section class="lg:col-span-5 flex flex-col gap-5">
+
+            <!-- Streamlined Export & Preview Card -->
+            <div class="bg-cyber-900 border border-slate-800 rounded-2xl p-5 shadow-2xl flex flex-col items-center text-center gap-4">
+                <div class="w-full flex justify-between items-center pb-2 border-b border-slate-800">
+                    <h2 class="text-sm font-bold font-mono text-cyan-400 flex items-center gap-1.5">
+                        🖼️ 作品導出與下載
+                    </h2>
+                    <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-cyan-500/10 text-cyan-300 border border-cyan-500/30">256 × 256 PNG</span>
+                </div>
+
+                <!-- Realtime Crisp Preview with Checkerboard for Transparency -->
+                <div id="preview-wrapper" class="p-3 rounded-2xl border-2 border-slate-800 shadow-xl flex flex-col items-center justify-center transition-all bg-slate-950">
+                    <canvas id="preview-canvas" width="160" height="160" class="rounded-lg shadow border border-slate-800/80"></canvas>
+                </div>
+
+                <!-- Transparency & Grid Export Options -->
+                <div class="w-full grid grid-cols-2 gap-2 font-mono text-xs">
+                    <button id="toggle-transparency-btn" onclick="toggleTransparency()" class="py-1.5 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 font-bold transition flex items-center justify-center gap-1.5">
+                        <span>🏁 透明背景：</span>
+                        <span id="transparency-status-label" class="text-slate-400">關閉</span>
+                    </button>
+                    <button id="toggle-export-grid-btn" onclick="toggleExportGrid()" class="py-1.5 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 font-bold transition flex items-center justify-center gap-1.5">
+                        <span>網格線：</span>
+                        <span id="export-grid-status-label" class="text-cyan-400">保留</span>
+                    </button>
+                </div>
+
+                <!-- Direct Download Buttons -->
+                <div class="w-full flex flex-col gap-2 pt-1">
+                    <button onclick="downloadImage()" class="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-cyan-500 to-emerald-500 hover:from-cyan-400 hover:to-emerald-400 text-slate-950 font-black text-xs font-mono shadow-lg shadow-cyan-500/20 active:scale-95 transition flex items-center justify-center gap-2">
+                        📥 下載塗鴉圖片 (256×256 PNG)
+                    </button>
+                </div>
+
+                <!-- Image Size & Specs Calculation Box -->
+                <div class="w-full bg-slate-950/80 rounded-xl p-3 border border-slate-800 text-left font-mono text-[11px] space-y-1.5">
+                    <div class="text-cyan-400 font-bold border-b border-slate-800/80 pb-1 flex justify-between items-center">
+                        <span>📏 圖片尺寸與容量計算</span>
+                        <span class="text-[10px] text-slate-500">Specs</span>
+                    </div>
+                    <div class="flex justify-between text-slate-300">
+                        <span>點陣圖陣列解析度：</span>
+                        <span class="text-slate-100 font-bold">8 × 8 像素 (64 px)</span>
+                    </div>
+                    <div class="flex justify-between text-slate-300">
+                        <span>色彩深度：</span>
+                        <span id="bit-depth-display" class="text-cyan-400 font-bold">1 Bit / 像素 (雙色)</span>
+                    </div>
+                    <div class="flex justify-between text-slate-300">
+                        <span>背景模式：</span>
+                        <span id="bg-mode-display" class="text-slate-300 font-bold">實心白底 (不去背)</span>
+                    </div>
+                    <div class="flex justify-between text-slate-300">
+                        <span>導出圖檔解析度：</span>
+                        <span class="text-cyan-300 font-bold">256 × 256 像素</span>
+                    </div>
+                    <div class="flex justify-between text-slate-300">
+                        <span>匯出 PNG 檔大小：</span>
+                        <span id="file-size-display" class="text-emerald-400 font-bold">計算中...</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Matrix Code Inspector -->
+            <div class="bg-cyber-900 border border-slate-800 rounded-2xl p-4 shadow-2xl flex flex-col gap-3">
+                <div class="flex justify-between items-center pb-2 border-b border-slate-800">
+                    <h3 class="text-xs font-bold font-mono text-emerald-400 flex items-center gap-1.5">
+                        🔢 圖像點陣矩陣碼 (Binary & Hex)
+                    </h3>
+                    <span class="text-[10px] font-mono text-slate-500">64 Bits</span>
+                </div>
+
+                <!-- Matrix List -->
+                <div class="custom-scrollbar max-h-[200px] overflow-y-auto space-y-1.5 pr-1">
+                    <table class="w-full text-[11px] font-mono text-left">
+                        <thead>
+                            <tr class="text-slate-500 border-b border-slate-800/60">
+                                <th class="pb-1 font-normal">列 (Row)</th>
+                                <th class="pb-1 font-normal">二進位 (Bits)</th>
+                                <th class="pb-1 font-normal text-right">HEX 16進位</th>
+                            </tr>
+                        </thead>
+                        <tbody id="matrix-rows-body">
+                            <!-- Matrix rows generated by JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </section>
+
+    </main>
+
+    <!-- Hidden Offscreen Canvas for 256x256 High-Res Export -->
+    <canvas id="export-canvas" width="256" height="256" class="hidden"></canvas>
+
+    <!-- Direct Image Download / Save Modal -->
+    <div id="image-modal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+        <div class="bg-cyber-900 border border-cyan-500/40 rounded-2xl p-5 max-w-sm w-full flex flex-col items-center gap-4 text-center shadow-2xl relative">
+            <button onclick="closeImageModal()" class="absolute top-3 right-3 text-slate-400 hover:text-white text-lg font-bold w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center">
+                ✕
+            </button>
+            <h3 class="text-base font-bold font-mono text-cyan-400 flex items-center gap-1.5">
+                🖼️ 256×256 圖片已成功生成
+            </h3>
+            
+            <!-- High Res Preview Image for Direct Save -->
+            <div class="bg-white p-2 rounded-xl border-2 border-slate-700 shadow-inner">
+                <img id="modal-preview-img" src="" alt="Pixel Doodle" class="w-52 h-52 rounded-lg object-contain shadow" />
+            </div>
+
+            <p class="text-xs text-slate-300 font-mono leading-relaxed bg-slate-950/80 p-2.5 rounded-xl border border-slate-800 w-full">
+                💡 <span class="text-cyan-300 font-bold">儲存方式提示：</span><br>
+                • <strong class="text-white">手機：</strong>請長按上方圖片 ➔ 選擇「加入照片」或「儲存圖片」<br>
+                • <strong class="text-white">電腦：</strong>已自動觸發下載，或可在圖片上點擊右鍵 ➔ 「另存圖片」
+            </p>
+
+            <div class="w-full flex flex-col gap-2 pt-1">
+                <button id="modal-share-btn" onclick="shareImage()" class="hidden w-full py-2.5 px-4 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs font-mono transition flex items-center justify-center gap-2">
+                    📱 儲存至手機相簿 / 分享
+                </button>
+                <button onclick="closeImageModal()" class="w-full py-2 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-mono transition">
+                    關閉視窗
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification Container -->
+    <div id="toast" class="fixed bottom-5 right-5 z-50 transform translate-y-20 opacity-0 transition-all duration-300 pointer-events-none bg-slate-900 border border-cyan-500/50 text-cyan-300 font-mono text-xs px-4 py-2.5 rounded-xl shadow-2xl flex items-center gap-2">
+        <span id="toast-icon">✨</span>
+        <span id="toast-msg">提示訊息</span>
+    </div>
+
+    <!-- Footer -->
+    <footer class="w-full max-w-5xl mx-auto px-4 py-4 text-center text-xs text-slate-600 border-t border-slate-800/60 font-mono">
+        像素塗鴉 | 8x8 Pixel Grid 256x256 PNG Exporter
+    </footer>
+
+    <script>
+        // 8x8 Grid State: 0 to 3 depending on color depth
+        let gridState = new Array(64).fill(0);
+
+        // Color depth state: 1 = 1-Bit (2 colors), 2 = 2-Bit (4 colors)
+        let colorDepth = 1;
+
+        // Background transparency option
+        let isTransparent = false;
+        let showExportGrid = true;
+
+        // Color Palette Maps
+        const PALETTE_1BIT = {
+            0: { bg: '#FFFFFF', border: '#CBD5E1', text: '#94A3B8', name: '白色', bitStr: '0' },
+            1: { bg: '#0F172A', border: '#334155', text: '#06B6D4', name: '黑色', bitStr: '1' }
+        };
+
+        const PALETTE_2BIT = {
+            0: { bg: '#FFFFFF', border: '#CBD5E1', text: '#64748B', name: '白色', bitStr: '00' },
+            1: { bg: '#EF4444', border: '#B91C1C', text: '#FFFFFF', name: '紅色', bitStr: '01' },
+            2: { bg: '#22C55E', border: '#15803D', text: '#FFFFFF', name: '綠色', bitStr: '10' },
+            3: { bg: '#3B82F6', border: '#1D4ED8', text: '#FFFFFF', name: '藍色', bitStr: '11' }
+        };
+
+        // Drawing state variables
+        let isMouseDown = false;
+        let toolMode = 'draw';
+        let activeBrushValue = 1;
+        let dragTargetValue = 1;
+        let showDigits = false;
+
+        // Presets Definition (1-Bit)
+        const PRESETS = {
+            heart: [
+                0,1,1,0,0,1,1,0,
+                1,1,1,1,1,1,1,1,
+                1,1,1,1,1,1,1,1,
+                1,1,1,1,1,1,1,1,
+                0,1,1,1,1,1,1,0,
+                0,0,1,1,1,1,0,0,
+                0,0,0,1,1,0,0,0,
+                0,0,0,0,0,0,0,0
+            ],
+            smile: [
+                0,0,1,1,1,1,0,0,
+                0,1,0,0,0,0,1,0,
+                1,0,1,0,0,1,0,1,
+                1,0,0,0,0,0,0,1,
+                1,0,1,0,0,1,0,1,
+                1,0,0,1,1,0,0,1,
+                0,1,0,0,0,0,1,0,
+                0,0,1,1,1,1,0,0
+            ],
+            invader: [
+                0,0,0,1,1,0,0,0,
+                0,0,1,1,1,1,0,0,
+                0,1,1,1,1,1,1,0,
+                1,1,0,1,1,0,1,1,
+                1,1,1,1,1,1,1,1,
+                0,0,1,0,0,1,0,0,
+                0,1,0,1,1,0,1,0,
+                1,0,1,0,0,1,0,1
+            ],
+            ghost: [
+                0,0,1,1,1,1,0,0,
+                0,1,1,1,1,1,1,0,
+                1,1,0,1,1,0,1,1,
+                1,1,0,1,1,0,1,1,
+                1,1,1,1,1,1,1,1,
+                1,1,1,1,1,1,1,1,
+                1,1,1,1,1,1,1,1,
+                1,0,1,0,0,1,0,1
+            ],
+            sword: [
+                0,0,0,0,0,0,1,1,
+                0,0,0,0,0,1,1,0,
+                0,0,0,0,1,1,0,0,
+                0,0,0,1,1,0,0,0,
+                0,1,0,1,0,0,0,0,
+                0,0,1,0,0,0,0,0,
+                0,1,0,1,0,0,0,0,
+                1,0,0,0,0,0,0,0
+            ],
+            skull: [
+                0,0,1,1,1,1,0,0,
+                0,1,1,1,1,1,1,0,
+                1,1,0,1,1,0,1,1,
+                1,1,0,1,1,0,1,1,
+                0,1,1,1,1,1,1,0,
+                0,0,1,1,1,1,0,0,
+                0,0,1,0,0,1,0,0,
+                0,0,1,1,1,1,0,0
+            ],
+            checker: [
+                1,0,1,0,1,0,1,0,
+                0,1,0,1,0,1,0,1,
+                1,0,1,0,1,0,1,0,
+                0,1,0,1,0,1,0,1,
+                1,0,1,0,1,0,1,0,
+                0,1,0,1,0,1,0,1,
+                1,0,1,0,1,0,1,0,
+                0,1,0,1,0,1,0,1
+            ]
+        };
+
+        // Set Color Depth Mode (1 or 2 bits)
+        function setColorDepth(depth) {
+            colorDepth = depth;
+            const btn1 = document.getElementById('bit-mode-1');
+            const btn2 = document.getElementById('bit-mode-2');
+            const brush1Container = document.getElementById('brush-1bit-container');
+            const brush2Container = document.getElementById('brush-2bit-container');
+
+            if (depth === 1) {
+                btn1.className = "px-2 py-0.5 rounded-md text-[11px] font-bold bg-cyan-500 text-slate-950 transition";
+                btn2.className = "px-2 py-0.5 rounded-md text-[11px] font-bold text-slate-400 hover:text-white transition";
+                brush1Container.classList.remove('hidden');
+                brush2Container.classList.add('hidden');
+                activeBrushValue = 1;
+                gridState = gridState.map(v => v > 0 ? 1 : 0);
+
+                document.getElementById('bit-depth-display').textContent = '1 Bit / 像素 (雙色)';
+                document.getElementById('bit-capacity-display').textContent = '64 Bits (8 Bytes)';
+                document.getElementById('matrix-bits-label').textContent = '64 Bits';
+            } else {
+                btn2.className = "px-2 py-0.5 rounded-md text-[11px] font-bold bg-cyan-500 text-slate-950 transition";
+                btn1.className = "px-2 py-0.5 rounded-md text-[11px] font-bold text-slate-400 hover:text-white transition";
+                brush1Container.classList.add('hidden');
+                brush2Container.classList.remove('hidden');
+                activeBrushValue = 1;
+                set2BitColor(1);
+
+                document.getElementById('bit-depth-display').textContent = '2 Bits / 像素 (四色)';
+                document.getElementById('bit-capacity-display').textContent = '128 Bits (16 Bytes)';
+                document.getElementById('matrix-bits-label').textContent = '128 Bits';
+            }
+            updateUI();
+            showToast(`🎨 已切換至 ${depth === 1 ? '1-Bit 雙色' : '2-Bit 四色'} 模式`);
+        }
+
+        function set2BitColor(val) {
+            activeBrushValue = val;
+            for (let i = 0; i <= 3; i++) {
+                const swatch = document.getElementById(`swatch-${i}`);
+                if (swatch) {
+                    if (i === val) {
+                        swatch.classList.add('ring-2', 'ring-cyan-400', 'scale-110');
+                    } else {
+                        swatch.classList.remove('ring-2', 'ring-cyan-400', 'scale-110');
+                    }
+                }
+            }
+        }
+
+        // Handle Mouse Down on Pixel Cell
+        function handleCellStart(index, e) {
+            e.preventDefault();
+            isMouseDown = true;
+            
+            if (toolMode === 'draw') {
+                if (gridState[index] === activeBrushValue) {
+                    gridState[index] = 0;
+                } else {
+                    gridState[index] = activeBrushValue;
+                }
+                dragTargetValue = gridState[index];
+            } else {
+                gridState[index] = 0;
+                dragTargetValue = 0;
+            }
+            updateUI();
+        }
+
+        // Update all visual elements (Grid, Matrix Table, Preview Canvas)
+        function updateUI() {
+            const palette = colorDepth === 1 ? PALETTE_1BIT : PALETTE_2BIT;
+
+            // 1. Update Grid Cells
+            for (let i = 0; i < 64; i++) {
+                const cell = document.getElementById(`cell-${i}`);
+                if (cell) {
+                    const val = gridState[i];
+                    const item = palette[val] || palette[0];
+                    
+                    cell.textContent = showDigits ? item.bitStr : '';
+                    cell.style.backgroundColor = item.bg;
+                    cell.style.borderColor = item.border;
+                    cell.style.color = item.text;
+                    cell.style.fontWeight = val > 0 ? 'bold' : 'normal';
+                }
+            }
+
+            // 2. Update Binary & Hex Table
+            const tbody = document.getElementById('matrix-rows-body');
+            if (tbody) {
+                tbody.innerHTML = '';
+
+                for (let row = 0; row < 8; row++) {
+                    let rowBits = '';
+                    for (let col = 0; col < 8; col++) {
+                        const idx = row * 8 + col;
+                        const val = gridState[idx];
+                        if (colorDepth === 1) {
+                            rowBits += (val > 0 ? 1 : 0);
+                        } else {
+                            const bitVal = val;
+                            const binaryStr = bitVal.toString(2).padStart(2, '0');
+                            rowBits += binaryStr;
+                        }
+                    }
+
+                    const hexDigits = colorDepth === 1 ? 2 : 4;
+                    const hexVal = "0x" + parseInt(rowBits, 2).toString(16).toUpperCase().padStart(hexDigits, '0');
+
+                    const tr = document.createElement('tr');
+                    tr.className = "border-b border-slate-800/40 hover:bg-slate-800/30 transition";
+                    tr.innerHTML = `
+                        <td class="py-1 text-slate-400 font-bold">第 ${row + 1} 列</td>
+                        <td class="py-1 font-mono text-cyan-400 font-bold tracking-wider">${rowBits}</td>
+                        <td class="py-1 font-mono text-emerald-400 text-right font-bold">${hexVal}</td>
+                    `;
+                    tbody.appendChild(tr);
+                }
+            }
+
+            // 3. Render Canvas Previews (256x256)
+            renderExportCanvas();
+        }
+
+        // Render crisp 256x256 pixel image on HTML5 canvas (Each 8x8 pixel maps to 32x32 px)
+        function renderExportCanvas() {
+            const canvas = document.getElementById('export-canvas');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            const cellSize = canvas.width / 8; // 256 / 8 = 32px per cell
+            const palette = colorDepth === 1 ? PALETTE_1BIT : PALETTE_2BIT;
+
+            ctx.imageSmoothingEnabled = false;
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Fill solid white background if transparency is turned OFF
+            if (!isTransparent) {
+                ctx.fillStyle = '#FFFFFF';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+            }
+
+            for (let row = 0; row < 8; row++) {
+                for (let col = 0; col < 8; col++) {
+                    const idx = row * 8 + col;
+                    const val = gridState[idx];
+                    const item = palette[val] || palette[0];
+
+                    // Draw pixel color (If transparent mode and val is 0, skip fill)
+                    if (!(isTransparent && val === 0)) {
+                        ctx.fillStyle = item.bg;
+                        ctx.fillRect(col * cellSize, row * cellSize, cellSize, cellSize);
+                    }
+
+                    // Optional Export Grid lines
+                    if (showExportGrid) {
+                        ctx.strokeStyle = val > 0 ? 'rgba(0,0,0,0.12)' : 'rgba(0,0,0,0.06)';
+                        ctx.lineWidth = 1;
+                        ctx.strokeRect(col * cellSize, row * cellSize, cellSize, cellSize);
+                    }
+                }
+            }
+
+            // Realtime Sidebar Preview Canvas (160x160)
+            const pCanvas = document.getElementById('preview-canvas');
+            if (pCanvas) {
+                const pCtx = pCanvas.getContext('2d');
+                pCtx.imageSmoothingEnabled = false;
+                pCtx.clearRect(0, 0, pCanvas.width, pCanvas.height);
+                pCtx.drawImage(canvas, 0, 0, pCanvas.width, pCanvas.height);
+            }
+
+            // Calculate & Display PNG Image File Size
+            canvas.toBlob((blob) => {
+                if (blob) {
+                    const sizeKB = (blob.size / 1024).toFixed(2);
+                    const display = document.getElementById('file-size-display');
+                    if (display) {
+                        display.textContent = `${blob.size} Bytes (${sizeKB} KB)`;
+                    }
+                }
+            }, 'image/png');
+        }
+
+        // Toggle Transparent Background Mode
+        function toggleTransparency() {
+            isTransparent = !isTransparent;
+            const statusLabel = document.getElementById('transparency-status-label');
+            const btn = document.getElementById('toggle-transparency-btn');
+            const previewWrapper = document.getElementById('preview-wrapper');
+            const bgModeDisplay = document.getElementById('bg-mode-display');
+
+            if (isTransparent) {
+                statusLabel.textContent = "開啟 (去背)";
+                statusLabel.className = "text-emerald-400 font-bold";
+                btn.classList.add('border-emerald-500/50', 'bg-emerald-500/10');
+                previewWrapper.classList.add('checkerboard-bg');
+                previewWrapper.classList.remove('bg-slate-950');
+                if (bgModeDisplay) bgModeDisplay.textContent = "透明背景 (已去背)";
+                showToast("🏁 已開啟「透明背景去背」模式");
+            } else {
+                statusLabel.textContent = "關閉";
+                statusLabel.className = "text-slate-400";
+                btn.classList.remove('border-emerald-500/50', 'bg-emerald-500/10');
+                previewWrapper.classList.remove('checkerboard-bg');
+                previewWrapper.classList.add('bg-slate-950');
+                if (bgModeDisplay) bgModeDisplay.textContent = "實心白底 (不去背)";
+                showToast("⚪ 已切換為「白底實心」模式");
+            }
+
+            updateUI();
+        }
+
+        // Toggle Export Grid Lines
+        function toggleExportGrid() {
+            showExportGrid = !showExportGrid;
+            const statusLabel = document.getElementById('export-grid-status-label');
+            if (showExportGrid) {
+                statusLabel.textContent = "保留";
+                statusLabel.className = "text-cyan-400";
+            } else {
+                statusLabel.textContent = "隱藏";
+                statusLabel.className = "text-slate-400";
+            }
+            updateUI();
+        }
+
+        let currentImageBlob = null;
+
+        // Direct Download & Save Image Function
+        function downloadImage() {
+            const canvas = document.getElementById('export-canvas');
+            
+            canvas.toBlob((blob) => {
+                if (!blob) {
+                    showToast("❌ 圖片生成失敗", "⚠️");
+                    return;
+                }
+
+                currentImageBlob = blob;
+                const blobUrl = URL.createObjectURL(blob);
+                const dataUrl = canvas.toDataURL("image/png");
+
+                // Update Preview Modal
+                const modalImg = document.getElementById('modal-preview-img');
+                modalImg.src = dataUrl;
+
+                // Check Web Share API
+                const shareBtn = document.getElementById('modal-share-btn');
+                if (navigator.share && navigator.canShare && navigator.canShare({ files: [new File([blob], 'pixel-256x256.png', { type: 'image/png' })] })) {
+                    shareBtn.classList.remove('hidden');
+                } else {
+                    shareBtn.classList.add('hidden');
+                }
+
+                // Automatic Download Trigger
+                const link = document.createElement('a');
+                link.download = `pixel-256x256-${Date.now()}.png`;
+                link.href = blobUrl;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+
+                // Show Save Modal as helper
+                document.getElementById('image-modal').classList.remove('hidden');
+                showToast("📥 已匯出 256×256 高畫質 PNG！");
+
+                setTimeout(() => URL.revokeObjectURL(blobUrl), 60000);
+            }, 'image/png');
+        }
+
+        // Native Mobile Share / Save
+        async function shareImage() {
+            if (!currentImageBlob) return;
+            try {
+                const file = new File([currentImageBlob], `pixel-art-256x256-${Date.now()}.png`, { type: 'image/png' });
+                await navigator.share({
+                    title: '8x8 像素塗鴉作品 (256x256)',
+                    text: '這是我創作的像素點陣圖作品！',
+                    files: [file]
+                });
+                showToast("✨ 分享/儲存成功！");
+            } catch (err) {
+                if (err.name !== 'AbortError') {
+                    showToast("💡 請直接長按圖片儲存", "ℹ️");
+                }
+            }
+        }
+
+        function closeImageModal() {
+            document.getElementById('image-modal').classList.add('hidden');
+        }
+
+        // Notification Toast Handler
+        function showToast(msg, icon = "✨") {
+            const toast = document.getElementById('toast');
+            document.getElementById('toast-msg').textContent = msg;
+            document.getElementById('toast-icon').textContent = icon;
+
+            toast.classList.remove('translate-y-20', 'opacity-0');
+            toast.classList.add('translate-y-0', 'opacity-100');
+
+            setTimeout(() => {
+                toast.classList.remove('translate-y-0', 'opacity-100');
+                toast.classList.add('translate-y-20', 'opacity-0');
+            }, 2500);
+        }
+
+        // Initialize 8x8 Grid Cells & Touch/Mouse Event Listeners
+        function initGridUI() {
+            const container = document.getElementById('pixel-grid-container');
+            if (!container) return;
+            container.innerHTML = '';
+
+            for (let i = 0; i < 64; i++) {
+                const cell = document.createElement('div');
+                cell.id = `cell-${i}`;
+                cell.className = 'pixel-cell border border-slate-700/60 rounded-md flex items-center justify-center font-mono text-[10px] cursor-pointer shadow-sm select-none';
+
+                // Mouse Events
+                cell.addEventListener('mousedown', (e) => handleCellStart(i, e));
+                cell.addEventListener('mouseenter', (e) => {
+                    if (isMouseDown) {
+                        gridState[i] = dragTargetValue;
+                        updateUI();
+                    }
+                });
+
+                // Touch Events
+                cell.addEventListener('touchstart', (e) => handleCellStart(i, e), { passive: false });
+
+                container.appendChild(cell);
+            }
+
+            // Global Mouseup Reset
+            window.addEventListener('mouseup', () => { isMouseDown = false; });
+
+            // Touch Dragging Handler over Canvas Grid
+            container.addEventListener('touchmove', (e) => {
+                e.preventDefault();
+                if (!isMouseDown) return;
+                const touch = e.touches[0];
+                const target = document.elementFromPoint(touch.clientX, touch.clientY);
+                if (target && target.id && target.id.startsWith('cell-')) {
+                    const idx = parseInt(target.id.replace('cell-', ''), 10);
+                    if (!isNaN(idx) && gridState[idx] !== dragTargetValue) {
+                        gridState[idx] = dragTargetValue;
+                        updateUI();
+                    }
+                }
+            }, { passive: false });
+
+            window.addEventListener('touchend', () => { isMouseDown = false; });
+
+            updateUI();
+        }
+
+        // Toggle 1-Bit Brush Color (Black/White)
+        function toggleCurrentColor() {
+            if (colorDepth === 1) {
+                activeBrushValue = activeBrushValue === 1 ? 0 : 1;
+                const indicator = document.getElementById('brush-color-indicator');
+                const label = document.getElementById('brush-color-label');
+                if (activeBrushValue === 1) {
+                    indicator.className = "w-3.5 h-3.5 rounded-sm bg-slate-950 border border-slate-500 inline-block";
+                    label.textContent = "黑色 (1)";
+                } else {
+                    indicator.className = "w-3.5 h-3.5 rounded-sm bg-white border border-slate-300 inline-block";
+                    label.textContent = "白色 (0)";
+                }
+            }
+        }
+
+        // Toggle Displaying Binary Digits on Grid Cells
+        function toggleDigits() {
+            showDigits = !showDigits;
+            const btn = document.getElementById('toggle-digits-btn');
+            if (btn) {
+                btn.textContent = showDigits ? '🔢 隱藏數字' : '🔢 顯示數字';
+                if (showDigits) {
+                    btn.classList.add('bg-cyan-500', 'text-slate-950', 'font-bold');
+                    btn.classList.remove('bg-slate-800', 'text-slate-300');
+                } else {
+                    btn.classList.remove('bg-cyan-500', 'text-slate-950', 'font-bold');
+                    btn.classList.add('bg-slate-800', 'text-slate-300');
+                }
+            }
+            updateUI();
+        }
+
+        // Invert Colors of the Entire Canvas
+        function invertCanvas() {
+            gridState = gridState.map(v => {
+                if (colorDepth === 1) {
+                    return v === 0 ? 1 : 0;
+                } else {
+                    return 3 - v;
+                }
+            });
+            updateUI();
+            showToast("🔄 已完成顏色反轉！");
+        }
+
+        // Clear Canvas
+        function clearCanvas() {
+            gridState.fill(0);
+            updateUI();
+            showToast("🧹 已清空畫布！");
+        }
+
+        // Load Quick Preset Pattern
+        function loadPreset(name) {
+            if (PRESETS[name]) {
+                gridState = [...PRESETS[name]];
+                updateUI();
+                showToast(`🎨 已載入「${name}」預設圖案！`);
+            }
+        }
+
+        // Window Load Event
+        window.onload = function() {
+            initGridUI();
+        };
+    </script>
+</body>
+</html>

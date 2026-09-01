@@ -1,0 +1,1169 @@
+<!DOCTYPE html>
+<html lang="zh-TW" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>聲波取樣與量化實驗室 (Audio Sampling & Quantization Lab)</title>
+    <meta name="description" content="了解音訊取樣率與量化位元深度，透過互動實驗理解類比轉數位的概念。">
+    <meta name="keywords" content="取樣, 量化, 音訊, 類比轉數位, ADC, 計算機概論, 實驗室">
+    <meta name="robots" content="index, follow">
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8522276249008152" crossorigin="anonymous"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        cyber: {
+                            950: '#060913',
+                            900: '#0F172A',
+                            800: '#1E293B',
+                            700: '#334155',
+                            cyan: '#06B6D4',
+                            magenta: '#EC4899',
+                            emerald: '#10B981',
+                            amber: '#F59E0B'
+                        }
+                    },
+                    fontFamily: {
+                        mono: ['Courier New', 'monospace'],
+                        sans: ['Inter', 'system-ui', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .waveform-canvas {
+            touch-action: none;
+            cursor: crosshair;
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: rgba(15, 23, 42, 0.6);
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 4px;
+        }
+        /* Custom range sliders styling */
+        input[type=range] {
+            accent-color: #06B6D4;
+        }
+        /* Vertical Slider Styling */
+        input[type=range].vertical-slider {
+            writing-mode: vertical-lr;
+            direction: rtl;
+            appearance: slider-vertical;
+            width: 14px;
+            height: 100%;
+            cursor: pointer;
+        }
+        .recording-pulse {
+            animation: pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(1.05); }
+        }
+    </style>
+</head>
+<body class="bg-cyber-950 text-slate-100 min-h-screen flex flex-col justify-between font-sans antialiased selection:bg-cyan-500 selection:text-slate-950">
+
+    <header class="w-full max-w-6xl mx-auto px-4 py-4 border-b border-slate-800 flex flex-col md:flex-row justify-between items-center gap-3">
+        <div class="flex items-center gap-3">
+            <a href="index.html" class="text-xs text-sky-400 hover:text-sky-300 transition flex items-center gap-1">
+                ← 回到首頁
+            </a>
+            <div class="w-10 h-10 rounded-xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400 font-mono text-xl shadow-lg shadow-cyan-500/10">
+                🎙️
+            </div>
+            <div>
+                <h1 class="text-xl sm:text-2xl font-black tracking-tight font-mono text-cyan-400 flex items-center gap-2">
+                    聲波取樣與量化實驗室
+                </h1>
+                <p class="text-xs text-slate-400">Audio Sampling & Quantization • 錄音、取樣率、位元深度與波形轉換探索</p>
+            </div>
+        </div>
+
+        <!-- Mode Status Badge -->
+        <div class="flex items-center gap-2 bg-cyber-900 border border-slate-800 px-3 py-1.5 rounded-xl text-xs font-mono">
+            <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping"></span>
+            <span class="text-slate-300">Web Audio API 運作中</span>
+        </div>
+    </header>
+
+    <nav class="w-full max-w-6xl mx-auto px-4 pt-3 flex items-center gap-3">
+        <button id="btn-tab-lab" onclick="switchTab('lab')" class="tab-btn py-2.5 px-5 rounded-xl font-mono text-xs font-bold border transition flex items-center gap-2 bg-cyan-500/20 border-cyan-500 text-cyan-400 shadow-lg shadow-cyan-500/10">
+            <span>🎛️</span> 聲波實驗室 (Lab)
+        </button>
+        <button id="btn-tab-quiz" onclick="switchTab('quiz')" class="tab-btn py-2.5 px-5 rounded-xl font-mono text-xs font-bold border transition flex items-center gap-2 bg-slate-900 border-slate-800 text-slate-400 hover:text-slate-200">
+            <span>🧮</span> 容量計算與隨堂測驗 (Tutorial & Quiz)
+        </button>
+    </nav>
+
+    <main class="w-full max-w-6xl mx-auto px-4 py-4 flex-1 flex flex-col gap-6">
+
+        <div id="tab-lab" class="tab-content flex flex-col gap-6">
+
+            <!-- Top Section: 1. Audio Source & 2. Playback/Status placed side-by-side ABOVE waveform -->
+            <section class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                
+                <!-- 1. Audio Source Selection -->
+                <div class="bg-cyber-900 border border-slate-800 rounded-2xl p-4 shadow-xl flex flex-col justify-between gap-4">
+                    <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+                        <h2 class="text-sm font-bold font-mono text-cyan-400 flex items-center gap-2">
+                            <span>🎙️ 1. 聲音來源設定</span>
+                        </h2>
+                        <span id="audio-duration-tag" class="text-[10px] text-cyan-400 bg-cyan-950/60 border border-cyan-800/50 px-2 py-0.5 rounded font-mono">
+                            長度: 0.00 秒
+                        </span>
+                    </div>
+
+                    <!-- Record Controls -->
+                    <div class="flex flex-col gap-2">
+                        <div class="flex justify-between items-center">
+                            <span class="text-xs font-mono font-bold text-slate-300">麥克風即時錄音：</span>
+                            <span id="rec-time" class="text-xs font-mono text-rose-400 font-bold hidden">00:00</span>
+                        </div>
+
+                        <button id="btn-record" onclick="toggleRecording()" class="w-full py-2.5 px-3 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs font-mono transition flex items-center justify-center gap-2 shadow-lg shadow-rose-600/20 active:scale-95">
+                            <span id="rec-icon">🔴</span> <span id="rec-text">開始麥克風錄音</span>
+                        </button>
+                    </div>
+
+                    <!-- Preset Sounds Selection -->
+                    <div class="flex flex-col gap-2">
+                        <span class="text-xs font-mono text-slate-400 font-bold">或選擇內建聲音範例：</span>
+                        <div class="grid grid-cols-2 gap-2">
+                            <button onclick="loadPresetAudio('sine')" class="py-2 px-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-mono text-slate-200 transition text-left flex items-center gap-1.5">
+                                <span>🔊</span> 正弦純音
+                            </button>
+                            <button onclick="loadPresetAudio('voice')" class="py-2 px-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-mono text-slate-200 transition text-left flex items-center gap-1.5">
+                                <span>🗣️</span> 人聲短語
+                            </button>
+                            <button onclick="loadPresetAudio('piano')" class="py-2 px-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-mono text-slate-200 transition text-left flex items-center gap-1.5">
+                                <span>🎹</span> 鋼琴音階
+                            </button>
+                            <button onclick="loadPresetAudio('chirp')" class="py-2 px-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-mono text-slate-200 transition text-left flex items-center gap-1.5">
+                                <span>🐤</span> 漸變頻率
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 2. Audio Playback Comparison & Info -->
+                <div class="bg-cyber-900 border border-slate-800 rounded-2xl p-4 shadow-xl flex flex-col justify-between gap-3">
+                    <div class="flex flex-col gap-3">
+                        <h2 class="text-sm font-bold font-mono text-cyan-400 flex items-center gap-2 border-b border-slate-800 pb-2">
+                            <span>🔊 2. 聽覺對比與參數狀態</span>
+                        </h2>
+
+                        <div class="grid grid-cols-2 gap-2.5">
+                            <button id="btn-play-orig" onclick="playOriginalAudio()" class="py-2.5 px-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-mono font-bold text-slate-200 transition flex flex-col items-center gap-1 active:scale-95">
+                                <span>▶️ 播放原聲</span>
+                            </button>
+                            <button id="btn-play-proc" onclick="playProcessedAudio()" class="py-2.5 px-2 rounded-xl bg-gradient-to-r from-cyan-600 to-pink-600 hover:from-cyan-500 hover:to-pink-500 text-white font-mono font-bold text-xs transition flex flex-col items-center gap-1 shadow-lg active:scale-95">
+                                <span>🔊 播放處理後聲音</span>
+                            </button>
+                        </div>
+
+                        <!-- Info Metrics Display -->
+                        <div class="bg-slate-950 p-3 rounded-xl border border-slate-800 font-mono text-[11px] space-y-1.5">
+                            <div class="flex justify-between text-slate-400 border-b border-slate-800 pb-1">
+                                <span>當前位元率 (Bitrate):</span>
+                                <span id="metric-bitrate" class="text-cyan-400 font-bold">705.6 kbps</span>
+                            </div>
+                            <div class="flex justify-between text-slate-400 border-b border-slate-800 pb-1">
+                                <span>量化階數 (2^N):</span>
+                                <span id="metric-levels" class="text-pink-400 font-bold">65,536 階</span>
+                            </div>
+                            <div class="flex justify-between text-slate-400">
+                                <span>相對 CD 容量佔比:</span>
+                                <span id="metric-compression" class="text-emerald-400 font-bold">100.0% (節省 0.0%)</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <p class="text-[11px] text-slate-400 font-mono bg-cyber-950/40 p-2 rounded-lg border border-slate-800/80">
+                        💡 <strong>小撇步：</strong> 嘗試將位元拉至 1-Bit 體驗 8-bit 電玩音效；降至 1kHz 可聆聽奈奎斯特失真 (Aliasing)。
+                    </p>
+                </div>
+
+            </section>
+
+            <section class="bg-cyber-900 border border-slate-800 rounded-2xl p-4 shadow-xl flex flex-col gap-4">
+                
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-800 pb-3">
+                    <div class="flex items-center gap-2">
+                        <h2 class="text-sm font-bold font-mono text-cyan-400 flex items-center gap-2">
+                            <span>📈 3. 即時聲波微觀對比視覺化 (Waveform Preview)</span>
+                        </h2>
+                    </div>
+
+                    <!-- Canvas Visual Controls -->
+                    <div class="flex flex-wrap items-center gap-2">
+                        <button id="toggle-wave-type-btn" onclick="toggleWaveStyle()" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-[11px] font-mono text-slate-300">
+                            波形模式: 連續聲波
+                        </button>
+                        <button id="toggle-grid-btn" onclick="toggleCanvasGrid()" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-[11px] font-mono text-slate-300">
+                            網格: 開
+                        </button>
+                        <button id="toggle-dots-btn" onclick="toggleCanvasDots()" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-[11px] font-mono text-slate-300">
+                            取樣點: 開
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Main Canvas & Side Vertical Sliders Container -->
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 items-stretch">
+                    
+                    <!-- Left: Waveform Canvas View (Col-9) -->
+                    <div class="lg:col-span-9 flex flex-col gap-2">
+                        <!-- Legend & Zoom Bar -->
+                        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center text-[11px] font-mono gap-2 bg-slate-950 p-2 rounded-xl border border-slate-800">
+                            <div class="flex items-center gap-3">
+                                <span class="flex items-center gap-1 text-cyan-400 font-bold"><span class="w-3 h-0.5 bg-cyan-400"></span> 原始類比聲波</span>
+                                <span class="flex items-center gap-1 text-pink-400 font-bold"><span class="w-3 h-0.5 bg-pink-400"></span> 處理後聲波</span>
+                                <span class="flex items-center gap-1 text-emerald-400 font-bold"><span class="w-2 h-2 rounded-full bg-emerald-400"></span> 取樣點</span>
+                            </div>
+
+                            <!-- Offset Zoom Slider -->
+                            <div class="flex items-center gap-2 w-full sm:w-auto">
+                                <span class="text-slate-400">觀察時間點:</span>
+                                <input type="range" id="zoom-slider" min="0" max="95" value="10" step="1" oninput="onOffsetChange(this.value)" class="w-24 accent-cyan-400">
+                                <span id="zoom-time-text" class="text-cyan-300 min-w-[50px]">0.20 秒</span>
+                            </div>
+                        </div>
+
+                        <!-- Canvas Box -->
+                        <div class="relative bg-slate-950 rounded-xl border border-slate-800 p-2 overflow-hidden min-h-[260px] flex items-center justify-center">
+                            <canvas id="waveform-canvas" height="260" class="waveform-canvas w-full rounded-lg"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Right: Paired Vertical Sliders Panel (Col-3) -->
+                    <div class="lg:col-span-3 bg-slate-950 rounded-xl border border-slate-800 p-3 flex flex-col justify-between gap-3">
+                        
+                        <div class="text-center border-b border-slate-800 pb-1.5">
+                            <h3 class="text-xs font-bold font-mono text-amber-400">🎛️ 參數微調 (並排拉桿)</h3>
+                            <span class="text-[10px] text-slate-400">拉動直桿即時觀察波形變化</span>
+                        </div>
+
+                        <!-- Paired Vertical Sliders (1 Row, 2 Columns) -->
+                        <div class="grid grid-cols-2 gap-3 flex-1 min-h-[190px]">
+                            
+                            <!-- Slider 1: Sampling Rate -->
+                            <div class="bg-cyber-900/80 rounded-lg p-2 border border-slate-800 flex flex-col items-center justify-between gap-2">
+                                <span class="text-[10px] font-mono font-bold text-cyan-400">取樣率 (SR)</span>
+                                
+                                <div class="flex-1 py-1 flex justify-center">
+                                    <input type="range" id="v-sr-slider" class="vertical-slider" min="500" max="44100" step="500" value="44100" oninput="onSamplingRateChange(this.value)">
+                                </div>
+
+                                <span id="v-sr-value-text" class="text-[11px] font-mono font-bold text-cyan-300 bg-cyan-950 px-1.5 py-0.5 rounded border border-cyan-800/60">
+                                    44.1 kHz
+                                </span>
+
+                                <!-- Quick Preset Buttons for SR -->
+                                <div class="grid grid-cols-2 gap-1 w-full text-[9px] font-mono">
+                                    <button onclick="setSamplingRate(44100)" class="bg-slate-800 hover:bg-slate-700 text-slate-300 py-0.5 rounded text-center">44k</button>
+                                    <button onclick="setSamplingRate(22050)" class="bg-slate-800 hover:bg-slate-700 text-slate-300 py-0.5 rounded text-center">22k</button>
+                                    <button onclick="setSamplingRate(8000)" class="bg-slate-800 hover:bg-slate-700 text-slate-300 py-0.5 rounded text-center">8k</button>
+                                    <button onclick="setSamplingRate(1000)" class="bg-slate-800 hover:bg-slate-700 text-slate-300 py-0.5 rounded text-center">1k</button>
+                                </div>
+                            </div>
+
+                            <!-- Slider 2: Quantization Bit Depth -->
+                            <div class="bg-cyber-900/80 rounded-lg p-2 border border-slate-800 flex flex-col items-center justify-between gap-2">
+                                <span class="text-[10px] font-mono font-bold text-pink-400">量化位元 (Bit)</span>
+
+                                <div class="flex-1 py-1 flex justify-center">
+                                    <input type="range" id="v-bit-slider" class="vertical-slider" min="1" max="16" step="1" value="16" oninput="onBitDepthChange(this.value)">
+                                </div>
+
+                                <span id="v-bit-value-text" class="text-[11px] font-mono font-bold text-pink-300 bg-pink-950 px-1.5 py-0.5 rounded border border-pink-800/60">
+                                    16-Bit
+                                </span>
+
+                                <!-- Quick Preset Buttons for Bit -->
+                                <div class="grid grid-cols-2 gap-1 w-full text-[9px] font-mono">
+                                    <button onclick="setBitDepth(16)" class="bg-slate-800 hover:bg-slate-700 text-slate-300 py-0.5 rounded text-center">16b</button>
+                                    <button onclick="setBitDepth(8)" class="bg-slate-800 hover:bg-slate-700 text-slate-300 py-0.5 rounded text-center">8b</button>
+                                    <button onclick="setBitDepth(4)" class="bg-slate-800 hover:bg-slate-700 text-slate-300 py-0.5 rounded text-center">4b</button>
+                                    <button onclick="setBitDepth(1)" class="bg-slate-800 hover:bg-slate-700 text-slate-300 py-0.5 rounded text-center">1b</button>
+                                </div>
+                            </div>
+
+                        </div>
+
+                        <!-- Reset Button -->
+                        <button onclick="resetParams()" class="w-full py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-mono text-xs rounded-lg border border-slate-700 transition">
+                            🔄 重設預設值 (44.1k/16b)
+                        </button>
+
+                    </div>
+
+                </div>
+
+            </section>
+
+            <section class="bg-cyber-900 border border-slate-800 rounded-2xl p-4 shadow-xl flex flex-col gap-2.5 font-mono text-[11px] text-slate-300">
+                <h3 class="text-xs font-bold text-amber-400 flex items-center gap-1.5 border-b border-slate-800 pb-1.5">
+                    💡 聲波數位化小知識
+                </h3>
+                <p class="leading-relaxed">
+                    <strong class="text-cyan-400">取樣 (Sampling)：</strong>將連續時間切成離散點。取樣率過低會造成高頻失真 (Aliasing)。<br>
+                    <strong class="text-pink-400">量化 (Quantization)：</strong>將振幅切成固定階數 ($2^N$)。位元過低會產生量化雜訊與電玩雜音感。
+                </p>
+            </section>
+
+        </div> <!-- END TAB 1 -->
+
+
+        <div id="tab-quiz" class="tab-content flex flex-col gap-6 hidden">
+            
+            <!-- Audio File Size Calculation Tutorial & Interactive Practice -->
+            <section class="bg-cyber-900 border border-slate-800 rounded-2xl p-5 shadow-xl flex flex-col gap-5 font-mono text-slate-200">
+                
+                <!-- Section Header -->
+                <div class="border-b border-slate-800 pb-3 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+                    <div>
+                        <h2 class="text-base font-bold text-amber-400 flex items-center gap-2">
+                            🧮 聲音檔案大小計算教學與學生練習區
+                        </h2>
+                        <p class="text-xs text-slate-400 mt-0.5">學習未壓縮 PCM 數位音訊容量計算公式與即時演練</p>
+                    </div>
+                    <span class="px-2.5 py-1 bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs rounded-lg font-bold">
+                        單元教學與測驗
+                    </span>
+                </div>
+
+                <!-- Formula Banner & Visual Data Flow Diagram -->
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 items-center bg-slate-950 p-4 rounded-xl border border-slate-800">
+                    
+                    <div class="lg:col-span-8 flex flex-col gap-2">
+                        <span class="text-xs font-bold text-cyan-400">📐 未壓縮 PCM 音訊容量計算公式：</span>
+                        <div class="bg-cyber-900/90 p-3 rounded-lg border border-cyan-900/60 text-xs text-cyan-200 overflow-x-auto">
+                            <code>檔案大小 (Bytes) = 時間 (秒) × 取樣頻率 (Hz) × 位元深度 (bits) × 聲道數 (Channels) ÷ 8</code>
+                        </div>
+                        <div class="text-[11px] text-slate-400 space-y-1 mt-1">
+                            <p>• <strong>除以 8</strong>：將位元 (bits) 轉換為位元組 (Bytes)。</p>
+                            <p>• <strong>聲道數</strong>：單聲道 (Mono) = 1，雙聲道/立體聲 (Stereo) = 2。</p>
+                            <p>• <strong>單位換算</strong>：1 KB = 1024 Bytes (二進位) 或 1000 Bytes (十進位)；1 MB = 1024 KB。</p>
+                        </div>
+                    </div>
+
+                    <!-- Visual SVG Graphic: PCM Structure Diagram -->
+                    <div class="lg:col-span-4 bg-cyber-950 p-3 rounded-xl border border-cyan-900/40 flex flex-col items-center justify-center gap-1.5">
+                        <span class="text-[10px] text-cyan-300 font-bold">📊 PCM 音訊資料結構示意圖</span>
+                        <svg viewBox="0 0 200 90" class="w-full h-20">
+                            <line x1="10" y1="45" x2="190" y2="45" stroke="#334155" stroke-dasharray="2,2"/>
+                            <path d="M 10 45 Q 35 15, 60 45 T 110 45 T 160 45 T 190 45" fill="none" stroke="#06B6D4" stroke-width="1.5" opacity="0.4"/>
+                            <line x1="30" y1="45" x2="30" y2="24" stroke="#10B981" stroke-width="1.5"/>
+                            <circle cx="30" cy="24" r="3" fill="#10B981"/>
+                            <line x1="60" y1="45" x2="60" y2="45" stroke="#10B981" stroke-width="1.5"/>
+                            <circle cx="60" cy="45" r="3" fill="#10B981"/>
+                            <line x1="90" y1="45" x2="90" y2="66" stroke="#10B981" stroke-width="1.5"/>
+                            <circle cx="90" cy="66" r="3" fill="#10B981"/>
+                            <line x1="120" y1="45" x2="120" y2="45" stroke="#10B981" stroke-width="1.5"/>
+                            <circle cx="120" cy="45" r="3" fill="#10B981"/>
+                            <line x1="150" y1="45" x2="150" y2="24" stroke="#10B981" stroke-width="1.5"/>
+                            <circle cx="150" cy="24" r="3" fill="#10B981"/>
+                            <line x1="180" y1="15" x2="180" y2="75" stroke="#EC4899" stroke-width="1.5"/>
+                            <path d="M 176 15 L 184 15 M 176 75 L 184 75" stroke="#EC4899" stroke-width="1.5"/>
+                            <text x="175" y="48" fill="#EC4899" font-size="8" text-anchor="end">2^N 階</text>
+                        </svg>
+                        <span class="text-[9px] text-slate-400">綠色: 取樣頻率 (Hz) | 粉色: 位元量化 (Bit)</span>
+                    </div>
+
+                </div>
+
+                <!-- Detailed Example Box with Waveform Diagram Side-by-Side -->
+                <div class="bg-slate-950 p-4 rounded-xl border border-emerald-900/50 flex flex-col gap-3">
+                    <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+                        <span class="text-xs font-bold text-emerald-400 flex items-center gap-1.5">
+                            ✍️ 範例題目與詳細解題步驟
+                        </span>
+                        <span class="text-[10px] bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded border border-emerald-500/30">標準範例</span>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
+                        <div class="md:col-span-8 text-xs text-slate-200 leading-relaxed bg-cyber-900/60 p-3 rounded-lg border border-slate-800">
+                            <strong class="text-amber-300">題目：</strong>請計算一段長度 <strong>2 秒鐘</strong>、取樣頻率 <strong>44,100 Hz</strong>、量化深度 <strong>4-bit</strong> 的<strong>單聲道 (Mono)</strong> 未壓縮聲音檔案大小。
+                        </div>
+
+                        <!-- Mini SVG Visual for Example -->
+                        <div class="md:col-span-4 bg-cyber-950 p-2.5 rounded-lg border border-slate-800 flex flex-col items-center justify-center">
+                            <span class="text-[10px] text-amber-300 font-bold mb-1">🔍 4-Bit 量化階梯波示範 (16 階)</span>
+                            <svg viewBox="0 0 160 55" class="w-full h-14">
+                                <rect width="160" height="55" fill="#0B132B" rx="4"/>
+                                <line x1="0" y1="10" x2="160" y2="10" stroke="#1E293B" stroke-dasharray="2,2"/>
+                                <line x1="0" y1="27" x2="160" y2="27" stroke="#1E293B" stroke-dasharray="2,2"/>
+                                <line x1="0" y1="44" x2="160" y2="44" stroke="#1E293B" stroke-dasharray="2,2"/>
+                                <path d="M 10 44 L 30 44 L 30 35 L 50 35 L 50 18 L 70 18 L 70 10 L 90 10 L 90 27 L 110 27 L 110 44 L 130 44 L 130 35 L 150 35" fill="none" stroke="#EC4899" stroke-width="2"/>
+                                <circle cx="30" cy="44" r="2" fill="#10B981"/>
+                                <circle cx="50" cy="35" r="2" fill="#10B981"/>
+                                <circle cx="70" cy="18" r="2" fill="#10B981"/>
+                                <circle cx="90" cy="10" r="2" fill="#10B981"/>
+                            </svg>
+                        </div>
+                    </div>
+
+                    <!-- Step-by-step breakdown -->
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
+                        <div class="bg-cyber-900 p-3 rounded-lg border border-slate-800 flex flex-col gap-1">
+                            <span class="text-cyan-400 font-bold text-[11px]">步驟 1：計算總位元數 (Bits)</span>
+                            <p class="text-slate-300 text-[11px]">2 秒 × 44,100 Hz × 4 bit × 1</p>
+                            <p class="text-emerald-400 font-bold mt-auto text-xs">= 352,800 bits</p>
+                        </div>
+
+                        <div class="bg-cyber-900 p-3 rounded-lg border border-slate-800 flex flex-col gap-1">
+                            <span class="text-cyan-400 font-bold text-[11px]">步驟 2：轉換為位元組 (Bytes)</span>
+                            <p class="text-slate-300 text-[11px]">352,800 bits ÷ 8</p>
+                            <p class="text-emerald-400 font-bold mt-auto text-xs">= 44,100 Bytes</p>
+                        </div>
+
+                        <div class="bg-cyber-900 p-3 rounded-lg border border-slate-800 flex flex-col gap-1">
+                            <span class="text-cyan-400 font-bold text-[11px]">步驟 3：轉換為 KB</span>
+                            <p class="text-slate-300 text-[11px]">44,100 ÷ 1024</p>
+                            <p class="text-emerald-400 font-bold mt-auto text-xs">≈ 43.07 KB <span class="text-slate-400 text-[10px]">(若以÷1000計算為 44.1 KB)</span></p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Student Practice Interactive Questions -->
+                <div class="flex flex-col gap-4 mt-2">
+                    <h3 class="text-xs font-bold text-cyan-400 flex items-center justify-between border-b border-slate-800 pb-2">
+                        <span>📝 學生自主演練題庫 (隨堂測驗)</span>
+                        <span class="text-[10px] text-slate-400 font-normal">輸入數值點擊檢查或查看解答</span>
+                    </h3>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                        
+                        <!-- Q1 -->
+                        <div class="bg-slate-950 p-3.5 rounded-xl border border-slate-800 flex flex-col justify-between gap-3">
+                            <div>
+                                <span class="text-amber-400 font-bold block mb-1">【題目 1】基本觀念題</span>
+                                <p class="text-slate-300 text-[11px] leading-relaxed mb-3">
+                                    一個長度 <strong>2 秒</strong>、取樣頻率 <strong>44,100 Hz</strong>、量化深度 <strong>4 bit</strong> 的單聲道音訊，其容量為多少 <strong>Bytes</strong>？
+                                </p>
+
+                                <div class="bg-cyber-900 p-2 rounded-lg border border-slate-800 mb-2 flex items-center justify-between gap-2">
+                                    <div class="text-[10px] text-slate-400">
+                                        <span class="text-cyan-400 font-bold block">波形特徵：</span>
+                                        高取樣率 (44.1k) / 低量化 (4-bit)
+                                    </div>
+                                    <svg viewBox="0 0 110 40" class="w-24 h-9">
+                                        <path d="M 5 35 Q 25 5, 55 20 T 105 5" fill="none" stroke="#06B6D4" stroke-width="1"/>
+                                        <path d="M 5 35 L 20 35 L 20 15 L 40 15 L 40 20 L 65 20 L 65 10 L 85 10 L 85 5 L 105 5" fill="none" stroke="#EC4899" stroke-width="1.5"/>
+                                    </svg>
+                                </div>
+                            </div>
+
+                            <div class="space-y-2">
+                                <div class="flex items-center gap-2">
+                                    <input type="number" id="quiz-q1-input" placeholder="輸入答案 (Bytes)" class="w-full bg-cyber-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-100 focus:outline-none focus:border-cyan-500 font-mono">
+                                    <button onclick="checkQuizAnswer(1, 44100)" class="whitespace-nowrap px-3 py-1.5 bg-cyan-600 hover:bg-cyan-500 text-white rounded-lg font-bold transition text-xs">檢查</button>
+                                </div>
+                                <div id="quiz-q1-feedback" class="text-[11px] font-bold hidden"></div>
+                                <button onclick="toggleQuizSolution(1)" class="text-[10px] text-slate-400 hover:text-cyan-300 underline">👉 顯示/隱藏詳細解析</button>
+                                <div id="quiz-q1-sol" class="hidden text-[11px] bg-cyber-900 p-2 rounded border border-slate-800 text-slate-300 space-y-1">
+                                    <p class="text-emerald-400 font-bold">正確答案：44,100 Bytes</p>
+                                    <p>解析：$2 \times 44100 \times 4 \times 1 \div 8 = 44,100 \text{ Bytes}$</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Q2 -->
+                        <div class="bg-slate-950 p-3.5 rounded-xl border border-slate-800 flex flex-col justify-between gap-3">
+                            <div>
+                                <span class="text-amber-400 font-bold block mb-1">【題目 2】CD 音質容量題</span>
+                                <p class="text-slate-300 text-[11px] leading-relaxed mb-3">
+                                    音樂 CD 品質為 <strong>44,100 Hz</strong>、<strong>16 bit</strong>、<strong>雙聲道 (Stereo)</strong>。一首 <strong>3 分鐘 (180秒)</strong> 的歌曲，未壓縮 PCM 容量約為多少 <strong>MB</strong>？(以 1MB = 1024×1024 Bytes 計算，四捨五入至小數第一位)
+                                </p>
+
+                                <div class="bg-cyber-900 p-2 rounded-lg border border-slate-800 mb-2 flex items-center justify-between gap-2">
+                                    <div class="text-[10px] text-slate-400">
+                                        <span class="text-emerald-400 font-bold block">波形特徵：</span>
+                                        CD 音質雙聲道 (Stereo L/R)
+                                    </div>
+                                    <svg viewBox="0 0 110 40" class="w-24 h-9">
+                                        <path d="M 5 12 Q 30 2, 55 12 T 105 12" fill="none" stroke="#06B6D4" stroke-width="1.5"/>
+                                        <path d="M 5 28 Q 30 38, 55 28 T 105 28" fill="none" stroke="#EC4899" stroke-width="1.5"/>
+                                        <text x="106" y="14" fill="#06B6D4" font-size="7">L</text>
+                                        <text x="106" y="30" fill="#EC4899" font-size="7">R</text>
+                                    </svg>
+                                </div>
+                            </div>
+
+                            <div class="space-y-2">
+                                <div class="flex items-center gap-2">
+                                    <input type="number" step="0.1" id="quiz-q2-input" placeholder="輸入答案 (MB，如: 30.3)" class="w-full bg-cyber-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-100 focus:outline-none focus:border-cyan-500 font-mono">
+                                    <button onclick="checkQuizAnswer(2, 30.3)" class="whitespace-nowrap px-3 py-1.5 bg-cyan-600 hover:bg-cyan-500 text-white rounded-lg font-bold transition text-xs">檢查</button>
+                                </div>
+                                <div id="quiz-q2-feedback" class="text-[11px] font-bold hidden"></div>
+                                <button onclick="toggleQuizSolution(2)" class="text-[10px] text-slate-400 hover:text-cyan-300 underline">👉 顯示/隱藏詳細解析</button>
+                                <div id="quiz-q2-sol" class="hidden text-[11px] bg-cyber-900 p-2 rounded border border-slate-800 text-slate-300 space-y-1">
+                                    <p class="text-emerald-400 font-bold">正確答案：約 30.3 MB (或 31.75 MB 十進位)</p>
+                                    <p>解析：$180 \times 44100 \times 16 \times 2 \div 8 = 31,752,000 \text{ Bytes}$</p>
+                                    <p>$31,752,000 \div 1024 \div 1024 \approx 30.28 \text{ MB} \approx 30.3 \text{ MB}$</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Q3 -->
+                        <div class="bg-slate-950 p-3.5 rounded-xl border border-slate-800 flex flex-col justify-between gap-3">
+                            <div>
+                                <span class="text-amber-400 font-bold block mb-1">【題目 3】電話語音傳輸題</span>
+                                <p class="text-slate-300 text-[11px] leading-relaxed mb-3">
+                                    傳統電話語音規格為 <strong>8,000 Hz</strong>、<strong>8 bit</strong>、<strong>單聲道</strong>。一段 <strong>10 秒鐘</strong> 的通話錄音容量為多少 <strong>KB</strong>？(以 1KB = 1000 Bytes 計算)
+                                </p>
+
+                                <div class="bg-cyber-900 p-2 rounded-lg border border-slate-800 mb-2 flex items-center justify-between gap-2">
+                                    <div class="text-[10px] text-slate-400">
+                                        <span class="text-amber-400 font-bold block">波形特徵：</span>
+                                        低取樣電話波形 (8kHz 稀疏點)
+                                    </div>
+                                    <svg viewBox="0 0 110 40" class="w-24 h-9">
+                                        <path d="M 5 20 Q 30 5, 55 20 T 105 20" fill="none" stroke="#F59E0B" stroke-width="1.5" stroke-dasharray="3,3"/>
+                                        <circle cx="10" cy="18" r="2.5" fill="#F59E0B"/>
+                                        <circle cx="35" cy="8" r="2.5" fill="#F59E0B"/>
+                                        <circle cx="60" cy="22" r="2.5" fill="#F59E0B"/>
+                                        <circle cx="85" cy="32" r="2.5" fill="#F59E0B"/>
+                                    </svg>
+                                </div>
+                            </div>
+
+                            <div class="space-y-2">
+                                <div class="flex items-center gap-2">
+                                    <input type="number" id="quiz-q3-input" placeholder="輸入答案 (KB)" class="w-full bg-cyber-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-100 focus:outline-none focus:border-cyan-500 font-mono">
+                                    <button onclick="checkQuizAnswer(3, 80)" class="whitespace-nowrap px-3 py-1.5 bg-cyan-600 hover:bg-cyan-500 text-white rounded-lg font-bold transition text-xs">檢查</button>
+                                </div>
+                                <div id="quiz-q3-feedback" class="text-[11px] font-bold hidden"></div>
+                                <button onclick="toggleQuizSolution(3)" class="text-[10px] text-slate-400 hover:text-cyan-300 underline">👉 顯示/隱藏詳細解析</button>
+                                <div id="quiz-q3-sol" class="hidden text-[11px] bg-cyber-900 p-2 rounded border border-slate-800 text-slate-300 space-y-1">
+                                    <p class="text-emerald-400 font-bold">正確答案：80 KB (或 78.125 KB 二進位)</p>
+                                    <p>解析：$10 \times 8000 \times 8 \times 1 \div 8 = 80,000 \text{ Bytes}$</p>
+                                    <p>$80,000 \div 1000 = 80 \text{ KB}$</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Q4 -->
+                        <div class="bg-slate-950 p-3.5 rounded-xl border border-slate-800 flex flex-col justify-between gap-3">
+                            <div>
+                                <span class="text-amber-400 font-bold block mb-1">【題目 4】高解析 (Hi-Res) 錄音題</span>
+                                <p class="text-slate-300 text-[11px] leading-relaxed mb-3">
+                                    錄音室使用 <strong>96,000 Hz</strong>、<strong>24 bit</strong>、<strong>雙聲道</strong> 錄製 <strong>5 秒鐘</strong> 的樂器對音音訊，容量為多少 <strong>Bytes</strong>？
+                                </p>
+
+                                <div class="bg-cyber-900 p-2 rounded-lg border border-slate-800 mb-2 flex items-center justify-between gap-2">
+                                    <div class="text-[10px] text-slate-400">
+                                        <span class="text-pink-400 font-bold block">波形特徵：</span>
+                                        Hi-Res 超高密度點陣 (96k 24-bit)
+                                    </div>
+                                    <svg viewBox="0 0 110 40" class="w-24 h-9">
+                                        <path d="M 5 20 Q 25 2, 55 20 T 105 20" fill="none" stroke="#EC4899" stroke-width="2"/>
+                                        <circle cx="10" cy="16" r="1.5" fill="#10B981"/>
+                                        <circle cx="20" cy="9" r="1.5" fill="#10B981"/>
+                                        <circle cx="30" cy="7" r="1.5" fill="#10B981"/>
+                                        <circle cx="40" cy="10" r="1.5" fill="#10B981"/>
+                                        <circle cx="50" cy="17" r="1.5" fill="#10B981"/>
+                                        <circle cx="60" cy="24" r="1.5" fill="#10B981"/>
+                                        <circle cx="70" cy="31" r="1.5" fill="#10B981"/>
+                                        <circle cx="80" cy="33" r="1.5" fill="#10B981"/>
+                                        <circle cx="90" cy="29" r="1.5" fill="#10B981"/>
+                                    </svg>
+                                </div>
+                            </div>
+
+                            <div class="space-y-2">
+                                <div class="flex items-center gap-2">
+                                    <input type="number" id="quiz-q4-input" placeholder="輸入答案 (Bytes)" class="w-full bg-cyber-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-100 focus:outline-none focus:border-cyan-500 font-mono">
+                                    <button onclick="checkQuizAnswer(4, 2880000)" class="whitespace-nowrap px-3 py-1.5 bg-cyan-600 hover:bg-cyan-500 text-white rounded-lg font-bold transition text-xs">檢查</button>
+                                </div>
+                                <div id="quiz-q4-feedback" class="text-[11px] font-bold hidden"></div>
+                                <button onclick="toggleQuizSolution(4)" class="text-[10px] text-slate-400 hover:text-cyan-300 underline">👉 顯示/隱藏詳細解析</button>
+                                <div id="quiz-q4-sol" class="hidden text-[11px] bg-cyber-900 p-2 rounded border border-slate-800 text-slate-300 space-y-1">
+                                    <p class="text-emerald-400 font-bold">正確答案：2,880,000 Bytes (約 2.88 MB)</p>
+                                    <p>解析：$5 \times 96000 \times 24 \times 2 \div 8 = 2,880,000 \text{ Bytes}$</p>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+            </section>
+
+        </div> <!-- END TAB 2 -->
+
+    </main>
+
+    <!-- Toast Notification Banner -->
+    <div id="toast" class="fixed bottom-5 right-5 z-50 transform translate-y-20 opacity-0 transition-all duration-300 pointer-events-none bg-slate-900 border border-cyan-500/50 text-cyan-300 font-mono text-xs px-4 py-2.5 rounded-xl shadow-2xl flex items-center gap-2">
+        <span id="toast-icon">✨</span>
+        <span id="toast-msg">提示訊息</span>
+    </div>
+
+    <footer class="w-full max-w-6xl mx-auto px-4 py-4 text-center text-xs text-slate-600 border-t border-slate-800/60 font-mono">
+        聲波取樣與量化實驗室 | Audio Signal Processing Interactive Demo
+    </footer>
+
+    <script>
+        // Web Audio Context & Buffer variables
+        let audioCtx = null;
+        let originalAudioBuffer = null;
+        let processedAudioBuffer = null;
+        let activeSourceNode = null;
+
+        // Recording variables
+        let mediaRecorder = null;
+        let recordedChunks = [];
+        let isRecording = false;
+        let recordStartTime = 0;
+        let recordTimerInterval = null;
+
+        // DSP Parameters
+        let currentSamplingRate = 44100;
+        let currentBitDepth = 16;
+        let viewOffsetPercent = 10;
+
+        // Canvas UI Options
+        let showCanvasGrid = true;
+        let showCanvasDots = true;
+        let waveStyleMode = 'wave'; // 'wave' (折線聲波) 或 'staircase' (階梯波)
+
+        // Safe DOM helper
+        function safeSetText(id, text) {
+            const el = document.getElementById(id);
+            if (el) el.textContent = text;
+        }
+
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('bg-cyan-500/20', 'border-cyan-500', 'text-cyan-400', 'shadow-lg');
+                btn.classList.add('bg-slate-900', 'border-slate-800', 'text-slate-400');
+            });
+
+            const targetContent = document.getElementById(`tab-${tabId}`);
+            const targetBtn = document.getElementById(`btn-tab-${tabId}`);
+
+            if (targetContent && targetBtn) {
+                targetContent.classList.remove('hidden');
+                targetBtn.classList.remove('bg-slate-900', 'border-slate-800', 'text-slate-400');
+                targetBtn.classList.add('bg-cyan-500/20', 'border-cyan-500', 'text-cyan-400', 'shadow-lg');
+            }
+
+            if (tabId === 'lab') {
+                setTimeout(() => {
+                    const canvas = document.getElementById('waveform-canvas');
+                    if (canvas && canvas.parentElement) {
+                        canvas.width = canvas.parentElement.clientWidth - 16;
+                        drawWaveformCanvas();
+                    }
+                }, 50);
+            }
+        }
+
+        function getAudioContext() {
+            if (!audioCtx) {
+                const AudioCtx = window.AudioContext || window.webkitAudioContext;
+                audioCtx = new AudioCtx({ sampleRate: 44100 });
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+            return audioCtx;
+        }
+
+        function showToast(msg, icon = "✨") {
+            const toast = document.getElementById('toast');
+            if (!toast) return;
+            safeSetText('toast-msg', msg);
+            safeSetText('toast-icon', icon);
+
+            toast.classList.remove('translate-y-20', 'opacity-0');
+            toast.classList.add('translate-y-0', 'opacity-100');
+
+            setTimeout(() => {
+                toast.classList.remove('translate-y-0', 'opacity-100');
+                toast.classList.add('translate-y-20', 'opacity-0');
+            }, 2500);
+        }
+
+        async function toggleRecording() {
+            const ctx = getAudioContext();
+            const btn = document.getElementById('btn-record');
+            const recTimeText = document.getElementById('rec-time');
+
+            if (!isRecording) {
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    recordedChunks = [];
+                    mediaRecorder = new MediaRecorder(stream);
+
+                    mediaRecorder.ondataavailable = (e) => {
+                        if (e.data.size > 0) recordedChunks.push(e.data);
+                    };
+
+                    mediaRecorder.onstop = async () => {
+                        const blob = new Blob(recordedChunks, { type: 'audio/webm' });
+                        const arrayBuffer = await blob.arrayBuffer();
+                        ctx.decodeAudioData(arrayBuffer, (decodedBuffer) => {
+                            originalAudioBuffer = decodedBuffer;
+                            updateAudioInfo();
+                            processAudioSignal();
+                            showToast("🎙️ 錄音完成！已轉換為數位聲波樣本");
+                        }, () => {
+                            showToast("❌ 音訊解碼失敗", "⚠️");
+                        });
+
+                        stream.getTracks().forEach(track => track.stop());
+                    };
+
+                    mediaRecorder.start();
+                    isRecording = true;
+                    recordStartTime = Date.now();
+
+                    safeSetText('rec-text', "停止錄音 (Stop)");
+                    safeSetText('rec-icon', "⏹️");
+                    if (btn) {
+                        btn.classList.remove('bg-rose-600', 'hover:bg-rose-500');
+                        btn.classList.add('bg-amber-600', 'hover:bg-amber-500', 'recording-pulse');
+                    }
+                    if (recTimeText) recTimeText.classList.remove('hidden');
+
+                    recordTimerInterval = setInterval(() => {
+                        const elapsed = Math.floor((Date.now() - recordStartTime) / 1000);
+                        const mins = String(Math.floor(elapsed / 60)).padStart(2, '0');
+                        const secs = String(elapsed % 60).padStart(2, '0');
+                        safeSetText('rec-time', `${mins}:${secs}`);
+                    }, 500);
+
+                } catch (err) {
+                    showToast("❌ 無法取得麥克風權限或不支援錄音", "⚠️");
+                }
+            } else {
+                if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+                    mediaRecorder.stop();
+                }
+                isRecording = false;
+                clearInterval(recordTimerInterval);
+
+                safeSetText('rec-text', "開始麥克風錄音");
+                safeSetText('rec-icon', "🔴");
+                if (btn) {
+                    btn.classList.remove('bg-amber-600', 'hover:bg-amber-500', 'recording-pulse');
+                    btn.classList.add('bg-rose-600', 'hover:bg-rose-500');
+                }
+                if (recTimeText) recTimeText.classList.add('hidden');
+            }
+        }
+
+        function loadPresetAudio(type) {
+            const ctx = getAudioContext();
+            const sampleRate = 44100;
+            const duration = 2.0;
+            const totalFrames = sampleRate * duration;
+            const buffer = ctx.createBuffer(1, totalFrames, sampleRate);
+            const channelData = buffer.getChannelData(0);
+
+            if (type === 'sine') {
+                const freq = 440;
+                for (let i = 0; i < totalFrames; i++) {
+                    const t = i / sampleRate;
+                    channelData[i] = Math.sin(2 * Math.PI * freq * t) * 0.7;
+                }
+                showToast("🔊 已載入正弦純音 (440Hz)");
+            } else if (type === 'piano') {
+                const freqs = [261.63, 329.63, 392.00, 523.25];
+                for (let i = 0; i < totalFrames; i++) {
+                    const t = i / sampleRate;
+                    const env = Math.exp(-2.5 * t);
+                    let sample = 0;
+                    freqs.forEach(f => {
+                        sample += (Math.sin(2 * Math.PI * f * t) + 0.3 * Math.sin(4 * Math.PI * f * t)) * env;
+                    });
+                    channelData[i] = sample * 0.25;
+                }
+                showToast("🎹 已載入鋼琴和弦範例");
+            } else if (type === 'chirp') {
+                for (let i = 0; i < totalFrames; i++) {
+                    const t = i / sampleRate;
+                    const freq = 300 + 1350 * t;
+                    channelData[i] = Math.sin(2 * Math.PI * freq * t) * 0.6;
+                }
+                showToast("🐤 已載入漸變頻率 (Chirp)");
+            } else if (type === 'voice') {
+                for (let i = 0; i < totalFrames; i++) {
+                    const t = i / sampleRate;
+                    const pitch = 130 + 20 * Math.sin(2 * Math.PI * 2 * t);
+                    const env = Math.sin(Math.PI * (t / duration));
+                    const f1 = Math.sin(2 * Math.PI * pitch * t);
+                    const f2 = 0.5 * Math.sin(2 * Math.PI * (pitch * 3.5) * t);
+                    const f3 = 0.25 * Math.sin(2 * Math.PI * (pitch * 7) * t);
+                    channelData[i] = (f1 + f2 + f3) * env * 0.5;
+                }
+                showToast("🗣️ 已載入人聲短語範例");
+            }
+
+            originalAudioBuffer = buffer;
+            updateAudioInfo();
+            processAudioSignal();
+        }
+
+        function processAudioSignal() {
+            if (!originalAudioBuffer) return;
+
+            const origSampleRate = originalAudioBuffer.sampleRate;
+            const length = originalAudioBuffer.length;
+            const numChannels = originalAudioBuffer.numberOfChannels;
+            const ctx = getAudioContext();
+
+            processedAudioBuffer = ctx.createBuffer(numChannels, length, origSampleRate);
+            const sampleInterval = Math.max(1, Math.round(origSampleRate / currentSamplingRate));
+            const levels = Math.pow(2, currentBitDepth);
+
+            for (let c = 0; c < numChannels; c++) {
+                const inputData = originalAudioBuffer.getChannelData(c);
+                const outputData = processedAudioBuffer.getChannelData(c);
+                let holdSampleValue = 0;
+
+                for (let i = 0; i < length; i++) {
+                    if (i % sampleInterval === 0 || i === 0) {
+                        let raw = inputData[i];
+                        raw = Math.max(-1, Math.min(1, raw));
+
+                        const normalized = (raw + 1) / 2;
+                        const quantizedStep = Math.round(normalized * (levels - 1));
+                        const quantizedNormalized = quantizedStep / (levels - 1);
+                        
+                        holdSampleValue = quantizedNormalized * 2 - 1;
+                    }
+
+                    outputData[i] = holdSampleValue;
+                }
+            }
+
+            updateMetricsDisplay();
+            drawWaveformCanvas();
+        }
+
+        function onSamplingRateChange(val) {
+            currentSamplingRate = parseInt(val, 10);
+            const srDisplay = currentSamplingRate >= 1000 ? `${(currentSamplingRate / 1000).toFixed(1)} kHz` : `${currentSamplingRate} Hz`;
+            safeSetText('v-sr-value-text', srDisplay);
+            processAudioSignal();
+        }
+
+        function setSamplingRate(val) {
+            const slider = document.getElementById('v-sr-slider');
+            if (slider) slider.value = val;
+            onSamplingRateChange(val);
+        }
+
+        function onBitDepthChange(val) {
+            currentBitDepth = parseInt(val, 10);
+            safeSetText('v-bit-value-text', `${currentBitDepth}-Bit`);
+            processAudioSignal();
+        }
+
+        function setBitDepth(val) {
+            const slider = document.getElementById('v-bit-slider');
+            if (slider) slider.value = val;
+            onBitDepthChange(val);
+        }
+
+        function onOffsetChange(val) {
+            viewOffsetPercent = parseFloat(val);
+            if (originalAudioBuffer) {
+                const totalSec = originalAudioBuffer.duration;
+                const offsetSec = (totalSec * (viewOffsetPercent / 100)).toFixed(2);
+                safeSetText('zoom-time-text', `${offsetSec} 秒`);
+            }
+            drawWaveformCanvas();
+        }
+
+        function resetParams() {
+            setSamplingRate(44100);
+            setBitDepth(16);
+            showToast("🔄 已將取樣與量化參數重設為 CD 品質");
+        }
+
+        function updateAudioInfo() {
+            if (originalAudioBuffer) {
+                const dur = originalAudioBuffer.duration.toFixed(2);
+                safeSetText('audio-duration-tag', `長度: ${dur} 秒 (${originalAudioBuffer.sampleRate}Hz)`);
+            }
+        }
+
+        function updateMetricsDisplay() {
+            const bitrateKbps = ((currentSamplingRate * currentBitDepth * 1) / 1000).toFixed(1);
+            safeSetText('metric-bitrate', `${bitrateKbps} kbps`);
+
+            const levels = Math.pow(2, currentBitDepth);
+            safeSetText('metric-levels', `${levels.toLocaleString()} 階`);
+
+            const refBitrate = 44100 * 16 * 1;
+            const currentBitrate = currentSamplingRate * currentBitDepth * 1;
+            const ratio = ((currentBitrate / refBitrate) * 100).toFixed(1);
+            safeSetText('metric-compression', `${ratio}% (節省 ${(100 - ratio).toFixed(1)}%)`);
+        }
+
+        function stopAudioPlayback() {
+            if (activeSourceNode) {
+                try { activeSourceNode.stop(); } catch (e) {}
+                activeSourceNode = null;
+            }
+        }
+
+        function playOriginalAudio() {
+            if (!originalAudioBuffer) {
+                showToast("⚠️ 請先錄音或載入範例聲音", "ℹ️");
+                return;
+            }
+            stopAudioPlayback();
+            const ctx = getAudioContext();
+            activeSourceNode = ctx.createBufferSource();
+            activeSourceNode.buffer = originalAudioBuffer;
+            activeSourceNode.connect(ctx.destination);
+            activeSourceNode.start();
+            showToast("▶️ 正在播放原始類比聲波");
+        }
+
+        function playProcessedAudio() {
+            if (!processedAudioBuffer) {
+                showToast("⚠️ 請先錄音或載入範例聲音", "ℹ️");
+                return;
+            }
+            stopAudioPlayback();
+            const ctx = getAudioContext();
+            activeSourceNode = ctx.createBufferSource();
+            activeSourceNode.buffer = processedAudioBuffer;
+            activeSourceNode.connect(ctx.destination);
+            activeSourceNode.start();
+            showToast(`🔊 正在播放處理後聲波 (${currentSamplingRate}Hz, ${currentBitDepth}-Bit)`);
+        }
+
+        function toggleWaveStyle() {
+            waveStyleMode = (waveStyleMode === 'wave') ? 'staircase' : 'wave';
+            safeSetText('toggle-wave-type-btn', `波形模式: ${waveStyleMode === 'wave' ? '連續聲波' : '階梯波'}`);
+            drawWaveformCanvas();
+        }
+
+        function toggleCanvasGrid() {
+            showCanvasGrid = !showCanvasGrid;
+            safeSetText('toggle-grid-btn', `網格: ${showCanvasGrid ? '開' : '關'}`);
+            drawWaveformCanvas();
+        }
+
+        function toggleCanvasDots() {
+            showCanvasDots = !showCanvasDots;
+            safeSetText('toggle-dots-btn', `取樣點: ${showCanvasDots ? '開' : '關'}`);
+            drawWaveformCanvas();
+        }
+
+        function drawWaveformCanvas() {
+            const canvas = document.getElementById('waveform-canvas');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            const width = canvas.width;
+            const height = canvas.height;
+
+            ctx.clearRect(0, 0, width, height);
+
+            if (!originalAudioBuffer) {
+                ctx.fillStyle = '#64748B';
+                ctx.font = '14px Courier New';
+                ctx.textAlign = 'center';
+                ctx.fillText('請先在左側「錄製聲音」或「選擇範例聲音」以檢視聲波切片', width / 2, height / 2);
+                return;
+            }
+
+            const rawData = originalAudioBuffer.getChannelData(0);
+            const procData = processedAudioBuffer ? processedAudioBuffer.getChannelData(0) : rawData;
+            const totalSamples = rawData.length;
+
+            const windowSize = Math.min(1500, Math.floor(totalSamples * 0.05));
+            const startSample = Math.floor((totalSamples - windowSize) * (viewOffsetPercent / 100));
+
+            const centerY = height / 2;
+            const amplitudeScale = (height / 2) * 0.85;
+
+            // 1. Draw Quantization Level Grid Lines
+            if (showCanvasGrid && currentBitDepth <= 5) {
+                const levels = Math.pow(2, currentBitDepth);
+                ctx.strokeStyle = 'rgba(236, 72, 153, 0.15)';
+                ctx.lineWidth = 1;
+                ctx.setLineDash([4, 4]);
+
+                for (let l = 0; l < levels; l++) {
+                    const norm = l / (levels - 1);
+                    const val = norm * 2 - 1;
+                    const y = centerY - val * amplitudeScale;
+
+                    ctx.beginPath();
+                    ctx.moveTo(0, y);
+                    ctx.lineTo(width, y);
+                    ctx.stroke();
+                }
+                ctx.setLineDash([]);
+            }
+
+            // 2. Draw Center Axis
+            ctx.strokeStyle = '#334155';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(0, centerY);
+            ctx.lineTo(width, centerY);
+            ctx.stroke();
+
+            // 3. Draw Original Smooth Waveform (Cyan Line)
+            ctx.strokeStyle = '#06B6D4';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+
+            for (let i = 0; i < windowSize; i++) {
+                const sampleIdx = startSample + i;
+                if (sampleIdx >= totalSamples) break;
+
+                const val = rawData[sampleIdx];
+                const x = (i / (windowSize - 1)) * width;
+                const y = centerY - val * amplitudeScale;
+
+                if (i === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            }
+            ctx.stroke();
+
+            const sampleInterval = Math.max(1, Math.round(originalAudioBuffer.sampleRate / currentSamplingRate));
+
+            // 4. Draw Processed Waveform (Pink Line)
+            ctx.strokeStyle = '#EC4899';
+            ctx.lineWidth = 2.5;
+            ctx.beginPath();
+
+            if (waveStyleMode === 'wave') {
+                let firstPoint = true;
+                for (let i = 0; i < windowSize; i++) {
+                    const sampleIdx = startSample + i;
+                    if (sampleIdx >= totalSamples) break;
+
+                    const val = procData[sampleIdx];
+                    const x = (i / (windowSize - 1)) * width;
+                    const y = centerY - val * amplitudeScale;
+
+                    if (firstPoint) {
+                        ctx.moveTo(x, y);
+                        firstPoint = false;
+                    } else {
+                        ctx.lineTo(x, y);
+                    }
+                }
+            } else {
+                for (let i = 0; i < windowSize; i++) {
+                    const sampleIdx = startSample + i;
+                    if (sampleIdx >= totalSamples) break;
+
+                    const val = procData[sampleIdx];
+                    const x = (i / (windowSize - 1)) * width;
+                    const y = centerY - val * amplitudeScale;
+
+                    if (i === 0) {
+                        ctx.moveTo(x, y);
+                    } else {
+                        ctx.lineTo(x, centerY - procData[startSample + i - 1] * amplitudeScale);
+                        ctx.lineTo(x, y);
+                    }
+                }
+            }
+            ctx.stroke();
+
+            // 5. Draw Sample Points (Emerald Green Dots)
+            if (showCanvasDots) {
+                for (let i = 0; i < windowSize; i++) {
+                    const sampleIdx = startSample + i;
+                    if (sampleIdx >= totalSamples) break;
+
+                    if (sampleIdx % sampleInterval === 0) {
+                        const x = (i / (windowSize - 1)) * width;
+                        const val = procData[sampleIdx];
+                        const y = centerY - val * amplitudeScale;
+
+                        ctx.strokeStyle = 'rgba(16, 185, 129, 0.35)';
+                        ctx.lineWidth = 1;
+                        ctx.beginPath();
+                        ctx.moveTo(x, centerY);
+                        ctx.lineTo(x, y);
+                        ctx.stroke();
+
+                        ctx.fillStyle = '#10B981';
+                        ctx.beginPath();
+                        ctx.arc(x, y, 3.5, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+                }
+            }
+        }
+
+        window.onload = function() {
+            // Auto resize canvas first
+            const canvas = document.getElementById('waveform-canvas');
+            if (canvas && canvas.parentElement) {
+                canvas.width = canvas.parentElement.clientWidth - 16;
+            }
+
+            // Auto load default sine preset on startup for immediate visual feedback
+            loadPresetAudio('sine');
+
+            // Responsive Canvas Resize Listener
+            window.addEventListener('resize', () => {
+                if (canvas && canvas.parentElement) {
+                    canvas.width = canvas.parentElement.clientWidth - 16;
+                    drawWaveformCanvas();
+                }
+            });
+        };
+
+        // Quiz Interactive Logic
+        function checkQuizAnswer(qNum, targetAns) {
+            const inputEl = document.getElementById(`quiz-q${qNum}-input`);
+            const feedbackEl = document.getElementById(`quiz-q${qNum}-feedback`);
+            if (!inputEl || !feedbackEl) return;
+
+            const val = parseFloat(inputEl.value.trim());
+            if (isNaN(val)) {
+                feedbackEl.textContent = "⚠️ 請輸入有效的數字數值！";
+                feedbackEl.className = "text-[11px] font-bold text-amber-400 block";
+                return;
+            }
+
+            const isCorrect = Math.abs(val - targetAns) < 0.25;
+
+            if (isCorrect) {
+                feedbackEl.textContent = "🎉 解答正確！太棒了！";
+                feedbackEl.className = "text-[11px] font-bold text-emerald-400 block";
+                showToast(`🎉 題目 ${qNum} 答對囉！`, "✅");
+            } else {
+                feedbackEl.textContent = `❌ 計算有誤，請再試試看！(提示：請依公式計算)`;
+                feedbackEl.className = "text-[11px] font-bold text-rose-400 block";
+            }
+        }
+
+        function toggleQuizSolution(qNum) {
+            const solEl = document.getElementById(`quiz-q${qNum}-sol`);
+            if (solEl) {
+                solEl.classList.toggle('hidden');
+            }
+        }
+    </script>
+</body>
+</html>
