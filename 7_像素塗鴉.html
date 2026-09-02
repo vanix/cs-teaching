@@ -82,7 +82,7 @@
 <body class="bg-cyber-950 text-slate-100 min-h-screen flex flex-col justify-between font-sans antialiased selection:bg-cyan-500 selection:text-slate-950">
 
     <!-- Header Navigation -->
-    <header class="w-full max-w-5xl mx-auto px-4 py-4 border-b border-slate-800/80 flex flex-col lg:flex-row justify-between items-center gap-3">
+    <header class="w-full max-w-5xl mx-auto px-4 py-4 border-b border-slate-800/80 flex flex-col sm:flex-row justify-between items-center gap-3">
         <div class="flex items-center gap-3">
             <a href="index.html" class="text-xs text-sky-400 hover:text-sky-300 transition flex items-center gap-1">
                 ← 回到首頁
@@ -95,11 +95,13 @@
                 <p class="text-xs text-slate-400">8x8 點陣創作器 • 二進位圖像矩陣與 256x256 圖片導出</p>
             </div>
         </div>
+    </header>
 
-        <!-- Palette / Color indicator -->
-        <div class="flex flex-wrap items-center gap-1.5 min-w-0 max-w-full bg-cyber-900 border border-slate-800 px-3 py-1.5 rounded-xl text-xs font-mono">
+    <!-- 色彩模式 & 顏色選擇橫幅 -->
+    <div class="w-full bg-cyber-900/80 border-b border-slate-800/80">
+        <div class="max-w-5xl mx-auto px-4 py-2 flex flex-wrap items-center gap-2 text-xs font-mono">
             <!-- Mode Selector -->
-            <div class="flex items-center bg-slate-950 p-1 rounded-lg border border-slate-800 mr-1">
+            <div class="flex items-center bg-slate-950 p-1 rounded-lg border border-slate-800">
                 <button id="bit-mode-1" onclick="setColorDepth(1)" class="px-2 py-0.5 rounded-md text-[11px] font-bold bg-cyan-500 text-slate-950 transition">1-Bit (雙色)</button>
                 <button id="bit-mode-2" onclick="setColorDepth(2)" class="px-2 py-0.5 rounded-md text-[11px] font-bold text-slate-400 hover:text-white transition">2-Bit (四色)</button>
                 <button id="bit-mode-3" onclick="setColorDepth(3)" class="px-2 py-0.5 rounded-md text-[11px] font-bold text-slate-400 hover:text-white transition">3-Bit (八色)</button>
@@ -154,7 +156,7 @@
                 <button onclick="selectColor(15)" id="swatch-15" class="w-6 h-6 rounded flex items-center justify-center font-mono text-[8px] font-bold bg-slate-950 text-cyan-400 border border-slate-600 hover:border-white transition" title="黑色 (1111)">1111</button>
             </div>
         </div>
-    </header>
+    </div>
 
     <!-- Main App Container -->
     <main class="w-full max-w-5xl mx-auto px-4 py-6 flex-1 grid grid-cols-1 lg:grid-cols-12 gap-6">
