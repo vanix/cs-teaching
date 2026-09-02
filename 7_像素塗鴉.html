@@ -82,7 +82,7 @@
 <body class="bg-cyber-950 text-slate-100 min-h-screen flex flex-col justify-between font-sans antialiased selection:bg-cyan-500 selection:text-slate-950">
 
     <!-- Header Navigation -->
-    <header class="w-full max-w-5xl mx-auto px-4 py-4 border-b border-slate-800/80 flex flex-col sm:flex-row justify-between items-center gap-3">
+    <header class="w-full max-w-5xl mx-auto px-4 py-4 border-b border-slate-800/80 flex flex-col lg:flex-row justify-between items-center gap-3">
         <div class="flex items-center gap-3">
             <a href="index.html" class="text-xs text-sky-400 hover:text-sky-300 transition flex items-center gap-1">
                 ← 回到首頁
@@ -97,7 +97,7 @@
         </div>
 
         <!-- Palette / Color indicator -->
-        <div class="flex flex-wrap items-center gap-2 bg-cyber-900 border border-slate-800 px-3 py-1.5 rounded-xl text-xs font-mono">
+        <div class="flex flex-wrap items-center gap-1.5 min-w-0 max-w-full bg-cyber-900 border border-slate-800 px-3 py-1.5 rounded-xl text-xs font-mono">
             <!-- Mode Selector -->
             <div class="flex items-center bg-slate-950 p-1 rounded-lg border border-slate-800 mr-1">
                 <button id="bit-mode-1" onclick="setColorDepth(1)" class="px-2 py-0.5 rounded-md text-[11px] font-bold bg-cyan-500 text-slate-950 transition">1-Bit (雙色)</button>
@@ -115,7 +115,7 @@
             </button>
 
             <!-- 2-Bit 4-Color Swatches Container -->
-            <div id="brush-2bit-container" class="hidden flex items-center gap-1 bg-slate-950 p-1 rounded-lg border border-slate-800">
+            <div id="brush-2bit-container" class="hidden flex-wrap items-center gap-1 max-w-full bg-slate-950 p-1 rounded-lg border border-slate-800">
                 <button onclick="selectColor(0)" id="swatch-0" class="w-6 h-6 rounded flex items-center justify-center font-mono text-[9px] font-bold bg-white text-slate-900 border-2 border-cyan-400 shadow" title="白色 (00)">00</button>
                 <button onclick="selectColor(1)" id="swatch-1" class="w-6 h-6 rounded flex items-center justify-center font-mono text-[9px] font-bold bg-rose-500 text-white border border-transparent hover:border-white transition" title="紅色 (01)">01</button>
                 <button onclick="selectColor(2)" id="swatch-2" class="w-6 h-6 rounded flex items-center justify-center font-mono text-[9px] font-bold bg-emerald-500 text-white border border-transparent hover:border-white transition" title="綠色 (10)">10</button>
@@ -123,35 +123,35 @@
             </div>
 
             <!-- 3-Bit 8-Color Swatches Container -->
-            <div id="brush-3bit-container" class="hidden flex items-center gap-1 bg-slate-950 p-1 rounded-lg border border-slate-800">
-                <button onclick="selectColor(0)" id="swatch-0" class="w-7 h-6 rounded flex items-center justify-center font-mono text-[8px] font-bold bg-white text-slate-900 border-2 border-cyan-400 shadow" title="白色 (000)">000</button>
-                <button onclick="selectColor(1)" id="swatch-1" class="w-7 h-6 rounded flex items-center justify-center font-mono text-[8px] font-bold bg-red-500 text-white border border-transparent hover:border-white transition" title="紅色 (001)">001</button>
-                <button onclick="selectColor(2)" id="swatch-2" class="w-7 h-6 rounded flex items-center justify-center font-mono text-[8px] font-bold bg-green-500 text-white border border-transparent hover:border-white transition" title="綠色 (010)">010</button>
-                <button onclick="selectColor(3)" id="swatch-3" class="w-7 h-6 rounded flex items-center justify-center font-mono text-[8px] font-bold bg-blue-500 text-white border border-transparent hover:border-white transition" title="藍色 (011)">011</button>
-                <button onclick="selectColor(4)" id="swatch-4" class="w-7 h-6 rounded flex items-center justify-center font-mono text-[8px] font-bold bg-yellow-400 text-slate-900 border border-transparent hover:border-white transition" title="黃色 (100)">100</button>
-                <button onclick="selectColor(5)" id="swatch-5" class="w-7 h-6 rounded flex items-center justify-center font-mono text-[8px] font-bold bg-cyan-500 text-white border border-transparent hover:border-white transition" title="青色 (101)">101</button>
-                <button onclick="selectColor(6)" id="swatch-6" class="w-7 h-6 rounded flex items-center justify-center font-mono text-[8px] font-bold bg-purple-500 text-white border border-transparent hover:border-white transition" title="紫色 (110)">110</button>
-                <button onclick="selectColor(7)" id="swatch-7" class="w-7 h-6 rounded flex items-center justify-center font-mono text-[8px] font-bold bg-slate-950 text-cyan-400 border border-slate-600 hover:border-white transition" title="黑色 (111)">111</button>
+            <div id="brush-3bit-container" class="hidden flex-wrap items-center gap-1 max-w-full bg-slate-950 p-1 rounded-lg border border-slate-800">
+                <button onclick="selectColor(0)" id="swatch-0" class="w-6 h-6 rounded flex items-center justify-center font-mono text-[8px] font-bold bg-white text-slate-900 border-2 border-cyan-400 shadow" title="白色 (000)">000</button>
+                <button onclick="selectColor(1)" id="swatch-1" class="w-6 h-6 rounded flex items-center justify-center font-mono text-[8px] font-bold bg-red-500 text-white border border-transparent hover:border-white transition" title="紅色 (001)">001</button>
+                <button onclick="selectColor(2)" id="swatch-2" class="w-6 h-6 rounded flex items-center justify-center font-mono text-[8px] font-bold bg-green-500 text-white border border-transparent hover:border-white transition" title="綠色 (010)">010</button>
+                <button onclick="selectColor(3)" id="swatch-3" class="w-6 h-6 rounded flex items-center justify-center font-mono text-[8px] font-bold bg-blue-500 text-white border border-transparent hover:border-white transition" title="藍色 (011)">011</button>
+                <button onclick="selectColor(4)" id="swatch-4" class="w-6 h-6 rounded flex items-center justify-center font-mono text-[8px] font-bold bg-yellow-400 text-slate-900 border border-transparent hover:border-white transition" title="黃色 (100)">100</button>
+                <button onclick="selectColor(5)" id="swatch-5" class="w-6 h-6 rounded flex items-center justify-center font-mono text-[8px] font-bold bg-cyan-500 text-white border border-transparent hover:border-white transition" title="青色 (101)">101</button>
+                <button onclick="selectColor(6)" id="swatch-6" class="w-6 h-6 rounded flex items-center justify-center font-mono text-[8px] font-bold bg-purple-500 text-white border border-transparent hover:border-white transition" title="紫色 (110)">110</button>
+                <button onclick="selectColor(7)" id="swatch-7" class="w-6 h-6 rounded flex items-center justify-center font-mono text-[8px] font-bold bg-slate-950 text-cyan-400 border border-slate-600 hover:border-white transition" title="黑色 (111)">111</button>
             </div>
 
             <!-- 4-Bit 16-Color Swatches Container -->
-            <div id="brush-4bit-container" class="hidden flex-wrap items-center gap-1 bg-slate-950 p-1 rounded-lg border border-slate-800">
-                <button onclick="selectColor(0)" id="swatch-0" class="w-7 h-6 rounded flex items-center justify-center font-mono text-[8px] font-bold bg-white text-slate-900 border-2 border-cyan-400 shadow" title="白色 (0000)">0000</button>
-                <button onclick="selectColor(1)" id="swatch-1" class="w-7 h-6 rounded flex items-center justify-center font-mono text-[8px] font-bold bg-red-500 text-white border border-transparent hover:border-white transition" title="紅色 (0001)">0001</button>
-                <button onclick="selectColor(2)" id="swatch-2" class="w-7 h-6 rounded flex items-center justify-center font-mono text-[8px] font-bold bg-orange-500 text-white border border-transparent hover:border-white transition" title="橙色 (0010)">0010</button>
-                <button onclick="selectColor(3)" id="swatch-3" class="w-7 h-6 rounded flex items-center justify-center font-mono text-[8px] font-bold bg-yellow-400 text-slate-900 border border-transparent hover:border-white transition" title="黃色 (0011)">0011</button>
-                <button onclick="selectColor(4)" id="swatch-4" class="w-7 h-6 rounded flex items-center justify-center font-mono text-[8px] font-bold bg-green-500 text-white border border-transparent hover:border-white transition" title="綠色 (0100)">0100</button>
-                <button onclick="selectColor(5)" id="swatch-5" class="w-7 h-6 rounded flex items-center justify-center font-mono text-[8px] font-bold bg-cyan-500 text-white border border-transparent hover:border-white transition" title="青色 (0101)">0101</button>
-                <button onclick="selectColor(6)" id="swatch-6" class="w-7 h-6 rounded flex items-center justify-center font-mono text-[8px] font-bold bg-blue-500 text-white border border-transparent hover:border-white transition" title="藍色 (0110)">0110</button>
-                <button onclick="selectColor(7)" id="swatch-7" class="w-7 h-6 rounded flex items-center justify-center font-mono text-[8px] font-bold bg-purple-500 text-white border border-transparent hover:border-white transition" title="紫色 (0111)">0111</button>
-                <button onclick="selectColor(8)" id="swatch-8" class="w-7 h-6 rounded flex items-center justify-center font-mono text-[8px] font-bold bg-pink-500 text-white border border-transparent hover:border-white transition" title="粉紅色 (1000)">1000</button>
-                <button onclick="selectColor(9)" id="swatch-9" class="w-7 h-6 rounded flex items-center justify-center font-mono text-[8px] font-bold bg-amber-800 text-white border border-transparent hover:border-white transition" title="棕色 (1001)">1001</button>
-                <button onclick="selectColor(10)" id="swatch-10" class="w-7 h-6 rounded flex items-center justify-center font-mono text-[8px] font-bold bg-slate-300 text-slate-800 border border-transparent hover:border-white transition" title="淺灰色 (1010)">1010</button>
-                <button onclick="selectColor(11)" id="swatch-11" class="w-7 h-6 rounded flex items-center justify-center font-mono text-[8px] font-bold bg-slate-600 text-white border border-transparent hover:border-white transition" title="灰色 (1011)">1011</button>
-                <button onclick="selectColor(12)" id="swatch-12" class="w-7 h-6 rounded flex items-center justify-center font-mono text-[8px] font-bold bg-lime-400 text-slate-900 border border-transparent hover:border-white transition" title="螢光綠 (1100)">1100</button>
-                <button onclick="selectColor(13)" id="swatch-13" class="w-7 h-6 rounded flex items-center justify-center font-mono text-[8px] font-bold bg-sky-400 text-slate-900 border border-transparent hover:border-white transition" title="天空藍 (1101)">1101</button>
-                <button onclick="selectColor(14)" id="swatch-14" class="w-7 h-6 rounded flex items-center justify-center font-mono text-[8px] font-bold bg-pink-400 text-slate-900 border border-transparent hover:border-white transition" title="粉彩色 (1110)">1110</button>
-                <button onclick="selectColor(15)" id="swatch-15" class="w-7 h-6 rounded flex items-center justify-center font-mono text-[8px] font-bold bg-slate-950 text-cyan-400 border border-slate-600 hover:border-white transition" title="黑色 (1111)">1111</button>
+            <div id="brush-4bit-container" class="hidden flex-wrap items-center gap-1 max-w-full bg-slate-950 p-1 rounded-lg border border-slate-800">
+                <button onclick="selectColor(0)" id="swatch-0" class="w-6 h-6 rounded flex items-center justify-center font-mono text-[8px] font-bold bg-white text-slate-900 border-2 border-cyan-400 shadow" title="白色 (0000)">0000</button>
+                <button onclick="selectColor(1)" id="swatch-1" class="w-6 h-6 rounded flex items-center justify-center font-mono text-[8px] font-bold bg-red-500 text-white border border-transparent hover:border-white transition" title="紅色 (0001)">0001</button>
+                <button onclick="selectColor(2)" id="swatch-2" class="w-6 h-6 rounded flex items-center justify-center font-mono text-[8px] font-bold bg-orange-500 text-white border border-transparent hover:border-white transition" title="橙色 (0010)">0010</button>
+                <button onclick="selectColor(3)" id="swatch-3" class="w-6 h-6 rounded flex items-center justify-center font-mono text-[8px] font-bold bg-yellow-400 text-slate-900 border border-transparent hover:border-white transition" title="黃色 (0011)">0011</button>
+                <button onclick="selectColor(4)" id="swatch-4" class="w-6 h-6 rounded flex items-center justify-center font-mono text-[8px] font-bold bg-green-500 text-white border border-transparent hover:border-white transition" title="綠色 (0100)">0100</button>
+                <button onclick="selectColor(5)" id="swatch-5" class="w-6 h-6 rounded flex items-center justify-center font-mono text-[8px] font-bold bg-cyan-500 text-white border border-transparent hover:border-white transition" title="青色 (0101)">0101</button>
+                <button onclick="selectColor(6)" id="swatch-6" class="w-6 h-6 rounded flex items-center justify-center font-mono text-[8px] font-bold bg-blue-500 text-white border border-transparent hover:border-white transition" title="藍色 (0110)">0110</button>
+                <button onclick="selectColor(7)" id="swatch-7" class="w-6 h-6 rounded flex items-center justify-center font-mono text-[8px] font-bold bg-purple-500 text-white border border-transparent hover:border-white transition" title="紫色 (0111)">0111</button>
+                <button onclick="selectColor(8)" id="swatch-8" class="w-6 h-6 rounded flex items-center justify-center font-mono text-[8px] font-bold bg-pink-500 text-white border border-transparent hover:border-white transition" title="粉紅色 (1000)">1000</button>
+                <button onclick="selectColor(9)" id="swatch-9" class="w-6 h-6 rounded flex items-center justify-center font-mono text-[8px] font-bold bg-amber-800 text-white border border-transparent hover:border-white transition" title="棕色 (1001)">1001</button>
+                <button onclick="selectColor(10)" id="swatch-10" class="w-6 h-6 rounded flex items-center justify-center font-mono text-[8px] font-bold bg-slate-300 text-slate-800 border border-transparent hover:border-white transition" title="淺灰色 (1010)">1010</button>
+                <button onclick="selectColor(11)" id="swatch-11" class="w-6 h-6 rounded flex items-center justify-center font-mono text-[8px] font-bold bg-slate-600 text-white border border-transparent hover:border-white transition" title="灰色 (1011)">1011</button>
+                <button onclick="selectColor(12)" id="swatch-12" class="w-6 h-6 rounded flex items-center justify-center font-mono text-[8px] font-bold bg-lime-400 text-slate-900 border border-transparent hover:border-white transition" title="螢光綠 (1100)">1100</button>
+                <button onclick="selectColor(13)" id="swatch-13" class="w-6 h-6 rounded flex items-center justify-center font-mono text-[8px] font-bold bg-sky-400 text-slate-900 border border-transparent hover:border-white transition" title="天空藍 (1101)">1101</button>
+                <button onclick="selectColor(14)" id="swatch-14" class="w-6 h-6 rounded flex items-center justify-center font-mono text-[8px] font-bold bg-pink-400 text-slate-900 border border-transparent hover:border-white transition" title="粉彩色 (1110)">1110</button>
+                <button onclick="selectColor(15)" id="swatch-15" class="w-6 h-6 rounded flex items-center justify-center font-mono text-[8px] font-bold bg-slate-950 text-cyan-400 border border-slate-600 hover:border-white transition" title="黑色 (1111)">1111</button>
             </div>
         </div>
     </header>
