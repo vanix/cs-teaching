@@ -102,6 +102,8 @@
             <div class="flex items-center bg-slate-950 p-1 rounded-lg border border-slate-800 mr-1">
                 <button id="bit-mode-1" onclick="setColorDepth(1)" class="px-2 py-0.5 rounded-md text-[11px] font-bold bg-cyan-500 text-slate-950 transition">1-Bit (雙色)</button>
                 <button id="bit-mode-2" onclick="setColorDepth(2)" class="px-2 py-0.5 rounded-md text-[11px] font-bold text-slate-400 hover:text-white transition">2-Bit (四色)</button>
+                <button id="bit-mode-3" onclick="setColorDepth(3)" class="px-2 py-0.5 rounded-md text-[11px] font-bold text-slate-400 hover:text-white transition">3-Bit (八色)</button>
+                <button id="bit-mode-4" onclick="setColorDepth(4)" class="px-2 py-0.5 rounded-md text-[11px] font-bold text-slate-400 hover:text-white transition">4-Bit (十六色)</button>
             </div>
 
             <span class="text-slate-400">筆刷：</span>
@@ -114,10 +116,42 @@
 
             <!-- 2-Bit 4-Color Swatches Container -->
             <div id="brush-2bit-container" class="hidden flex items-center gap-1 bg-slate-950 p-1 rounded-lg border border-slate-800">
-                <button onclick="set2BitColor(0)" id="swatch-0" class="w-6 h-6 rounded flex items-center justify-center font-mono text-[9px] font-bold bg-white text-slate-900 border-2 border-cyan-400 shadow" title="白色 (00)">00</button>
-                <button onclick="set2BitColor(1)" id="swatch-1" class="w-6 h-6 rounded flex items-center justify-center font-mono text-[9px] font-bold bg-rose-500 text-white border border-transparent hover:border-white transition" title="紅色 (01)">01</button>
-                <button onclick="set2BitColor(2)" id="swatch-2" class="w-6 h-6 rounded flex items-center justify-center font-mono text-[9px] font-bold bg-emerald-500 text-white border border-transparent hover:border-white transition" title="綠色 (10)">10</button>
-                <button onclick="set2BitColor(3)" id="swatch-3" class="w-6 h-6 rounded flex items-center justify-center font-mono text-[9px] font-bold bg-blue-500 text-white border border-transparent hover:border-white transition" title="藍色 (11)">11</button>
+                <button onclick="selectColor(0)" id="swatch-0" class="w-6 h-6 rounded flex items-center justify-center font-mono text-[9px] font-bold bg-white text-slate-900 border-2 border-cyan-400 shadow" title="白色 (00)">00</button>
+                <button onclick="selectColor(1)" id="swatch-1" class="w-6 h-6 rounded flex items-center justify-center font-mono text-[9px] font-bold bg-rose-500 text-white border border-transparent hover:border-white transition" title="紅色 (01)">01</button>
+                <button onclick="selectColor(2)" id="swatch-2" class="w-6 h-6 rounded flex items-center justify-center font-mono text-[9px] font-bold bg-emerald-500 text-white border border-transparent hover:border-white transition" title="綠色 (10)">10</button>
+                <button onclick="selectColor(3)" id="swatch-3" class="w-6 h-6 rounded flex items-center justify-center font-mono text-[9px] font-bold bg-blue-500 text-white border border-transparent hover:border-white transition" title="藍色 (11)">11</button>
+            </div>
+
+            <!-- 3-Bit 8-Color Swatches Container -->
+            <div id="brush-3bit-container" class="hidden flex items-center gap-1 bg-slate-950 p-1 rounded-lg border border-slate-800">
+                <button onclick="selectColor(0)" id="swatch-0" class="w-7 h-6 rounded flex items-center justify-center font-mono text-[8px] font-bold bg-white text-slate-900 border-2 border-cyan-400 shadow" title="白色 (000)">000</button>
+                <button onclick="selectColor(1)" id="swatch-1" class="w-7 h-6 rounded flex items-center justify-center font-mono text-[8px] font-bold bg-red-500 text-white border border-transparent hover:border-white transition" title="紅色 (001)">001</button>
+                <button onclick="selectColor(2)" id="swatch-2" class="w-7 h-6 rounded flex items-center justify-center font-mono text-[8px] font-bold bg-green-500 text-white border border-transparent hover:border-white transition" title="綠色 (010)">010</button>
+                <button onclick="selectColor(3)" id="swatch-3" class="w-7 h-6 rounded flex items-center justify-center font-mono text-[8px] font-bold bg-blue-500 text-white border border-transparent hover:border-white transition" title="藍色 (011)">011</button>
+                <button onclick="selectColor(4)" id="swatch-4" class="w-7 h-6 rounded flex items-center justify-center font-mono text-[8px] font-bold bg-yellow-400 text-slate-900 border border-transparent hover:border-white transition" title="黃色 (100)">100</button>
+                <button onclick="selectColor(5)" id="swatch-5" class="w-7 h-6 rounded flex items-center justify-center font-mono text-[8px] font-bold bg-cyan-500 text-white border border-transparent hover:border-white transition" title="青色 (101)">101</button>
+                <button onclick="selectColor(6)" id="swatch-6" class="w-7 h-6 rounded flex items-center justify-center font-mono text-[8px] font-bold bg-purple-500 text-white border border-transparent hover:border-white transition" title="紫色 (110)">110</button>
+                <button onclick="selectColor(7)" id="swatch-7" class="w-7 h-6 rounded flex items-center justify-center font-mono text-[8px] font-bold bg-slate-950 text-cyan-400 border border-slate-600 hover:border-white transition" title="黑色 (111)">111</button>
+            </div>
+
+            <!-- 4-Bit 16-Color Swatches Container -->
+            <div id="brush-4bit-container" class="hidden flex-wrap items-center gap-1 bg-slate-950 p-1 rounded-lg border border-slate-800">
+                <button onclick="selectColor(0)" id="swatch-0" class="w-7 h-6 rounded flex items-center justify-center font-mono text-[8px] font-bold bg-white text-slate-900 border-2 border-cyan-400 shadow" title="白色 (0000)">0000</button>
+                <button onclick="selectColor(1)" id="swatch-1" class="w-7 h-6 rounded flex items-center justify-center font-mono text-[8px] font-bold bg-red-500 text-white border border-transparent hover:border-white transition" title="紅色 (0001)">0001</button>
+                <button onclick="selectColor(2)" id="swatch-2" class="w-7 h-6 rounded flex items-center justify-center font-mono text-[8px] font-bold bg-orange-500 text-white border border-transparent hover:border-white transition" title="橙色 (0010)">0010</button>
+                <button onclick="selectColor(3)" id="swatch-3" class="w-7 h-6 rounded flex items-center justify-center font-mono text-[8px] font-bold bg-yellow-400 text-slate-900 border border-transparent hover:border-white transition" title="黃色 (0011)">0011</button>
+                <button onclick="selectColor(4)" id="swatch-4" class="w-7 h-6 rounded flex items-center justify-center font-mono text-[8px] font-bold bg-green-500 text-white border border-transparent hover:border-white transition" title="綠色 (0100)">0100</button>
+                <button onclick="selectColor(5)" id="swatch-5" class="w-7 h-6 rounded flex items-center justify-center font-mono text-[8px] font-bold bg-cyan-500 text-white border border-transparent hover:border-white transition" title="青色 (0101)">0101</button>
+                <button onclick="selectColor(6)" id="swatch-6" class="w-7 h-6 rounded flex items-center justify-center font-mono text-[8px] font-bold bg-blue-500 text-white border border-transparent hover:border-white transition" title="藍色 (0110)">0110</button>
+                <button onclick="selectColor(7)" id="swatch-7" class="w-7 h-6 rounded flex items-center justify-center font-mono text-[8px] font-bold bg-purple-500 text-white border border-transparent hover:border-white transition" title="紫色 (0111)">0111</button>
+                <button onclick="selectColor(8)" id="swatch-8" class="w-7 h-6 rounded flex items-center justify-center font-mono text-[8px] font-bold bg-pink-500 text-white border border-transparent hover:border-white transition" title="粉紅色 (1000)">1000</button>
+                <button onclick="selectColor(9)" id="swatch-9" class="w-7 h-6 rounded flex items-center justify-center font-mono text-[8px] font-bold bg-amber-800 text-white border border-transparent hover:border-white transition" title="棕色 (1001)">1001</button>
+                <button onclick="selectColor(10)" id="swatch-10" class="w-7 h-6 rounded flex items-center justify-center font-mono text-[8px] font-bold bg-slate-300 text-slate-800 border border-transparent hover:border-white transition" title="淺灰色 (1010)">1010</button>
+                <button onclick="selectColor(11)" id="swatch-11" class="w-7 h-6 rounded flex items-center justify-center font-mono text-[8px] font-bold bg-slate-600 text-white border border-transparent hover:border-white transition" title="灰色 (1011)">1011</button>
+                <button onclick="selectColor(12)" id="swatch-12" class="w-7 h-6 rounded flex items-center justify-center font-mono text-[8px] font-bold bg-lime-400 text-slate-900 border border-transparent hover:border-white transition" title="螢光綠 (1100)">1100</button>
+                <button onclick="selectColor(13)" id="swatch-13" class="w-7 h-6 rounded flex items-center justify-center font-mono text-[8px] font-bold bg-sky-400 text-slate-900 border border-transparent hover:border-white transition" title="天空藍 (1101)">1101</button>
+                <button onclick="selectColor(14)" id="swatch-14" class="w-7 h-6 rounded flex items-center justify-center font-mono text-[8px] font-bold bg-pink-400 text-slate-900 border border-transparent hover:border-white transition" title="粉彩色 (1110)">1110</button>
+                <button onclick="selectColor(15)" id="swatch-15" class="w-7 h-6 rounded flex items-center justify-center font-mono text-[8px] font-bold bg-slate-950 text-cyan-400 border border-slate-600 hover:border-white transition" title="黑色 (1111)">1111</button>
             </div>
         </div>
     </header>
@@ -132,7 +166,7 @@
             <div class="w-full flex justify-between items-center bg-cyber-900 border border-slate-800 p-3 rounded-2xl">
                 <div class="flex items-center gap-2">
                     <span class="text-xs font-mono font-bold text-slate-300">8×8 畫布</span>
-                    <span id="matrix-bits-label" class="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-800 text-cyan-400 border border-slate-700">64 Bits</span>
+                    <span id="matrix-bits-label" class="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-800 text-cyan-400 border border-slate-700">64 像素</span>
                 </div>
 
                 <div class="flex items-center gap-1.5">
@@ -225,6 +259,10 @@
                         <span id="bit-depth-display" class="text-cyan-400 font-bold">1 Bit / 像素 (雙色)</span>
                     </div>
                     <div class="flex justify-between text-slate-300">
+                        <span>總資料量：</span>
+                        <span id="bit-capacity-display" class="text-emerald-400 font-bold">64 Bits (8 Bytes)</span>
+                    </div>
+                    <div class="flex justify-between text-slate-300">
                         <span>背景模式：</span>
                         <span id="bg-mode-display" class="text-slate-300 font-bold">實心白底 (不去背)</span>
                     </div>
@@ -245,7 +283,7 @@
                     <h3 class="text-xs font-bold font-mono text-emerald-400 flex items-center gap-1.5">
                         🔢 圖像點陣矩陣碼 (Binary & Hex)
                     </h3>
-                    <span class="text-[10px] font-mono text-slate-500">64 Bits</span>
+                    <span class="text-[10px] font-mono text-slate-500">64 像素</span>
                 </div>
 
                 <!-- Matrix List -->
@@ -339,6 +377,36 @@
             3: { bg: '#3B82F6', border: '#1D4ED8', text: '#FFFFFF', name: '藍色', bitStr: '11' }
         };
 
+        const PALETTE_3BIT = {
+            0: { bg: '#FFFFFF', border: '#CBD5E1', text: '#64748B', name: '白色', bitStr: '000' },
+            1: { bg: '#EF4444', border: '#B91C1C', text: '#FFFFFF', name: '紅色', bitStr: '001' },
+            2: { bg: '#22C55E', border: '#15803D', text: '#FFFFFF', name: '綠色', bitStr: '010' },
+            3: { bg: '#3B82F6', border: '#1D4ED8', text: '#FFFFFF', name: '藍色', bitStr: '011' },
+            4: { bg: '#FACC15', border: '#CA8A04', text: '#1E293B', name: '黃色', bitStr: '100' },
+            5: { bg: '#06B6D4', border: '#0891B2', text: '#FFFFFF', name: '青色', bitStr: '101' },
+            6: { bg: '#A855F7', border: '#9333EA', text: '#FFFFFF', name: '紫色', bitStr: '110' },
+            7: { bg: '#0F172A', border: '#334155', text: '#06B6D4', name: '黑色', bitStr: '111' }
+        };
+
+        const PALETTE_4BIT = {
+            0: { bg: '#FFFFFF', border: '#CBD5E1', text: '#64748B', name: '白色', bitStr: '0000' },
+            1: { bg: '#EF4444', border: '#B91C1C', text: '#FFFFFF', name: '紅色', bitStr: '0001' },
+            2: { bg: '#F97316', border: '#C2410C', text: '#FFFFFF', name: '橙色', bitStr: '0010' },
+            3: { bg: '#FACC15', border: '#CA8A04', text: '#1E293B', name: '黃色', bitStr: '0011' },
+            4: { bg: '#22C55E', border: '#15803D', text: '#FFFFFF', name: '綠色', bitStr: '0100' },
+            5: { bg: '#06B6D4', border: '#0891B2', text: '#FFFFFF', name: '青色', bitStr: '0101' },
+            6: { bg: '#3B82F6', border: '#1D4ED8', text: '#FFFFFF', name: '藍色', bitStr: '0110' },
+            7: { bg: '#A855F7', border: '#9333EA', text: '#FFFFFF', name: '紫色', bitStr: '0111' },
+            8: { bg: '#EC4899', border: '#BE185D', text: '#FFFFFF', name: '粉紅色', bitStr: '1000' },
+            9: { bg: '#92400E', border: '#78350F', text: '#FFFFFF', name: '棕色', bitStr: '1001' },
+            10: { bg: '#CBD5E1', border: '#94A3B8', text: '#334155', name: '淺灰色', bitStr: '1010' },
+            11: { bg: '#475569', border: '#334155', text: '#FFFFFF', name: '灰色', bitStr: '1011' },
+            12: { bg: '#A3E635', border: '#65A30D', text: '#1E293B', name: '螢光綠', bitStr: '1100' },
+            13: { bg: '#38BDF8', border: '#0284C7', text: '#0F172A', name: '天空藍', bitStr: '1101' },
+            14: { bg: '#F472B6', border: '#DB2777', text: '#1E293B', name: '粉彩色', bitStr: '1110' },
+            15: { bg: '#0F172A', border: '#334155', text: '#06B6D4', name: '黑色', bitStr: '1111' }
+        };
+
         // Drawing state variables
         let isMouseDown = false;
         let toolMode = 'draw';
@@ -420,52 +488,62 @@
             ]
         };
 
-        // Set Color Depth Mode (1 or 2 bits)
+        const MODE_INFO = {
+            1: { label: '1 Bit / 像素 (雙色)', capacity: '64 Bits (8 Bytes)', maxVal: 1 },
+            2: { label: '2 Bits / 像素 (四色)', capacity: '128 Bits (16 Bytes)', maxVal: 3 },
+            3: { label: '3 Bits / 像素 (八色)', capacity: '192 Bits (24 Bytes)', maxVal: 7 },
+            4: { label: '4 Bits / 像素 (十六色)', capacity: '256 Bits (32 Bytes)', maxVal: 15 }
+        };
+
+        // Set Color Depth Mode (1, 2, 3 or 4 bits)
         function setColorDepth(depth) {
             colorDepth = depth;
-            const btn1 = document.getElementById('bit-mode-1');
-            const btn2 = document.getElementById('bit-mode-2');
-            const brush1Container = document.getElementById('brush-1bit-container');
-            const brush2Container = document.getElementById('brush-2bit-container');
-
-            if (depth === 1) {
-                btn1.className = "px-2 py-0.5 rounded-md text-[11px] font-bold bg-cyan-500 text-slate-950 transition";
-                btn2.className = "px-2 py-0.5 rounded-md text-[11px] font-bold text-slate-400 hover:text-white transition";
-                brush1Container.classList.remove('hidden');
-                brush2Container.classList.add('hidden');
-                activeBrushValue = 1;
-                gridState = gridState.map(v => v > 0 ? 1 : 0);
-
-                document.getElementById('bit-depth-display').textContent = '1 Bit / 像素 (雙色)';
-                document.getElementById('bit-capacity-display').textContent = '64 Bits (8 Bytes)';
-                document.getElementById('matrix-bits-label').textContent = '64 Bits';
-            } else {
-                btn2.className = "px-2 py-0.5 rounded-md text-[11px] font-bold bg-cyan-500 text-slate-950 transition";
-                btn1.className = "px-2 py-0.5 rounded-md text-[11px] font-bold text-slate-400 hover:text-white transition";
-                brush1Container.classList.add('hidden');
-                brush2Container.classList.remove('hidden');
-                activeBrushValue = 1;
-                set2BitColor(1);
-
-                document.getElementById('bit-depth-display').textContent = '2 Bits / 像素 (四色)';
-                document.getElementById('bit-capacity-display').textContent = '128 Bits (16 Bytes)';
-                document.getElementById('matrix-bits-label').textContent = '128 Bits';
+            for (let i = 1; i <= 4; i++) {
+                const btn = document.getElementById(`bit-mode-${i}`);
+                if (btn) {
+                    btn.className = i === depth
+                        ? "px-2 py-0.5 rounded-md text-[11px] font-bold bg-cyan-500 text-slate-950 transition"
+                        : "px-2 py-0.5 rounded-md text-[11px] font-bold text-slate-400 hover:text-white transition";
+                }
             }
+
+            const containers = {
+                1: document.getElementById('brush-1bit-container'),
+                2: document.getElementById('brush-2bit-container'),
+                3: document.getElementById('brush-3bit-container'),
+                4: document.getElementById('brush-4bit-container')
+            };
+            for (let i = 1; i <= 4; i++) {
+                if (containers[i]) containers[i].classList.add('hidden');
+            }
+            if (containers[depth]) containers[depth].classList.remove('hidden');
+
+            const info = MODE_INFO[depth];
+            const maxVal = info.maxVal;
+            gridState = gridState.map(v => v > maxVal ? 0 : v);
+            activeBrushValue = 1;
+
+            document.getElementById('bit-depth-display').textContent = info.label;
+            const capDisplay = document.getElementById('bit-capacity-display');
+            if (capDisplay) capDisplay.textContent = info.capacity;
+            selectColor(activeBrushValue);
             updateUI();
-            showToast(`🎨 已切換至 ${depth === 1 ? '1-Bit 雙色' : '2-Bit 四色'} 模式`);
+            showToast(`🎨 已切換至 ${info.maxVal + 1} 色模式 (${depth}-Bit)`);
         }
 
-        function set2BitColor(val) {
+        // Generic swatch selection for 2/3/4-bit modes
+        function selectColor(val) {
             activeBrushValue = val;
-            for (let i = 0; i <= 3; i++) {
-                const swatch = document.getElementById(`swatch-${i}`);
-                if (swatch) {
-                    if (i === val) {
-                        swatch.classList.add('ring-2', 'ring-cyan-400', 'scale-110');
-                    } else {
-                        swatch.classList.remove('ring-2', 'ring-cyan-400', 'scale-110');
-                    }
-                }
+            const containerId = ['', 'brush-1bit-container', 'brush-2bit-container', 'brush-3bit-container', 'brush-4bit-container'][colorDepth];
+            const container = document.getElementById(containerId);
+            if (!container) return;
+            const swatches = container.querySelectorAll('[id^="swatch-"]');
+            swatches.forEach(s => {
+                s.classList.remove('ring-2', 'ring-cyan-400', 'scale-110');
+            });
+            const active = container.querySelector(`#swatch-${val}`);
+            if (active) {
+                active.classList.add('ring-2', 'ring-cyan-400', 'scale-110');
             }
         }
 
@@ -490,7 +568,9 @@
 
         // Update all visual elements (Grid, Matrix Table, Preview Canvas)
         function updateUI() {
-            const palette = colorDepth === 1 ? PALETTE_1BIT : PALETTE_2BIT;
+            const PALETTES = { 1: PALETTE_1BIT, 2: PALETTE_2BIT, 3: PALETTE_3BIT, 4: PALETTE_4BIT };
+            const palette = PALETTES[colorDepth] || PALETTE_1BIT;
+            const bitsPerPixel = colorDepth;
 
             // 1. Update Grid Cells
             for (let i = 0; i < 64; i++) {
@@ -517,16 +597,11 @@
                     for (let col = 0; col < 8; col++) {
                         const idx = row * 8 + col;
                         const val = gridState[idx];
-                        if (colorDepth === 1) {
-                            rowBits += (val > 0 ? 1 : 0);
-                        } else {
-                            const bitVal = val;
-                            const binaryStr = bitVal.toString(2).padStart(2, '0');
-                            rowBits += binaryStr;
-                        }
+                        const binaryStr = val.toString(2).padStart(bitsPerPixel, '0');
+                        rowBits += binaryStr;
                     }
 
-                    const hexDigits = colorDepth === 1 ? 2 : 4;
+                    const hexDigits = bitsPerPixel * 2;
                     const hexVal = "0x" + parseInt(rowBits, 2).toString(16).toUpperCase().padStart(hexDigits, '0');
 
                     const tr = document.createElement('tr');
@@ -550,7 +625,8 @@
             if (!canvas) return;
             const ctx = canvas.getContext('2d');
             const cellSize = canvas.width / 8; // 256 / 8 = 32px per cell
-            const palette = colorDepth === 1 ? PALETTE_1BIT : PALETTE_2BIT;
+            const PALETTES = { 1: PALETTE_1BIT, 2: PALETTE_2BIT, 3: PALETTE_3BIT, 4: PALETTE_4BIT };
+            const palette = PALETTES[colorDepth] || PALETTE_1BIT;
 
             ctx.imageSmoothingEnabled = false;
             ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -811,13 +887,8 @@
 
         // Invert Colors of the Entire Canvas
         function invertCanvas() {
-            gridState = gridState.map(v => {
-                if (colorDepth === 1) {
-                    return v === 0 ? 1 : 0;
-                } else {
-                    return 3 - v;
-                }
-            });
+            const maxVal = (1 << colorDepth) - 1;
+            gridState = gridState.map(v => maxVal - v);
             updateUI();
             showToast("🔄 已完成顏色反轉！");
         }
