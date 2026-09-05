@@ -1,0 +1,805 @@
+<!DOCTYPE html>
+<html lang="zh-TW" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>主機板 I/O 連接埠配對連連看</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        cyber: {
+                            950: '#060a12',
+                            900: '#0b1326',
+                            800: '#13203e',
+                            700: '#1d2f57',
+                            cyan: '#06b6d4',
+                            emerald: '#10b981',
+                            amber: '#f59e0b',
+                            rose: '#f43f5e',
+                            purple: '#a855f7'
+                        }
+                    },
+                    fontFamily: {
+                        mono: ['Orbitron', 'Fira Code', 'monospace'],
+                        sans: ['Noto Sans TC', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Noto+Sans+TC:wght@400;500;700;900&display=swap');
+
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            background-color: #060a12;
+            color: #f1f5f9;
+            user-select: none;
+            overflow-x: hidden;
+        }
+
+        .tech-font { font-family: 'Orbitron', monospace; }
+
+        /* Smooth Dragging Shadow & Glow */
+        .device-card {
+            touch-action: none;
+            transition: transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.2s, border-color 0.2s;
+        }
+        .device-card:hover {
+            transform: translateY(-2px);
+            border-color: #06b6d4;
+            box-shadow: 0 0 15px rgba(6, 182, 212, 0.3);
+        }
+        .device-card.dragging {
+            opacity: 0.6;
+            transform: scale(1.05);
+            box-shadow: 0 0 25px rgba(6, 182, 212, 0.6);
+        }
+        .device-card.matched {
+            opacity: 0.4;
+            pointer-events: none;
+            filter: grayscale(0.8);
+            border-color: #10b981 !important;
+        }
+
+        /* SVG Target Ports Glow Effect */
+        .port-target {
+            cursor: pointer;
+            transition: all 0.25s ease;
+        }
+        .port-target:hover, .port-target.hovered {
+            filter: drop-shadow(0 0 8px #06b6d4);
+        }
+        .port-target.matched-port {
+            filter: drop-shadow(0 0 10px #10b981);
+        }
+
+        /* Connecting Cable Lines */
+        .connected-line {
+            stroke-dasharray: 6, 6;
+            animation: dashFlow 1.5s linear infinite;
+        }
+        @keyframes dashFlow {
+            to { stroke-dashoffset: -24; }
+        }
+
+        /* Glassmorphism Panel */
+        .glass-panel {
+            background: linear-gradient(135deg, rgba(11, 19, 38, 0.85) 0%, rgba(6, 10, 18, 0.95) 100%);
+            backdrop-filter: blur(12px);
+            box-shadow: inset 0 0 15px rgba(6, 182, 212, 0.08);
+        }
+
+        /* 計時模式時隱藏 I/O 文字標籤 */
+        .hide-port-labels .port-label {
+            display: none !important;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col bg-cyber-950 text-slate-100">
+
+    <!-- 頂部頁首 Navigation Bar -->
+    <header class="bg-cyber-900/90 border-b border-slate-800 px-4 sm:px-8 py-3 flex flex-col md:flex-row items-center justify-between gap-4 sticky top-0 z-40 backdrop-blur shadow-2xl">
+        <div class="flex items-center gap-3">
+            <a href="index.html" class="text-xs text-sky-400 hover:text-sky-300 transition flex items-center gap-1">
+                <i class="fa-solid fa-arrow-left"></i> 回到首頁
+            </a>
+            <div class="w-10 h-10 rounded-xl bg-cyan-500/10 border border-cyan-500/40 flex items-center justify-center text-cyan-400 text-xl shadow-lg shadow-cyan-500/20">
+                <i class="fa-solid fa-plug-circle-bolt"></i>
+            </div>
+            <div>
+                <h1 class="text-base sm:text-lg font-black tracking-wider tech-font text-cyan-400 flex items-center gap-2">
+                    主機板 I/O 連接埠配對連連看
+                </h1>
+            </div>
+        </div>
+
+        <!-- 模式切換分頁 Tab Switcher -->
+        <div class="flex bg-slate-950/80 p-1 rounded-2xl border border-slate-800 text-xs font-bold font-mono">
+            <button id="tab-practice" onclick="switchMode('practice')" class="px-4 py-2 rounded-xl transition flex items-center gap-2 bg-cyan-500 text-slate-950 shadow-lg">
+                <i class="fa-solid fa-book-open"></i>
+                <span>練習模式 (顯示標籤)</span>
+            </button>
+            <button id="tab-timed" onclick="switchMode('timed')" class="px-4 py-2 rounded-xl transition flex items-center gap-2 text-slate-400 hover:text-slate-200">
+                <i class="fa-solid fa-stopwatch"></i>
+                <span>挑戰計時模式 (無標籤)</span>
+            </button>
+        </div>
+
+        <!-- 遊戲數據與控制按鈕 -->
+        <div class="flex items-center gap-3">
+            <div class="flex items-center gap-3 bg-slate-950 px-3.5 py-1.5 rounded-xl border border-slate-800 text-xs font-mono">
+                <div class="flex items-center gap-1.5">
+                    <i class="fa-solid fa-trophy text-amber-400"></i>
+                    <span>進度: <strong id="score-text" class="text-cyan-400 font-bold">0 / 13</strong></span>
+                </div>
+                <div class="h-3 w-px bg-slate-800"></div>
+                <div class="flex items-center gap-1.5">
+                    <i class="fa-regular fa-clock text-slate-400"></i>
+                    <span id="timer-text" class="text-slate-300">00:00</span>
+                </div>
+            </div>
+
+            <button onclick="getHint()" class="px-3 py-1.5 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/40 text-amber-300 rounded-xl text-xs font-bold transition flex items-center gap-1.5">
+                <i class="fa-solid fa-lightbulb"></i>
+                <span class="hidden sm:inline">提示</span>
+            </button>
+
+            <button onclick="restartGame()" class="px-3 py-1.5 bg-cyan-500 hover:bg-cyan-400 text-slate-950 rounded-xl text-xs font-mono font-bold transition shadow-lg shadow-cyan-500/20 flex items-center gap-1.5">
+                <i class="fa-solid fa-rotate-left"></i>
+                <span class="hidden sm:inline">重置</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- 主遊戲區 Main Layout -->
+    <main class="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+
+        <!-- 左側：13 個待配對外接裝置列表 (Lg: 4 Cols) -->
+        <div class="lg:col-span-4 flex flex-col gap-3">
+            <div class="flex items-center justify-between px-1">
+                <h2 class="text-xs font-mono font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                    <i class="fa-solid fa-cubes text-cyan-400"></i> 請拖曳以下 13 種外接裝置
+                </h2>
+                <span id="mode-badge" class="text-[10px] font-mono px-2 py-0.5 rounded bg-cyan-500/10 text-cyan-400 border border-cyan-500/30">
+                    練習模式
+                </span>
+            </div>
+
+            <div id="device-list" class="grid grid-cols-2 lg:grid-cols-1 gap-2.5 max-h-[720px] overflow-y-auto pr-1">
+                <!-- 裝置卡片會由 JavaScript 動態生成與洗牌渲染 -->
+            </div>
+        </div>
+
+        <!-- 右側：主機板後方 I/O 背板與詳細說明 (Lg: 8 Cols) -->
+        <div class="lg:col-span-8 flex flex-col gap-4">
+
+            <!-- 主機板 I/O 背板核心展演區 -->
+            <div class="glass-panel border border-cyan-900/50 rounded-2xl p-4 sm:p-6 shadow-2xl relative overflow-hidden flex flex-col items-center">
+                
+                <div class="w-full flex items-center justify-between mb-3 px-2">
+                    <div class="flex items-center gap-2">
+                        <span class="w-2.5 h-2.5 rounded-full bg-cyan-500 animate-ping"></span>
+                        <span class="text-xs font-mono text-cyan-300 font-bold">主機板後方 I/O 擋板 (Motherboard Rear Shield)</span>
+                    </div>
+                    <span id="panel-mode-label" class="text-[10px] font-mono text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/30">
+                        標籤已顯示
+                    </span>
+                </div>
+
+                <!-- SVG 主機板 I/O 背板 -->
+                <div class="relative w-full max-w-[620px] aspect-[2.4/1] bg-slate-900 border-2 border-slate-700 rounded-xl shadow-2xl p-3 flex items-center justify-center overflow-hidden">
+                    
+                    <!-- 主機板 I/O 不鏽鋼金屬擋板紋理 -->
+                    <div class="absolute inset-0 bg-[radial-gradient(#334155_1px,transparent_1px)] [background-size:12px_12px] opacity-25"></div>
+                    <div class="absolute top-2 left-2 text-[8px] font-mono text-slate-600">STAINLESS STEEL I/O SHIELD</div>
+                    
+                    <!-- SVG Canvas 連線層與連接埠 Hit-box -->
+                    <svg id="io-svg-canvas" class="w-full h-full relative z-10" viewBox="0 0 600 250">
+                        <defs>
+                            <linearGradient id="metal-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" stop-color="#475569" />
+                                <stop offset="100%" stop-color="#1e293b" />
+                            </linearGradient>
+                            <linearGradient id="usb3-grad" x1="0%" y1="0%" x2="0%" y2="100%">
+                                <stop offset="0%" stop-color="#0284c7" />
+                                <stop offset="100%" stop-color="#0369a1" />
+                            </linearGradient>
+                        </defs>
+
+                        <!-- 線材繪製層 -->
+                        <g id="svg-cable-lines"></g>
+
+                        <!-- ================= 1. PS/2 Combo 埠 (x: 30, y: 25) ================= -->
+                        <g id="port-ps2" class="port-target" data-port="ps2">
+                            <rect x="30" y="25" width="50" height="50" rx="6" fill="url(#metal-grad)" stroke="#64748b" stroke-width="2"/>
+                            <path d="M 55 35 A 15 15 0 0 0 55 65 Z" fill="#a855f7"/>
+                            <path d="M 55 35 A 15 15 0 0 1 55 65 Z" fill="#10b981"/>
+                            <circle cx="55" cy="50" r="12" fill="#0f172a"/>
+                            <circle cx="51" cy="44" r="1.5" fill="#e2e8f0"/>
+                            <circle cx="59" cy="44" r="1.5" fill="#e2e8f0"/>
+                            <circle cx="48" cy="50" r="1.5" fill="#e2e8f0"/>
+                            <circle cx="62" cy="50" r="1.5" fill="#e2e8f0"/>
+                            <circle cx="51" cy="56" r="1.5" fill="#e2e8f0"/>
+                            <circle cx="59" cy="56" r="1.5" fill="#e2e8f0"/>
+                            <text class="port-label" x="55" y="86" font-size="8" fill="#94a3b8" text-anchor="middle" font-family="monospace">PS/2</text>
+                        </g>
+
+                        <!-- ================= 2. USB 2.0 雙層埠 (x: 95, y: 25) ================= -->
+                        <g id="port-usb2" class="port-target" data-port="usb2">
+                            <rect x="95" y="25" width="50" height="80" rx="6" fill="url(#metal-grad)" stroke="#64748b" stroke-width="2"/>
+                            <rect x="103" y="33" width="34" height="24" fill="#0f172a" rx="2" stroke="#334155"/>
+                            <rect x="107" y="36" width="26" height="6" fill="#1e293b"/>
+                            <rect x="103" y="71" width="34" height="24" fill="#0f172a" rx="2" stroke="#334155"/>
+                            <rect x="107" y="74" width="26" height="6" fill="#1e293b"/>
+                            <text class="port-label" x="120" y="118" font-size="8" fill="#94a3b8" text-anchor="middle" font-family="monospace">USB 2.0</text>
+                        </g>
+
+                        <!-- ================= 3. HDMI 2.1 埠 (x: 160, y: 25) ================= -->
+                        <g id="port-hdmi" class="port-target" data-port="hdmi">
+                            <rect x="160" y="25" width="50" height="50" rx="6" fill="url(#metal-grad)" stroke="#64748b" stroke-width="2"/>
+                            <path d="M 172 40 H 198 L 202 52 V 60 H 168 V 52 Z" fill="#0f172a" stroke="#e2e8f0" stroke-width="1.5"/>
+                            <rect x="174" y="44" width="22" height="10" fill="#334155" rx="1"/>
+                            <text class="port-label" x="185" y="86" font-size="8" fill="#94a3b8" text-anchor="middle" font-family="monospace">HDMI</text>
+                        </g>
+
+                        <!-- ================= 4. DisplayPort 1.4 埠 (x: 220, y: 25) ================= -->
+                        <g id="port-dp" class="port-target" data-port="dp">
+                            <rect x="220" y="25" width="50" height="50" rx="6" fill="url(#metal-grad)" stroke="#64748b" stroke-width="2"/>
+                            <path d="M 232 40 H 258 V 60 H 228 V 46 Z" fill="#0f172a" stroke="#e2e8f0" stroke-width="1.5"/>
+                            <rect x="234" y="44" width="20" height="10" fill="#334155" rx="1"/>
+                            <text class="port-label" x="245" y="86" font-size="8" fill="#94a3b8" text-anchor="middle" font-family="monospace">DisplayPort</text>
+                        </g>
+
+                        <!-- ================= 5. USB 3.2 Gen 1 (藍色 A 埠) (x: 280, y: 25) ================= -->
+                        <g id="port-usb3" class="port-target" data-port="usb3">
+                            <rect x="280" y="25" width="50" height="80" rx="6" fill="url(#metal-grad)" stroke="#64748b" stroke-width="2"/>
+                            <rect x="288" y="33" width="34" height="24" fill="#0f172a" rx="2" stroke="#0284c7"/>
+                            <rect x="292" y="36" width="26" height="8" fill="url(#usb3-grad)"/>
+                            <rect x="288" y="71" width="34" height="24" fill="#0f172a" rx="2" stroke="#0284c7"/>
+                            <rect x="292" y="74" width="26" height="8" fill="url(#usb3-grad)"/>
+                            <text class="port-label" x="305" y="118" font-size="8" fill="#38bdf8" text-anchor="middle" font-family="monospace">USB 3.2 (Blue)</text>
+                        </g>
+
+                        <!-- ================= 6. 雙層 USB Type-C 埠 (x: 340, y: 25) ================= -->
+                        <g id="port-typec" class="port-target" data-port="typec">
+                            <rect x="340" y="25" width="50" height="80" rx="6" fill="url(#metal-grad)" stroke="#64748b" stroke-width="2"/>
+                            <rect x="352" y="35" width="26" height="13" rx="6.5" fill="#0f172a" stroke="#06b6d4" stroke-width="1.5"/>
+                            <rect x="356" y="39.5" width="18" height="4" rx="2" fill="#38bdf8"/>
+                            <rect x="352" y="73" width="26" height="13" rx="6.5" fill="#0f172a" stroke="#06b6d4" stroke-width="1.5"/>
+                            <rect x="356" y="77.5" width="18" height="4" rx="2" fill="#38bdf8"/>
+                            <text class="port-label" x="365" y="118" font-size="8" fill="#06b6d4" text-anchor="middle" font-family="monospace">Dual Type-C</text>
+                        </g>
+
+                        <!-- ================= 7. RJ-45 有線網路埠 (x: 395, y: 25) ================= -->
+                        <g id="port-rj45" class="port-target" data-port="rj45">
+                            <rect x="395" y="25" width="55" height="60" rx="6" fill="url(#metal-grad)" stroke="#64748b" stroke-width="2"/>
+                            <rect x="403" y="33" width="39" height="36" fill="#0f172a" rx="2" stroke="#475569"/>
+                            <path d="M 412 33 V 45 H 433 V 33" fill="#1e293b"/>
+                            <circle cx="408" cy="62" r="2.5" fill="#10b981"/>
+                            <circle cx="437" cy="62" r="2.5" fill="#f59e0b"/>
+                            <text class="port-label" x="422" y="96" font-size="8" fill="#94a3b8" text-anchor="middle" font-family="monospace">2.5G LAN</text>
+                        </g>
+
+                        <!-- ================= 8. 3.5mm 雙音訊孔 (Line-Out / Mic-In) (x: 465, y: 20) ================= -->
+                        <g id="port-audio" class="port-target" data-port="audio">
+                            <rect x="465" y="20" width="60" height="85" rx="6" fill="url(#metal-grad)" stroke="#64748b" stroke-width="2"/>
+                            <circle cx="495" cy="42" r="9" fill="#10b981" stroke="#34d399" stroke-width="1.5"/>
+                            <circle cx="495" cy="42" r="3.5" fill="#0f172a"/>
+                            <circle cx="495" cy="73" r="9" fill="#f43f5e" stroke="#fb7185" stroke-width="1.5"/>
+                            <circle cx="495" cy="73" r="3.5" fill="#0f172a"/>
+                            <text class="port-label" x="495" y="97" font-size="8" fill="#94a3b8" text-anchor="middle" font-family="monospace">Audio (Out/Mic)</text>
+                        </g>
+
+                        <!-- ================= 9. S/PDIF 光纖數位音訊孔 (x: 535, y: 20) ================= -->
+                        <g id="port-spdif" class="port-target" data-port="spdif">
+                            <rect x="535" y="20" width="50" height="50" rx="6" fill="url(#metal-grad)" stroke="#64748b" stroke-width="2"/>
+                            <rect x="547" y="32" width="26" height="26" fill="#0f172a" rx="2" stroke="#64748b"/>
+                            <rect x="553" y="38" width="14" height="14" fill="#dc2626" rx="1"/>
+                            <text class="port-label" x="560" y="81" font-size="8" fill="#f87171" text-anchor="middle" font-family="monospace">Optical S/PDIF</text>
+                        </g>
+
+                        <!-- ================= 10. SD / MicroSD 記憶卡讀卡槽 (x: 155, y: 120) ================= -->
+                        <g id="port-sdcard" class="port-target" data-port="sdcard">
+                            <rect x="155" y="120" width="125" height="65" rx="6" fill="url(#metal-grad)" stroke="#64748b" stroke-width="2"/>
+                            <rect x="165" y="135" width="52" height="8" fill="#0f172a" rx="1" stroke="#f59e0b" stroke-width="1"/>
+                            <rect x="167" y="137" width="48" height="4" fill="#334155"/>
+                            <text class="port-label" x="191" y="155" font-size="7" fill="#fbbf24" text-anchor="middle" font-family="monospace">SD Card</text>
+                            <rect x="227" y="135" width="38" height="7" fill="#0f172a" rx="1" stroke="#f59e0b" stroke-width="1"/>
+                            <rect x="229" y="137" width="34" height="3" fill="#334155"/>
+                            <text class="port-label" x="246" y="155" font-size="7" fill="#fbbf24" text-anchor="middle" font-family="monospace">MicroSD</text>
+                            <text class="port-label" x="217.5" y="174" font-size="8" fill="#f59e0b" text-anchor="middle" font-family="monospace">SD / MicroSD Reader</text>
+                        </g>
+                    </svg>
+                </div>
+
+            </div>
+
+            <!-- 即時提示與規格說明卡片 (Dynamic Knowledge Panel) -->
+            <div id="info-panel" class="bg-cyber-900 border border-slate-800 rounded-2xl p-4 sm:p-5 flex items-start gap-4 shadow-xl transition-all duration-300">
+                <div id="info-icon-box" class="w-12 h-12 rounded-xl bg-cyan-500/10 border border-cyan-500/40 text-cyan-400 text-2xl flex items-center justify-center shrink-0">
+                    <i class="fa-solid fa-circle-info"></i>
+                </div>
+                <div class="space-y-1">
+                    <div class="flex items-center gap-2">
+                        <h3 id="info-title" class="text-sm font-bold text-cyan-300 font-mono">
+                            🎯 遊戲說明：拖曳左側外接裝置至主機板對應的 I/O 插槽
+                        </h3>
+                        <span id="info-tag" class="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700">
+                            防呆機制教學
+                        </span>
+                    </div>
+                    <p id="info-desc" class="text-xs text-slate-300 leading-relaxed">
+                        電腦主機板後方的 I/O 面板設有專門的防呆與顏色標示設計。例如：USB 3.2 常用藍色區分、HDMI 呈梯形切角、3.5mm 音訊孔中綠色為喇叭/耳機輸出、粉紅色為麥克風輸入。請試著配對全部 13 個外接設備！
+                    </p>
+                </div>
+            </div>
+
+        </div>
+
+    </main>
+
+    <!-- 成功破關 Modal 彈窗 -->
+    <div id="success-modal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md hidden flex items-center justify-center p-4">
+        <div class="bg-cyber-900 border-2 border-emerald-500/60 rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-[0_0_50px_rgba(16,185,129,0.3)] text-center space-y-5 transform transition-all">
+            <div class="w-20 h-20 bg-emerald-500/20 border-2 border-emerald-500 rounded-full flex items-center justify-center text-emerald-400 text-4xl mx-auto animate-bounce">
+                <i class="fa-solid fa-trophy"></i>
+            </div>
+            
+            <div class="space-y-2">
+                <h2 id="modal-title" class="text-xl font-black text-emerald-300 font-mono">恭喜完成所有 I/O 裝置配對！</h2>
+                <p id="modal-subtitle" class="text-xs text-slate-300">你已完全掌握主機板後方外接連接埠的規格與正確插法。</p>
+            </div>
+
+            <div class="bg-slate-950 border border-slate-800 rounded-2xl p-4 grid grid-cols-2 gap-3 text-left text-xs font-mono">
+                <div>
+                    <span class="text-slate-500">挑戰模式:</span>
+                    <p id="final-mode" class="text-cyan-400 font-bold text-sm">練習模式</p>
+                </div>
+                <div>
+                    <span class="text-slate-500">完成時間:</span>
+                    <p id="final-time" class="text-emerald-400 font-bold text-sm">00:00</p>
+                </div>
+            </div>
+
+            <button onclick="restartGame()" class="w-full py-3 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold font-mono text-xs rounded-xl transition shadow-lg shadow-emerald-500/20">
+                再玩一次 (Play Again)
+            </button>
+        </div>
+    </div>
+
+    <!-- JAVASCRIPT GAME ENGINE -->
+    <script>
+        // 1. 13 種 IO 裝置資料定義
+        const DEVICE_DATA = [
+            {
+                id: "ps2",
+                name: "PS/2 復古鍵盤",
+                portTarget: "ps2",
+                icon: "fa-keyboard",
+                iconColor: "text-purple-400",
+                cableType: "6-Pin 圓形紫色接頭",
+                desc: "傳統 PS/2 圓形接頭，專用於鍵盤 (紫) 與滑鼠 (綠)，具備硬體級中斷不衝突特性。"
+            },
+            {
+                id: "usb2",
+                name: "USB 無線滑鼠接收器",
+                portTarget: "usb2",
+                icon: "fa-computer-mouse",
+                iconColor: "text-slate-400",
+                cableType: "USB 2.0 Type-A (黑色口)",
+                desc: "規格上可向下相容插在 USB 3.2 埠，但 USB 3.2 高速傳輸時產生的 2.4GHz 電磁干擾容易導致無線滑鼠卡頓跳格，因此實務上強烈建議優先插在 USB 2.0 埠！"
+            },
+            {
+                id: "printer3d",
+                name: "3D 印表機",
+                portTarget: "usb2",
+                icon: "fa-cube",
+                iconColor: "text-amber-300",
+                cableType: "USB 2.0 Type-A 傳輸線",
+                desc: "3D 印表機通常透過 USB 2.0 連接線接受電腦切片軟體傳送的 G-code 列印指令，或直接插 SD 記憶卡離線列印。"
+            },
+            {
+                id: "hdmi",
+                name: "4K 電競顯示器 (HDMI)",
+                portTarget: "hdmi",
+                icon: "fa-tv",
+                iconColor: "text-rose-400",
+                cableType: "HDMI 2.1 影音傳輸線",
+                desc: "HDMI 為經典的影音同步傳輸介面，採用防呆梯形切角設計，廣泛用於電視與螢幕。"
+            },
+            {
+                id: "dp",
+                name: "高更新率顯示器 (DisplayPort)",
+                portTarget: "dp",
+                icon: "fa-desktop",
+                iconColor: "text-cyan-400",
+                cableType: "DisplayPort 1.4 纜線",
+                desc: "DisplayPort (DP) 具有單邊直角切角防呆，支援極高更新率與 G-Sync，是高階電腦螢幕的主流介面。"
+            },
+            {
+                id: "usb3",
+                name: "高速隨身碟 (USB 3.2)",
+                portTarget: "usb3",
+                icon: "fa-usb",
+                iconColor: "text-sky-400",
+                cableType: "USB 3.2 Gen 1 (藍色口)",
+                desc: "USB 3.0/3.2 介面通常採用藍色塑膠底座作為辨識，傳輸速度可達 5 Gbps ~ 10 Gbps，適合隨身碟與外接硬碟等高頻寬需求設備。"
+            },
+            {
+                id: "scanner",
+                name: "文件掃描器 (Scanner)",
+                portTarget: "usb3",
+                icon: "fa-print",
+                iconColor: "text-blue-400",
+                cableType: "USB 3.2 High-Speed 線",
+                desc: "高解析度文件或相片掃描器需要較高頻寬傳輸大量影像數據，因此連接至高速 USB 3.2 埠能加快掃描掃進電腦的速度。"
+            },
+            {
+                id: "typec",
+                name: "外接行動 SSD (Type-C)",
+                portTarget: "typec",
+                icon: "fa-hard-drive",
+                iconColor: "text-amber-400",
+                cableType: "USB Type-C 雙頭纜線",
+                desc: "現代主機板常配有雙 Type-C 埠（例如 10Gbps 或 20Gbps / Thunderbolt 4），擁有正反皆可插的雙面防呆橢圓設計，支援超高速數據傳輸。"
+            },
+            {
+                id: "webcam",
+                name: "高畫質視訊鏡頭 (Webcam)",
+                portTarget: "typec",
+                icon: "fa-video",
+                iconColor: "text-purple-300",
+                cableType: "USB Type-C 影音線",
+                desc: "新一代 4K/60fps 高畫質網路攝影機與視訊鏡頭可連接至主機板上的第二個 Type-C 埠，提供足夠頻寬與穩定電力傳送無壓縮視訊。"
+            },
+            {
+                id: "rj45",
+                name: "有線網路實體線 (CAT.6)",
+                portTarget: "rj45",
+                icon: "fa-network-wired",
+                iconColor: "text-emerald-400",
+                cableType: "RJ-45 網路水晶頭",
+                desc: "RJ-45 乙太網路接口設有塑膠彈片固定扣，主機板上通常配有 Link / Activity 狀態指示燈。"
+            },
+            {
+                id: "audio",
+                name: "3.5mm 電競耳機麥克風",
+                portTarget: "audio",
+                icon: "fa-headphones",
+                iconColor: "text-emerald-300",
+                cableType: "3.5mm TRS 音訊接頭",
+                desc: "基礎雙音訊孔防呆標示中：綠色孔代表音訊輸出 (Line-Out / 喇叭與耳機)，粉紅色孔代表麥克風輸入 (Mic-In)。"
+            },
+            {
+                id: "spdif",
+                name: "高級音響擴大機 (光纖)",
+                portTarget: "spdif",
+                icon: "fa-file-audio",
+                iconColor: "text-red-400",
+                cableType: "S/PDIF 方型光纖線",
+                desc: "S/PDIF 光纖數位音訊接口，透過紅光雷射脈衝傳送無損多聲道數位音訊，不受電磁干擾。"
+            },
+            {
+                id: "sdcard",
+                name: "相機 SD 記憶卡",
+                portTarget: "sdcard",
+                icon: "fa-sd-card",
+                iconColor: "text-amber-400",
+                cableType: "SDHC / SDXC 高速記憶卡",
+                desc: "創作者導向主機板（如 ASUS ProArt、MSI Creator 系列）常內建 SD / MicroSD 高速讀卡機插槽，方便攝影師與影音創作者直接插入記憶卡傳輸素材。"
+            }
+        ];
+
+        // 遊戲狀態變數
+        let currentMode = 'practice'; // 'practice' | 'timed'
+        let matchedCount = 0;
+        let matchedPairs = {}; // deviceId -> portId
+        let dragSrcId = null;
+        let secondsElapsed = 0;
+        let timerInterval = null;
+
+        // 頁面初始化
+        window.addEventListener('DOMContentLoaded', () => {
+            initGame();
+        });
+
+        // 切換模式：練習模式 (practice) vs 計時模式 (timed)
+        function switchMode(mode) {
+            currentMode = mode;
+
+            const tabPractice = document.getElementById('tab-practice');
+            const tabTimed = document.getElementById('tab-timed');
+            const svgCanvas = document.getElementById('io-svg-canvas');
+            const modeBadge = document.getElementById('mode-badge');
+            const panelModeLabel = document.getElementById('panel-mode-label');
+
+            if (mode === 'practice') {
+                tabPractice.className = "px-4 py-2 rounded-xl transition flex items-center gap-2 bg-cyan-500 text-slate-950 shadow-lg";
+                tabTimed.className = "px-4 py-2 rounded-xl transition flex items-center gap-2 text-slate-400 hover:text-slate-200";
+                svgCanvas.classList.remove('hide-port-labels');
+
+                modeBadge.textContent = "練習模式";
+                modeBadge.className = "text-[10px] font-mono px-2 py-0.5 rounded bg-cyan-500/10 text-cyan-400 border border-cyan-500/30";
+
+                panelModeLabel.textContent = "標籤已顯示";
+                panelModeLabel.className = "text-[10px] font-mono text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/30";
+            } else {
+                tabTimed.className = "px-4 py-2 rounded-xl transition flex items-center gap-2 bg-rose-500 text-slate-950 shadow-lg";
+                tabPractice.className = "px-4 py-2 rounded-xl transition flex items-center gap-2 text-slate-400 hover:text-slate-200";
+                svgCanvas.classList.add('hide-port-labels');
+
+                modeBadge.textContent = "⏱️ 計時模式";
+                modeBadge.className = "text-[10px] font-mono px-2 py-0.5 rounded bg-rose-500/10 text-rose-400 border border-rose-500/30";
+
+                panelModeLabel.textContent = "🚫 標籤已隱藏（挑戰中）";
+                panelModeLabel.className = "text-[10px] font-mono text-rose-400 bg-rose-500/10 px-2 py-0.5 rounded border border-rose-500/30";
+            }
+
+            restartGame();
+        }
+
+        // 重置與初始化遊戲
+        function initGame() {
+            matchedCount = 0;
+            matchedPairs = {};
+            dragSrcId = null;
+            secondsElapsed = 0;
+            clearInterval(timerInterval);
+
+            // 更新 UI 數據
+            document.getElementById('score-text').textContent = `0 / ${DEVICE_DATA.length}`;
+            document.getElementById('timer-text').textContent = '00:00';
+            document.getElementById('success-modal').classList.add('hidden');
+            document.getElementById('svg-cable-lines').innerHTML = '';
+
+            // 重置 SVG 埠樣式
+            document.querySelectorAll('.port-target').forEach(p => {
+                p.classList.remove('matched-port');
+            });
+
+            // 渲染洗牌後的裝置卡片
+            renderDeviceList();
+
+            // 啟動計時器
+            timerInterval = setInterval(() => {
+                secondsElapsed++;
+                const mins = String(Math.floor(secondsElapsed / 60)).padStart(2, '0');
+                const secs = String(secondsElapsed % 60).padStart(2, '0');
+                document.getElementById('timer-text').textContent = `${mins}:${secs}`;
+            }, 1000);
+
+            // 重置面板資訊
+            const modeName = currentMode === 'practice' ? '練習模式' : '計時挑戰模式';
+            const extraHint = currentMode === 'timed' ? '（當前模式下，右側 I/O 面板已隱藏所有名稱標籤，請依外型與色彩防呆判斷！）' : '';
+
+            updateInfoPanel(
+                `🎯 當前模式：${modeName}`,
+                `電腦主機板後方的 I/O 面板設有專門的防呆與顏色標示設計。${extraHint}請將 13 個外接設備拖曳至正確的位置上！`,
+                modeName
+            );
+        }
+
+        // 洗牌與渲染裝置卡片
+        function renderDeviceList() {
+            const listContainer = document.getElementById('device-list');
+            listContainer.innerHTML = '';
+
+            // 隨機洗牌 Array Shuffle
+            const shuffledDevices = [...DEVICE_DATA].sort(() => Math.random() - 0.5);
+
+            shuffledDevices.forEach(dev => {
+                const card = document.createElement('div');
+                card.id = `dev-card-${dev.id}`;
+                card.className = "device-card bg-slate-950 border border-slate-800 rounded-xl p-3 flex items-center justify-between cursor-grab hover:bg-slate-900/80 active:cursor-grabbing";
+                card.draggable = true;
+
+                card.innerHTML = `
+                    <div class="flex items-center gap-3">
+                        <div class="w-9 h-9 rounded-lg bg-slate-900 border border-slate-700 flex items-center justify-center text-lg ${dev.iconColor}">
+                            <i class="fa-solid ${dev.icon}"></i>
+                        </div>
+                        <div>
+                            <h4 class="text-xs font-bold text-slate-100">${dev.name}</h4>
+                            <p class="text-[10px] text-slate-400 font-mono">${dev.cableType}</p>
+                        </div>
+                    </div>
+                    <i class="fa-solid fa-grip-vertical text-slate-600 text-xs"></i>
+                `;
+
+                // 綁定 Drag & Drop 事件
+                card.addEventListener('dragstart', (e) => handleDragStart(e, dev));
+                card.addEventListener('dragend', handleDragEnd);
+
+                // 點擊事件 (查看詳情)
+                card.addEventListener('click', () => {
+                    updateInfoPanel(dev.name, dev.desc, dev.cableType);
+                });
+
+                listContainer.appendChild(card);
+            });
+
+            // 為右側 SVG 接頭綁定 Drop 拖放接收事件
+            setupSvgPortEvents();
+        }
+
+        // SVG 埠拖放與點擊事件設定
+        function setupSvgPortEvents() {
+            document.querySelectorAll('.port-target').forEach(portEl => {
+                const portType = portEl.getAttribute('data-port');
+
+                portEl.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    portEl.classList.add('hovered');
+                });
+
+                portEl.addEventListener('dragleave', () => {
+                    portEl.classList.remove('hovered');
+                });
+
+                portEl.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    portEl.classList.remove('hovered');
+
+                    if (!dragSrcId) return;
+                    checkPairing(dragSrcId, portType, portEl);
+                });
+
+                // 點擊接頭看說明
+                portEl.addEventListener('click', () => {
+                    const matchedDev = DEVICE_DATA.find(d => d.portTarget === portType);
+                    if (matchedDev) {
+                        const showLabel = currentMode === 'practice' ? matchedDev.portTarget.toUpperCase() : "？？？ (計時模式隱藏)";
+                        updateInfoPanel(`插槽：${showLabel}`, matchedDev.desc, matchedDev.cableType);
+                    }
+                });
+            });
+        }
+
+        // 拖曳開始
+        function handleDragStart(e, devData) {
+            dragSrcId = devData.id;
+            e.target.classList.add('dragging');
+            e.dataTransfer.setData('text/plain', devData.id);
+
+            updateInfoPanel(`準備安裝：${devData.name}`, devData.desc, devData.cableType);
+        }
+
+        // 拖曳結束
+        function handleDragEnd(e) {
+            e.target.classList.remove('dragging');
+        }
+
+        // 檢查配對是否正確
+        function checkPairing(deviceId, targetPort, portEl) {
+            const devData = DEVICE_DATA.find(d => d.id === deviceId);
+            if (!devData) return;
+
+            if (devData.portTarget === targetPort) {
+                // 配對成功！
+                if (!matchedPairs[deviceId]) {
+                    matchedPairs[deviceId] = targetPort;
+                    matchedCount++;
+
+                    // 1. 標示裝置卡片為完成
+                    const devCard = document.getElementById(`dev-card-${deviceId}`);
+                    if (devCard) {
+                        devCard.classList.add('matched');
+                        devCard.draggable = false;
+                    }
+
+                    // 2. 標示 SVG Port 成功光暈
+                    portEl.classList.add('matched-port');
+
+                    // 3. 畫出對應的 Cable 連線
+                    drawConnectingCable(devCard, portEl, devData);
+
+                    // 4. 更新分數與提示
+                    document.getElementById('score-text').textContent = `${matchedCount} / ${DEVICE_DATA.length}`;
+                    
+                    updateInfoPanel(
+                        `✅ 配對成功：${devData.name}`,
+                        `完全正確！${devData.desc}`,
+                        "配對成功"
+                    );
+
+                    // 5. 判斷是否全數完成
+                    if (matchedCount === DEVICE_DATA.length) {
+                        clearInterval(timerInterval);
+                        setTimeout(() => {
+                            const timeStr = document.getElementById('timer-text').textContent;
+                            document.getElementById('final-time').textContent = timeStr;
+                            document.getElementById('final-mode').textContent = currentMode === 'practice' ? '練習模式' : '🔥 挑戰計時模式';
+                            
+                            if (currentMode === 'timed') {
+                                document.getElementById('modal-title').textContent = "⚡ 恭喜通過無標籤計時挑戰！";
+                                document.getElementById('modal-subtitle').textContent = `太強了！你在完全沒有 I/O 標籤提示下，僅用 ${timeStr} 秒便搞定全部外接設備！`;
+                            } else {
+                                document.getElementById('modal-title').textContent = "恭喜完成所有 I/O 裝置配對！";
+                                document.getElementById('modal-subtitle').textContent = "你已完全掌握主機板後方外接連接埠的規格與正確插法。建議前往挑戰「計時模式」！";
+                            }
+
+                            document.getElementById('success-modal').classList.remove('hidden');
+                        }, 500);
+                    }
+                }
+            } else {
+                // 配對錯誤防呆提醒
+                updateInfoPanel(
+                    `❌ 配對失敗：接頭不符合`,
+                    `「${devData.name}」無法插入此插槽。提示：請觀察插槽形狀與顏色標示（例如：USB 3.2 常用藍色，HDMI 呈梯形切角）。`,
+                    "防呆提醒"
+                );
+            }
+        }
+
+        // 繪製 SVG 連接線 (Cable Line)
+        function drawConnectingCable(devCard, portEl, devData) {
+            const svgCanvas = document.getElementById('io-svg-canvas');
+            const cableGroup = document.getElementById('svg-cable-lines');
+            if (!svgCanvas || !cableGroup) return;
+
+            const bbox = portEl.getBBox();
+            const targetX = bbox.x + bbox.width / 2;
+            const targetY = bbox.y + bbox.height / 2;
+
+            const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            line.setAttribute('x1', targetX);
+            line.setAttribute('y1', targetY);
+            line.setAttribute('x2', targetX);
+            line.setAttribute('y2', targetY);
+            line.setAttribute('stroke', '#10b981');
+            line.setAttribute('stroke-width', '3');
+            line.setAttribute('class', 'connected-line');
+            line.setAttribute('filter', 'drop-shadow(0 0 5px #10b981)');
+
+            cableGroup.appendChild(line);
+
+            const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+            circle.setAttribute('cx', targetX);
+            circle.setAttribute('cy', targetY);
+            circle.setAttribute('r', '5');
+            circle.setAttribute('fill', '#10b981');
+            cableGroup.appendChild(circle);
+        }
+
+        // 更新資訊解說面板
+        function updateInfoPanel(title, desc, tag) {
+            document.getElementById('info-title').textContent = title;
+            document.getElementById('info-desc').textContent = desc;
+            document.getElementById('info-tag').textContent = tag;
+        }
+
+        // 提供提示 (Hint)
+        function getHint() {
+            const unmatchDev = DEVICE_DATA.find(d => !matchedPairs[d.id]);
+            if (unmatchDev) {
+                const card = document.getElementById(`dev-card-${unmatchDev.id}`);
+                if (card) {
+                    card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    card.classList.add('ring-2', 'ring-amber-400');
+                    setTimeout(() => card.classList.remove('ring-2', 'ring-amber-400'), 2000);
+                }
+
+                updateInfoPanel(
+                    `💡 提示：${unmatchDev.name}`,
+                    `該裝置所需插槽規格為：${unmatchDev.cableType}。${unmatchDev.desc}`,
+                    "提示模式"
+                );
+            }
+        }
+
+        // 重置遊戲
+        function restartGame() {
+            initGame();
+        }
+    </script>
+</body>
+</html>

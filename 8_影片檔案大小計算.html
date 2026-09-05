@@ -1,0 +1,777 @@
+<!DOCTYPE html>
+<html lang="zh-TW" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>影片檔案大小原理與計算互動實驗室</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            background-color: #090d16;
+            color: #f1f5f9;
+        }
+        .tech-font { font-family: 'Orbitron', monospace; }
+        
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #0f172a; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #475569; }
+
+        /* Cyber grid overlay background */
+        .bg-grid {
+            background-image: 
+                radial-gradient(circle at 50% 0%, rgba(56, 189, 248, 0.12) 0%, transparent 75%),
+                linear-gradient(rgba(30, 41, 59, 0.3) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(30, 41, 59, 0.3) 1px, transparent 1px);
+            background-size: 100% 100%, 24px 24px, 24px 24px;
+        }
+
+        .glow-cyan {
+            box-shadow: 0 0 25px rgba(6, 182, 212, 0.25);
+        }
+        
+        .glow-emerald {
+            box-shadow: 0 0 25px rgba(16, 185, 129, 0.25);
+        }
+
+        /* 3D Frame Stack Effect */
+        .frame-card {
+            transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            transform-style: preserve-3d;
+        }
+        .frame-card:hover {
+            transform: translateY(-10px) scale(1.05) rotateZ(-2deg);
+            z-index: 30 !important;
+        }
+
+        /* Formula highlight */
+        .math-highlight {
+            background: linear-gradient(120deg, rgba(14, 165, 233, 0.15), rgba(16, 185, 129, 0.15));
+            border-left: 4px solid #38bdf8;
+        }
+    </style>
+</head>
+<body class="bg-grid min-h-screen flex flex-col antialiased selection:bg-cyan-500 selection:text-black">
+
+    <!-- 頁頭標題欄 -->
+    <header class="border-b border-slate-800/80 bg-slate-950/80 backdrop-blur sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <a href="index.html" class="text-xs text-sky-400 hover:text-sky-300 transition flex items-center gap-1">
+                    <i class="fa-solid fa-arrow-left"></i> 回到首頁
+                </a>
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-cyan-500 to-emerald-500 flex items-center justify-center text-slate-950 font-black text-xl shadow-lg shadow-cyan-500/20">
+                    <i class="fa-solid fa-film"></i>
+                </div>
+                <div>
+                    <h1 class="text-base sm:text-lg font-black tracking-wide tech-font bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 via-teal-300 to-emerald-400">
+                        VIDEO SIZE LAB <span class="text-xs font-normal text-slate-400 font-sans">| 影片檔案大小計算與原理教學</span>
+                    </h1>
+                </div>
+            </div>
+            
+            <div class="flex items-center gap-3">
+                <a href="#lab-section" class="text-xs font-medium px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-700 hover:border-cyan-500 transition text-slate-300">
+                    <i class="fa-solid fa-cubes text-cyan-400 mr-1"></i> 原理展示
+                </a>
+                <a href="#calc-section" class="text-xs font-medium px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-700 hover:border-emerald-500 transition text-slate-300">
+                    <i class="fa-solid fa-calculator text-emerald-400 mr-1"></i> 容量計算機
+                </a>
+                <a href="#video-section" class="text-xs font-medium px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-700 hover:border-purple-500 transition text-slate-300">
+                    <i class="fa-brands fa-youtube text-purple-400 mr-1"></i> 影音課程
+                </a>
+                <a href="#quiz-section" class="text-xs font-medium px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-700 hover:border-amber-500 transition text-slate-300">
+                    <i class="fa-solid fa-graduation-cap text-amber-400 mr-1"></i> 觀念測驗
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <!-- 主要內容區 -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 py-8 space-y-12 flex-1 w-full">
+
+        <!-- 第一區：影片原理 - 「影片是由連續張圖片組成的」 -->
+        <section id="lab-section" class="bg-slate-900/80 border border-slate-800 rounded-2xl p-6 glow-cyan relative overflow-hidden backdrop-blur">
+            
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-800 pb-4 mb-6">
+                <div>
+                    <div class="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-cyan-500/10 text-cyan-400 border border-cyan-500/30 text-xs font-bold tech-font mb-2">
+                        <i class="fa-solid fa-atom"></i> CONCEPT 01
+                    </div>
+                    <h2 class="text-xl sm:text-2xl font-bold text-slate-100 flex items-center gap-2">
+                        核心原理：影片是怎樣構成的？
+                    </h2>
+                    <p class="text-slate-400 text-xs sm:text-sm mt-1">
+                        「影片」其實就是一串連續快速播放的「靜態圖片（稱為畫格 Frame）」。當每秒播放足夠多的圖片時，人類大腦就會產生連續運動的視覺錯覺！
+                    </p>
+                </div>
+
+                <!-- 控制鈕 -->
+                <div class="flex items-center gap-2 shrink-0">
+                    <button id="btn-play-pause" onclick="toggleCanvasPlay()" class="px-4 py-2 bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold rounded-xl text-xs transition flex items-center gap-2 shadow-lg shadow-cyan-500/20">
+                        <i class="fa-solid fa-pause" id="play-icon"></i> <span id="play-text">暫停播放</span>
+                    </button>
+                    <button onclick="explodeFrames()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-600 text-slate-200 font-bold rounded-xl text-xs transition flex items-center gap-2">
+                        <i class="fa-solid fa-layer-group text-cyan-400"></i> 拆解 1 秒鐘畫格 (Explode)
+                    </button>
+                </div>
+            </div>
+
+            <!-- 動畫展示主面板 -->
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
+                
+                <!-- 左邊：即時動態 Video Canvas -->
+                <div class="lg:col-span-5 flex flex-col items-center">
+                    <div class="relative w-full max-w-md aspect-video bg-slate-950 rounded-xl border-2 border-slate-700 overflow-hidden shadow-2xl flex items-center justify-center group">
+                        <canvas id="video-canvas" width="480" height="270" class="w-full h-full object-cover"></canvas>
+                        
+                        <!-- 畫面上方的即時資訊浮水印 -->
+                        <div class="absolute top-2 left-2 bg-slate-950/80 backdrop-blur px-2.5 py-1 rounded-md border border-slate-800 text-[10px] font-mono text-cyan-400 flex items-center gap-2">
+                            <span class="w-2 h-2 rounded-full bg-cyan-400 animate-ping"></span>
+                            <span>即時渲染中 | <span id="live-fps-text">24</span> FPS</span>
+                        </div>
+                        
+                        <div class="absolute bottom-2 right-2 bg-slate-950/80 backdrop-blur px-2.5 py-1 rounded-md border border-slate-800 text-[10px] font-mono text-slate-300">
+                            解析度: 480 × 270 px
+                        </div>
+                    </div>
+
+                    <!-- 物理速度正確性提示說明 -->
+                    <div class="mt-2 text-[11px] text-cyan-300/80 bg-cyan-950/40 border border-cyan-800/50 rounded-lg p-2 max-w-md text-left flex items-start gap-1.5">
+                        <i class="fa-solid fa-circle-info text-cyan-400 mt-0.5 shrink-0"></i>
+                        <span><strong>觀念釐清：</strong>不論切換何種 FPS，火箭飛過畫面的<strong>實際秒數完全相同</strong>！FPS 越高代表每幀間隔越短、採樣越密集，視覺體驗越流暢。</span>
+                    </div>
+
+                    <!-- 幀率選單切換 -->
+                    <div class="flex items-center gap-2 mt-3 bg-slate-950 p-1.5 rounded-xl border border-slate-800 text-xs flex-wrap">
+                        <span class="text-slate-400 font-medium px-2">示範 FPS：</span>
+                        <button onclick="changeDemoFPS(1)" data-fps="1" class="fps-btn px-3 py-1 rounded-lg text-slate-300 hover:text-white transition font-mono text-xs">1 FPS</button>
+                        <button onclick="changeDemoFPS(12)" data-fps="12" class="fps-btn px-3 py-1 rounded-lg text-slate-300 hover:text-white transition font-mono text-xs">12 FPS</button>
+                        <button onclick="changeDemoFPS(24)" data-fps="24" class="fps-btn px-3 py-1 rounded-lg bg-cyan-500 text-slate-950 font-bold font-mono text-xs">24 FPS (預設)</button>
+                        <button onclick="changeDemoFPS(30)" data-fps="30" class="fps-btn px-3 py-1 rounded-lg text-slate-300 hover:text-white transition font-mono text-xs">30 FPS</button>
+                        <button onclick="changeDemoFPS(60)" data-fps="60" class="fps-btn px-3 py-1 rounded-lg text-slate-300 hover:text-white transition font-mono text-xs">60 FPS</button>
+                    </div>
+                </div>
+
+                <!-- 右邊：拆解畫格層疊區 (Frame Stack Display) -->
+                <div class="lg:col-span-7 bg-slate-950/90 border border-slate-800/80 rounded-xl p-4 min-h-[260px] flex flex-col justify-between">
+                    <div class="flex items-center justify-between border-b border-slate-800/80 pb-2">
+                        <div class="flex items-center gap-2">
+                            <i class="fa-solid fa-film text-cyan-400"></i>
+                            <span class="text-xs font-bold text-slate-200">1 秒鐘內的靜態圖片展開序列 (Filmstrip Stack)</span>
+                        </div>
+                        <span id="frame-count-badge" class="text-[11px] font-mono font-bold px-2 py-0.5 rounded bg-cyan-950 text-cyan-300 border border-cyan-800">
+                            共 24 張圖片 / 秒
+                        </span>
+                    </div>
+
+                    <!-- 圖片疊加卡片容器 -->
+                    <div id="frames-stack-container" class="py-6 px-2 flex items-center overflow-x-auto gap-2 custom-scrollbar min-h-[140px] relative">
+                        <!-- 由 JavaScript 動態生成畫格卡片 -->
+                    </div>
+
+                    <!-- 單張畫格解說提示欄 -->
+                    <div id="frame-detail-box" class="bg-slate-900/90 rounded-lg p-3 border border-slate-800 flex items-center justify-between text-xs text-slate-300">
+                        <div class="flex items-center gap-2">
+                            <i class="fa-solid fa-lightbulb text-amber-400 text-sm"></i>
+                            <span>點選上方任意畫格卡片，檢視該張圖片的檔案大小計算方式！</span>
+                        </div>
+                        <span id="single-frame-calc" class="font-mono text-cyan-300 font-bold text-xs">
+                            單張圖片容量 = 寬 × 高 × 顏色深度
+                        </span>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+
+        <!-- 第二區：容量計算機與分步公式解析 -->
+        <section id="calc-section" class="bg-slate-900/80 border border-slate-800 rounded-2xl p-6 glow-emerald backdrop-blur">
+            
+            <div class="border-b border-slate-800 pb-4 mb-6">
+                <div class="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 text-xs font-bold tech-font mb-2">
+                    <i class="fa-solid fa-calculator"></i> CALCULATOR & MATH
+                </div>
+                <h2 class="text-xl sm:text-2xl font-bold text-slate-100 flex items-center gap-2">
+                    影片檔案大小計算機
+                </h2>
+                <p class="text-slate-400 text-xs sm:text-sm mt-1">
+                    調整下方影片四大要素（解析度、顏色深度、幀率、時長）與壓縮格式，觀察檔案容量的變化！
+                </p>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                
+                <!-- 控制面板欄位 (Inputs) -->
+                <div class="lg:col-span-5 space-y-5">
+                    
+                    <!-- 1. 解析度 (Resolution) -->
+                    <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-2">
+                        <label class="text-xs font-bold text-slate-300 flex items-center justify-between">
+                            <span><i class="fa-solid fa-expand text-cyan-400 mr-1.5"></i> 1. 影片解析度 (Resolution)</span>
+                            <span id="res-dims-text" class="text-cyan-400 font-mono text-xs">1920 × 1080 (1080p Full HD)</span>
+                        </label>
+                        <select id="preset-resolution" onchange="updateCalculator()" class="w-full bg-slate-900 border border-slate-700 text-slate-200 rounded-lg px-3 py-2 text-xs font-mono focus:border-cyan-500 outline-none">
+                            <option value="3840x2160">4K Ultra HD (3840 × 2160)</option>
+                            <option value="1920x1080" selected>1080p Full HD (1920 × 1080)</option>
+                            <option value="1280x720">720p HD (1280 × 720)</option>
+                            <option value="854x480">480p SD (854 × 480)</option>
+                        </select>
+                        <p class="text-[11px] text-slate-500">畫面總像素點數量 = 寬度 × 高度</p>
+                    </div>
+
+                    <!-- 2. 色彩深度 (Color Depth) -->
+                    <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-2">
+                        <label class="text-xs font-bold text-slate-300 flex items-center justify-between">
+                            <span><i class="fa-solid fa-palette text-emerald-400 mr-1.5"></i> 2. 顏色深度 (Bit Depth)</span>
+                            <span id="bit-depth-text" class="text-emerald-400 font-mono text-xs">24-bit (8-bit/全彩 RGB)</span>
+                        </label>
+                        <select id="preset-bitdepth" onchange="updateCalculator()" class="w-full bg-slate-900 border border-slate-700 text-slate-200 rounded-lg px-3 py-2 text-xs font-mono focus:border-emerald-500 outline-none">
+                            <option value="8">8-bit (256 色灰階/黑白)</option>
+                            <option value="24" selected>24-bit True Color (紅綠藍各 8-bit, 1677萬色)</option>
+                            <option value="30">30-bit HDR (紅綠藍各 10-bit 高動態範圍)</option>
+                            <option value="32">32-bit RGBA (包含透明度 Alpha 通道)</option>
+                        </select>
+                        <p class="text-[11px] text-slate-500">每個像素 (Pixel) 所佔用的電腦記憶體位元數 (Bits)</p>
+                    </div>
+
+                    <!-- 3. 幀率 (FPS) -->
+                    <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-2">
+                        <div class="flex items-center justify-between text-xs font-bold text-slate-300">
+                            <span><i class="fa-solid fa-stopwatch text-amber-400 mr-1.5"></i> 3. 每秒畫格數 (FPS)</span>
+                            <span id="val-fps" class="text-amber-400 font-mono text-xs font-bold">30 FPS</span>
+                        </div>
+                        <input type="range" id="input-fps" min="10" max="120" value="30" step="1" oninput="updateCalculator()" class="w-full accent-amber-500 cursor-pointer">
+                        <div class="flex justify-between text-[10px] text-slate-500 font-mono">
+                            <span>10 (電影復古)</span>
+                            <span>30 (標準影片)</span>
+                            <span>60 (高流暢遊戲)</span>
+                            <span>120</span>
+                        </div>
+                    </div>
+
+                    <!-- 4. 影片時長 (Duration) -->
+                    <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-2">
+                        <div class="flex items-center justify-between text-xs font-bold text-slate-300">
+                            <span><i class="fa-solid fa-clock text-purple-400 mr-1.5"></i> 4. 影片總長度 (Duration)</span>
+                            <span id="val-duration-text" class="text-purple-400 font-mono text-xs font-bold">00小時 01分 00秒</span>
+                        </div>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <span class="text-[10px] text-slate-400">分鐘 (Mins):</span>
+                                <input type="number" id="input-mins" min="0" max="180" value="1" oninput="updateCalculator()" class="w-full bg-slate-900 border border-slate-700 text-slate-200 rounded px-2 py-1 text-xs font-mono text-center">
+                            </div>
+                            <div>
+                                <span class="text-[10px] text-slate-400">秒數 (Secs):</span>
+                                <input type="number" id="input-secs" min="0" max="59" value="0" oninput="updateCalculator()" class="w-full bg-slate-900 border border-slate-700 text-slate-200 rounded px-2 py-1 text-xs font-mono text-center">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 5. 壓縮格式 (Codec / Compression) -->
+                    <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-2">
+                        <label class="text-xs font-bold text-slate-300 flex items-center justify-between">
+                            <span><i class="fa-solid fa-file-zipper text-rose-400 mr-1.5"></i> 5. 編碼格式 (Codec 壓縮比)</span>
+                            <span id="codec-ratio-text" class="text-rose-400 font-mono text-xs">H.264 (~1:100)</span>
+                        </label>
+                        <select id="preset-codec" onchange="updateCalculator()" class="w-full bg-slate-900 border border-slate-700 text-slate-200 rounded-lg px-3 py-2 text-xs font-mono focus:border-rose-500 outline-none">
+                            <option value="1">未壓縮 RAW 原始影片 (1 : 1)</option>
+                            <option value="5">Apple ProRes 422 高品質編輯 (約 1 : 5)</option>
+                            <option value="100" selected>H.264 / AVC (網路主流格式，約 1 : 100)</option>
+                            <option value="200">H.265 / HEVC (新一代高效能，約 1 : 200)</option>
+                            <option value="250">AV1 (超高壓縮比，約 1 : 250)</option>
+                        </select>
+                    </div>
+
+                </div>
+
+                <!-- 右邊：分步算式與結果 (Formula Steps & Output) -->
+                <div class="lg:col-span-7 flex flex-col justify-between space-y-6">
+                    
+                    <!-- 核心算式卡片 -->
+                    <div class="bg-slate-950 border border-slate-800 rounded-2xl p-5 space-y-4">
+                        <h3 class="text-sm font-bold text-slate-200 flex items-center justify-between border-b border-slate-800 pb-3">
+                            <span><i class="fa-solid fa-square-root-variable text-cyan-400 mr-2"></i>教學算式分步解析 (Step-by-Step Formula)</span>
+                            <span class="text-[10px] text-slate-500 font-mono">註: 8 bits = 1 Byte</span>
+                        </h3>
+
+                        <!-- Step 1: 單張圖片容量 -->
+                        <div class="p-3 rounded-xl math-highlight text-xs space-y-1">
+                            <div class="font-bold text-cyan-400 flex justify-between">
+                                <span>步驟 1: 計算「單張圖片 (1 Frame)」容量</span>
+                                <span id="out-frame-mb" class="font-mono text-white font-bold">5.93 MB</span>
+                            </div>
+                            <p class="font-mono text-[11px] text-slate-300">
+                                算式: <span id="math-step-1">1920 × 1080 × 24 bits = 49,766,400 bits</span>
+                            </p>
+                            <p class="text-[10px] text-slate-400">
+                                換算為 Byte: <span id="math-step-1-bytes" class="font-mono text-cyan-300">49,766,400 ÷ 8 = 6,220,800 Bytes (≈ 5.93 MB)</span>
+                            </p>
+                        </div>
+
+                        <!-- Step 2: 1 秒鐘影片容量 -->
+                        <div class="p-3 rounded-xl bg-slate-900 border border-slate-800 text-xs space-y-1">
+                            <div class="font-bold text-emerald-400 flex justify-between">
+                                <span>步驟 2: 計算「每秒鐘 (1 Second)」數據流容量</span>
+                                <span id="out-sec-mb" class="font-mono text-white font-bold">177.96 MB/s</span>
+                            </div>
+                            <p class="font-mono text-[11px] text-slate-300">
+                                算式: <span id="math-step-2">5.93 MB × 30 FPS = 177.96 MB/s</span>
+                            </p>
+                        </div>
+
+                        <!-- Step 3: 原始未壓縮容量 -->
+                        <div class="p-3 rounded-xl bg-slate-900 border border-slate-800 text-xs space-y-1">
+                            <div class="font-bold text-purple-400 flex justify-between">
+                                <span>步驟 3: 計算「未壓縮 (RAW) 總檔案大小」</span>
+                                <span id="out-raw-gb" class="font-mono text-white font-bold">10.43 GB</span>
+                            </div>
+                            <p class="font-mono text-[11px] text-slate-300">
+                                算式: <span id="math-step-3">177.96 MB/s × 60 秒 = 10,677.6 MB</span>
+                            </p>
+                        </div>
+
+                        <!-- Step 4: 經過壓縮後的實際容量 -->
+                        <div class="p-3 rounded-xl bg-gradient-to-r from-emerald-950 to-slate-900 border border-emerald-500/40 text-xs space-y-1">
+                            <div class="font-bold text-emerald-300 flex justify-between">
+                                <span>步驟 4: 經編碼器壓縮後實際大小 (Compressed)</span>
+                                <span id="out-final-size" class="font-mono text-emerald-400 font-extrabold text-sm">106.78 MB</span>
+                            </div>
+                            <p class="font-mono text-[11px] text-slate-300">
+                                算式: <span id="math-step-4">10.43 GB ÷ 100 (H.264 壓縮比) ≈ 106.78 MB</span>
+                            </p>
+                        </div>
+
+                    </div>
+
+                    <!-- 實體儲存媒體對比圖 (Storage Equivalents) -->
+                    <div class="bg-slate-950 border border-slate-800 rounded-2xl p-5 space-y-3">
+                        <h4 class="text-xs font-bold text-slate-300 flex items-center gap-2">
+                            <i class="fa-solid fa-hard-drive text-amber-400"></i> 相當於多少儲存空間？ (Storage Comparison)
+                        </h4>
+                        
+                        <div class="grid grid-cols-3 gap-3 text-center">
+                            <div class="bg-slate-900 p-2.5 rounded-xl border border-slate-800">
+                                <div class="text-[10px] text-slate-400">未壓縮 (RAW)</div>
+                                <div id="equiv-raw-disks" class="text-sm font-black font-mono text-purple-400 mt-1">15 張 CD</div>
+                                <div class="text-[9px] text-slate-500">以 700MB CD 計算</div>
+                            </div>
+
+                            <div class="bg-slate-900 p-2.5 rounded-xl border border-slate-800">
+                                <div class="text-[10px] text-slate-400">1 小時該設定影片</div>
+                                <div id="equiv-1hr-gb" class="text-sm font-black font-mono text-emerald-400 mt-1">6.26 GB</div>
+                                <div class="text-[9px] text-slate-500">H.264 格式</div>
+                            </div>
+
+                            <div class="bg-slate-900 p-2.5 rounded-xl border border-slate-800">
+                                <div class="text-[10px] text-slate-400">32GB 隨身碟可存</div>
+                                <div id="equiv-usb-hrs" class="text-sm font-black font-mono text-cyan-400 mt-1">約 5.1 小時</div>
+                                <div class="text-[9px] text-slate-500">H.264 格式</div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <!-- 第 2.5 區：YouTube 影音教學播放清單 -->
+        <section id="video-section" class="bg-slate-900/80 border border-slate-800 rounded-2xl p-6 glow-cyan backdrop-blur space-y-6">
+            
+            <div class="border-b border-slate-800 pb-4">
+                <div class="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-purple-500/10 text-purple-400 border border-purple-500/30 text-xs font-bold tech-font mb-2">
+                    <i class="fa-brands fa-youtube"></i> VIDEO TUTORIAL
+                </div>
+                <h2 class="text-xl sm:text-2xl font-bold text-slate-100 flex items-center gap-2">
+                    延伸推薦影音課程
+                </h2>
+                <p class="text-slate-400 text-xs sm:text-sm mt-1">
+                    搭配此 YouTube 教學影片，能更深入理解數位影像、影片編碼與容量計算原理！
+                </p>
+            </div>
+
+            <!-- YouTube Iframe 響應式容器 -->
+            <div class="relative w-full aspect-video rounded-xl overflow-hidden border border-slate-800 shadow-2xl bg-slate-950">
+                <iframe 
+                    class="absolute top-0 left-0 w-full h-full"
+                    src="https://www.youtube.com/embed/CfidNXdUOY8?si=lmgzHb-PXswnu5n_" 
+                    title="YouTube video player" 
+                    frameborder="0" 
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+                    referrerpolicy="strict-origin-when-cross-origin"
+                    allowfullscreen>
+                </iframe>
+            </div>
+
+        </section>
+
+
+        <!-- 第三區：學生課堂測驗 (Interactive Quiz) -->
+        <section id="quiz-section" class="bg-slate-900/80 border border-slate-800 rounded-2xl p-6 glow-cyan backdrop-blur space-y-6">
+            
+            <div class="flex items-center justify-between border-b border-slate-800 pb-4">
+                <div>
+                    <div class="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/30 text-xs font-bold tech-font mb-2">
+                        <i class="fa-solid fa-graduation-cap"></i> KNOWLEDGE CHECK
+                    </div>
+                    <h2 class="text-xl font-bold text-slate-100">
+                        觀念課堂小測驗
+                    </h2>
+                    <p class="text-slate-400 text-xs mt-0.5">試著回答以下問題，考考自己是否掌握了影片容量的影響因素！</p>
+                </div>
+                <div class="text-right">
+                    <span id="quiz-score-badge" class="text-xs font-mono font-bold px-3 py-1 bg-slate-950 text-amber-400 border border-amber-500/40 rounded-xl">
+                        得分: 0 / 3
+                    </span>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                
+                <!-- 題目 1 -->
+                <div class="bg-slate-950 border border-slate-800 rounded-xl p-4 space-y-3 flex flex-col justify-between">
+                    <div>
+                        <span class="text-xs font-bold text-cyan-400 font-mono">Q1. 解析度與容量</span>
+                        <p class="text-xs text-slate-200 mt-1 font-medium">
+                            如果將影片解析度從 1080p (1920×1080) 提高到 4K (3840×2160)，未壓縮影片容量會變成原來的幾倍？
+                        </p>
+                    </div>
+                    <div class="space-y-1.5 pt-2">
+                        <button onclick="checkQuiz(1, 'A', this)" class="q-btn w-full text-left px-3 py-2 bg-slate-900 hover:bg-slate-800 border border-slate-800 rounded-lg text-xs text-slate-300 transition">A. 2 倍</button>
+                        <button onclick="checkQuiz(1, 'B', this)" class="q-btn w-full text-left px-3 py-2 bg-slate-900 hover:bg-slate-800 border border-slate-800 rounded-lg text-xs text-slate-300 transition" data-correct="true">B. 4 倍 (長寬各擴大 2 倍)</button>
+                        <button onclick="checkQuiz(1, 'C', this)" class="q-btn w-full text-left px-3 py-2 bg-slate-900 hover:bg-slate-800 border border-slate-800 rounded-lg text-xs text-slate-300 transition">C. 8 倍</button>
+                    </div>
+                    <div id="quiz-ans-1" class="hidden text-[11px] p-2 rounded bg-slate-900 font-mono"></div>
+                </div>
+
+                <!-- 題目 2 -->
+                <div class="bg-slate-950 border border-slate-800 rounded-xl p-4 space-y-3 flex flex-col justify-between">
+                    <div>
+                        <span class="text-xs font-bold text-emerald-400 font-mono">Q2. 幀率 (FPS) 的影響</span>
+                        <p class="text-xs text-slate-200 mt-1 font-medium">
+                            在其他條件不變的情況下，將影片幀率從 30 FPS 調高到 60 FPS，每秒錄製的檔案容量會如何變化？
+                        </p>
+                    </div>
+                    <div class="space-y-1.5 pt-2">
+                        <button onclick="checkQuiz(2, 'A', this)" class="q-btn w-full text-left px-3 py-2 bg-slate-900 hover:bg-slate-800 border border-slate-800 rounded-lg text-xs text-slate-300 transition" data-correct="true">A. 增加為 2 倍 (圖片張數加倍)</button>
+                        <button onclick="checkQuiz(2, 'B', this)" class="q-btn w-full text-left px-3 py-2 bg-slate-900 hover:bg-slate-800 border border-slate-800 rounded-lg text-xs text-slate-300 transition">B. 保持不變</button>
+                        <button onclick="checkQuiz(2, 'C', this)" class="q-btn w-full text-left px-3 py-2 bg-slate-900 hover:bg-slate-800 border border-slate-800 rounded-lg text-xs text-slate-300 transition">C. 變為原本的 1/2</button>
+                    </div>
+                    <div id="quiz-ans-2" class="hidden text-[11px] p-2 rounded bg-slate-900 font-mono"></div>
+                </div>
+
+                <!-- 題目 3 -->
+                <div class="bg-slate-950 border border-slate-800 rounded-xl p-4 space-y-3 flex flex-col justify-between">
+                    <div>
+                        <span class="text-xs font-bold text-amber-400 font-mono">Q3. 壓縮格式的角色</span>
+                        <p class="text-xs text-slate-200 mt-1 font-medium">
+                            為什麼我們在 YouTube 上看 4K 影片不需要下載幾百 GB 的檔案？
+                        </p>
+                    </div>
+                    <div class="space-y-1.5 pt-2">
+                        <button onclick="checkQuiz(3, 'A', this)" class="q-btn w-full text-left px-3 py-2 bg-slate-900 hover:bg-slate-800 border border-slate-800 rounded-lg text-xs text-slate-300 transition">A. 螢幕把色彩減少了</button>
+                        <button onclick="checkQuiz(3, 'B', this)" class="q-btn w-full text-left px-3 py-2 bg-slate-900 hover:bg-slate-800 border border-slate-800 rounded-lg text-xs text-slate-300 transition" data-correct="true">B. 使用了高效影片編碼器 (如 H.264/AV1) 進行大幅壓縮</button>
+                        <button onclick="checkQuiz(3, 'C', this)" class="q-btn w-full text-left px-3 py-2 bg-slate-900 hover:bg-slate-800 border border-slate-800 rounded-lg text-xs text-slate-300 transition">C. 4K 影片的幀率自動降低到 1 FPS</button>
+                    </div>
+                    <div id="quiz-ans-3" class="hidden text-[11px] p-2 rounded bg-slate-900 font-mono"></div>
+                </div>
+
+            </div>
+
+        </section>
+
+    </main>
+
+    <!-- 頁尾 footer -->
+    <footer class="border-t border-slate-800/80 bg-slate-950 py-4 text-center text-xs text-slate-500 font-mono">
+        影片檔案大小與原理教學實驗室 &copy; 2026 Interactive Educational Tool
+    </footer>
+
+    <script>
+        // 全局變數
+        let demoFPS = 24;
+        let isPlaying = true;
+        let animFrameId = null;
+        let lastFrameTime = 0;
+        let rocketX = 0;
+        let currentScore = 0;
+        const quizStatus = { 1: false, 2: false, 3: false };
+
+        const canvas = document.getElementById('video-canvas');
+        const ctx = canvas.getContext('2d');
+
+        // 初始化
+        window.addEventListener('load', () => {
+            initAnimation();
+            explodeFrames();
+            updateCalculator();
+        });
+
+        // 1. 動態 Canvas 繪製 (修正：物理時間固定，FPS 決定步距與平滑度)
+        function initAnimation() {
+            function render(timestamp) {
+                if (!lastFrameTime) lastFrameTime = timestamp;
+                const elapsed = timestamp - lastFrameTime;
+
+                if (isPlaying && elapsed > (1000 / demoFPS)) {
+                    lastFrameTime = timestamp - (elapsed % (1000 / demoFPS));
+                    
+                    // 清空畫布
+                    ctx.fillStyle = '#0a0f1d';
+                    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                    // 繪製背景網格與星空
+                    ctx.strokeStyle = 'rgba(56, 189, 248, 0.15)';
+                    ctx.lineWidth = 1;
+                    for (let x = 0; x < canvas.width; x += 30) {
+                        ctx.beginPath();
+                        ctx.moveTo(x, 0);
+                        ctx.lineTo(x, canvas.height);
+                        ctx.stroke();
+                    }
+
+                    // 核心修正：固定物體真實速度為 140 像素/秒 (Speed = 140 px/s)
+                    // 每幀移動距離 = 每秒速度 ÷ 當前 FPS 幀率
+                    const speedPerSecond = 140; 
+                    const stepPerFrame = speedPerSecond / demoFPS;
+                    rocketX = (rocketX + stepPerFrame) % (canvas.width + 60);
+
+                    // 繪製軌跡火焰
+                    ctx.beginPath();
+                    ctx.fillStyle = '#f59e0b';
+                    ctx.arc(rocketX - 35, 135, 12 + Math.random() * 4, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    // 繪製主體 (火箭/衛星)
+                    ctx.save();
+                    ctx.translate(rocketX - 20, 135);
+                    ctx.fillStyle = '#38bdf8';
+                    ctx.beginPath();
+                    ctx.ellipse(0, 0, 20, 10, 0, 0, Math.PI * 2);
+                    ctx.fill();
+                    
+                    // 機翼
+                    ctx.fillStyle = '#10b981';
+                    ctx.fillRect(-10, -14, 8, 28);
+                    ctx.restore();
+
+                    // 文字標籤：顯示當前每幀的移動步距
+                    ctx.fillStyle = '#94a3b8';
+                    ctx.font = '10px Orbitron';
+                    ctx.fillText(`SPEED: 140 px/s | STEP: ${stepPerFrame.toFixed(1)} px/frame`, 15, 25);
+                }
+
+                animFrameId = requestAnimationFrame(render);
+            }
+            animFrameId = requestAnimationFrame(render);
+        }
+
+        // 切換示範播放/暫停
+        function toggleCanvasPlay() {
+            isPlaying = !isPlaying;
+            const icon = document.getElementById('play-icon');
+            const text = document.getElementById('play-text');
+            if (isPlaying) {
+                icon.className = 'fa-solid fa-pause';
+                text.textContent = '暫停播放';
+            } else {
+                icon.className = 'fa-solid fa-play';
+                text.textContent = '繼續播放';
+            }
+        }
+
+        // 切換示範 FPS
+        function changeDemoFPS(fps) {
+            demoFPS = fps;
+            document.getElementById('live-fps-text').textContent = fps;
+            document.querySelectorAll('.fps-btn').forEach(btn => {
+                if (parseInt(btn.dataset.fps) === fps) {
+                    btn.className = 'fps-btn px-3 py-1 rounded-lg bg-cyan-500 text-slate-950 font-bold font-mono text-xs';
+                } else {
+                    btn.className = 'fps-btn px-3 py-1 rounded-lg text-slate-300 hover:text-white transition font-mono text-xs';
+                }
+            });
+            explodeFrames();
+        }
+
+        // 拆解 1 秒鐘畫格 (Explode Frames into Stack Cards)
+        function explodeFrames() {
+            const container = document.getElementById('frames-stack-container');
+            const badge = document.getElementById('frame-count-badge');
+            container.innerHTML = '';
+
+            badge.textContent = `共 ${demoFPS} 張圖片 / 秒`;
+
+            // 展示代表性的 N 張卡片
+            const displayCount = Math.min(demoFPS, 16);
+            const speedPerSecond = 140;
+
+            for (let i = 0; i < displayCount; i++) {
+                const card = document.createElement('div');
+                card.className = 'frame-card shrink-0 w-20 h-28 bg-slate-900 border border-cyan-500/40 rounded-lg p-1.5 flex flex-col justify-between cursor-pointer shadow-lg hover:border-cyan-400';
+                
+                // 畫格縮圖畫布
+                const thumbCanvas = document.createElement('canvas');
+                thumbCanvas.width = 64;
+                thumbCanvas.height = 36;
+                thumbCanvas.className = 'w-full rounded border border-slate-800 bg-slate-950';
+                const tCtx = thumbCanvas.getContext('2d');
+                
+                // 依據時間點繪製縮圖位置：第 i 幀在 1 秒內的位置 (i / demoFPS 秒 * 速度)
+                tCtx.fillStyle = '#0a0f1d';
+                tCtx.fillRect(0, 0, 64, 36);
+                const frameTimeSec = i / demoFPS;
+                const posX = ((frameTimeSec * speedPerSecond) % 50) + 7;
+                
+                tCtx.fillStyle = '#38bdf8';
+                tCtx.beginPath();
+                tCtx.arc(posX, 18, 4, 0, Math.PI * 2);
+                tCtx.fill();
+
+                card.appendChild(thumbCanvas);
+
+                const info = document.createElement('div');
+                info.className = 'text-[9px] font-mono text-center text-slate-400 mt-1';
+                info.innerHTML = `<span class="text-cyan-400 font-bold">#${i + 1}</span> Frame`;
+                card.appendChild(info);
+
+                // 點擊事件：顯示該單張圖片計算 detail
+                card.addEventListener('click', () => {
+                    document.getElementById('single-frame-calc').innerHTML = 
+                        `第 ${i + 1} 張圖片 (t=${frameTimeSec.toFixed(2)}s) 容量 = 480 × 270 × 24bit = <span class="text-emerald-400">3,888,000 bits (約 0.46 MB)</span>`;
+                });
+
+                container.appendChild(card);
+            }
+        }
+
+        // 2. 容量計算機邏輯 (Video Size Calculator)
+        function updateCalculator() {
+            // 取得輸入值
+            const resVal = document.getElementById('preset-resolution').value;
+            const bitDepth = parseInt(document.getElementById('preset-bitdepth').value);
+            const fps = parseInt(document.getElementById('input-fps').value);
+            const mins = parseInt(document.getElementById('input-mins').value) || 0;
+            const secs = parseInt(document.getElementById('input-secs').value) || 0;
+            const codecRatio = parseFloat(document.getElementById('preset-codec').value);
+
+            // 解析度長寬
+            const [width, height] = resVal.split('x').map(Number);
+            
+            // 更新控制面板 UI 文字
+            document.getElementById('val-fps').textContent = `${fps} FPS`;
+            document.getElementById('res-dims-text').textContent = `${width} × ${height}`;
+            
+            const totalSecs = (mins * 60) + secs;
+            document.getElementById('val-duration-text').textContent = 
+                `${String(Math.floor(mins/60)).padStart(2,'0')}小時 ${String(mins%60).padStart(2,'0')}分 ${String(secs).padStart(2,'0')}秒 (${totalSecs}秒)`;
+
+            // --- 數學計算核心 ---
+            
+            // Step 1: 單張圖片位元數
+            const frameBits = width * height * bitDepth;
+            const frameBytes = frameBits / 8;
+            const frameMB = frameBytes / (1024 * 1024);
+
+            // Step 2: 每秒鐘 (Data Rate)
+            const secBytes = frameBytes * fps;
+            const secMB = secBytes / (1024 * 1024);
+
+            // Step 3: 原始未壓縮 (RAW) 容量
+            const rawBytes = secBytes * totalSecs;
+            const rawMB = rawBytes / (1024 * 1024);
+            const rawGB = rawMB / 1024;
+
+            // Step 4: 經過 Codec 壓縮後實際容量
+            const compBytes = rawBytes / codecRatio;
+            const compMB = compBytes / (1024 * 1024);
+            const compGB = compMB / 1024;
+
+            // --- 格式化渲染至算式卡片 ---
+
+            // Step 1 UI
+            document.getElementById('math-step-1').textContent = 
+                `${width} × ${height} × ${bitDepth} bits = ${frameBits.toLocaleString()} bits`;
+            document.getElementById('math-step-1-bytes').textContent = 
+                `${frameBits.toLocaleString()} ÷ 8 = ${frameBytes.toLocaleString()} Bytes (≈ ${frameMB.toFixed(2)} MB)`;
+            document.getElementById('out-frame-mb').textContent = `${frameMB.toFixed(2)} MB`;
+
+            // Step 2 UI
+            document.getElementById('math-step-2').textContent = 
+                `${frameMB.toFixed(2)} MB × ${fps} FPS = ${secMB.toFixed(2)} MB/s`;
+            document.getElementById('out-sec-mb').textContent = `${secMB.toFixed(2)} MB/s`;
+
+            // Step 3 UI
+            document.getElementById('math-step-3').textContent = 
+                `${secMB.toFixed(2)} MB/s × ${totalSecs} 秒 = ${rawMB.toFixed(1).toLocaleString()} MB`;
+            document.getElementById('out-raw-gb').textContent = 
+                rawGB >= 1 ? `${rawGB.toFixed(2)} GB` : `${rawMB.toFixed(1)} MB`;
+
+            // Step 4 UI
+            document.getElementById('math-step-4').textContent = 
+                `${rawGB >= 1 ? rawGB.toFixed(2) + ' GB' : rawMB.toFixed(1) + ' MB'} ÷ ${codecRatio} (壓縮比) ≈ ${compGB >= 1 ? compGB.toFixed(2) + ' GB' : compMB.toFixed(2) + ' MB'}`;
+            
+            document.getElementById('out-final-size').textContent = 
+                compGB >= 1 ? `${compGB.toFixed(2)} GB` : `${compMB.toFixed(2)} MB`;
+
+            // --- 實物比對數據 ---
+            // 700MB CD
+            const cdCount = Math.ceil(rawMB / 700);
+            document.getElementById('equiv-raw-disks').textContent = `${cdCount.toLocaleString()} 張 CD`;
+
+            // 1 小時同設定影片 (H.264 / 100)
+            const oneHrSecs = 3600;
+            const oneHrCompressedGB = ((secBytes * oneHrSecs) / 100) / (1024 * 1024 * 1024);
+            document.getElementById('equiv-1hr-gb').textContent = `${oneHrCompressedGB.toFixed(2)} GB`;
+
+            // 32GB 隨身碟可裝時數
+            const usbStorageGB = 32;
+            const hoursOnUsb = oneHrCompressedGB > 0 ? (usbStorageGB / oneHrCompressedGB) : 0;
+            document.getElementById('equiv-usb-hrs').textContent = `約 ${hoursOnUsb.toFixed(1)} 小時`;
+        }
+
+        // 3. 觀念測驗與評分機制
+        function checkQuiz(qNum, choice, btnEl) {
+            const parent = btnEl.parentElement;
+            const ansBox = document.getElementById(`quiz-ans-${qNum}`);
+            const buttons = parent.querySelectorAll('.q-btn');
+
+            buttons.forEach(b => {
+                b.disabled = true;
+                b.classList.remove('hover:bg-slate-800');
+            });
+
+            const isCorrect = btnEl.dataset.correct === "true";
+
+            if (isCorrect) {
+                btnEl.className = "q-btn w-full text-left px-3 py-2 bg-emerald-950 border border-emerald-500 text-emerald-200 rounded-lg text-xs font-bold";
+                ansBox.className = "text-[11px] p-2.5 rounded bg-emerald-950/80 border border-emerald-800 text-emerald-300";
+                ansBox.innerHTML = `✅ 答對了！非常棒！`;
+                if (!quizStatus[qNum]) {
+                    quizStatus[qNum] = true;
+                    currentScore++;
+                }
+            } else {
+                btnEl.className = "q-btn w-full text-left px-3 py-2 bg-rose-950 border border-rose-500 text-rose-200 rounded-lg text-xs font-bold";
+                ansBox.className = "text-[11px] p-2.5 rounded bg-rose-950/80 border border-rose-800 text-rose-300";
+                ansBox.innerHTML = `❌ 答錯囉！提示：請回想容量計算公式。`;
+            }
+
+            ansBox.classList.remove('hidden');
+            document.getElementById('quiz-score-badge').textContent = `得分: ${currentScore} / 3`;
+        }
+    </script>
+</body>
+</html>

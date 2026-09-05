@@ -1,0 +1,799 @@
+<!DOCTYPE html>
+<html lang="zh-TW" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>電腦五大單元運作與訊號流向教學系統</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icon Library -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        cyber: {
+                            950: '#050811',
+                            900: '#0b1120',
+                            800: '#152035',
+                            700: '#1f2e4d',
+                            cyan: '#06b6d4',
+                            emerald: '#10b981',
+                            amber: '#f59e0b',
+                            rose: '#f43f5e',
+                            purple: '#a855f7',
+                            blue: '#3b82f6'
+                        }
+                    },
+                    fontFamily: {
+                        mono: ['Orbitron', 'Fira Code', 'monospace'],
+                        sans: ['Noto Sans TC', 'Inter', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;800;900&family=Noto+Sans+TC:wght@400;500;700;900&display=swap');
+
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            background-color: #050811;
+            color: #e2e8f0;
+            overflow-x: hidden;
+        }
+
+        .tech-font { font-family: 'Orbitron', monospace; }
+
+        /* Glowing Pulse Animations for Paths */
+        @keyframes pulseGlowRed {
+            0%, 100% { stroke: #ef4444; filter: drop-shadow(0 0 4px #ef4444); }
+            50% { stroke: #f87171; filter: drop-shadow(0 0 8px #ef4444); }
+        }
+        @keyframes pulseGlowBlue {
+            0%, 100% { stroke: #3b82f6; filter: drop-shadow(0 0 4px #3b82f6); }
+            50% { stroke: #60a5fa; filter: drop-shadow(0 0 8px #3b82f6); }
+        }
+
+        .line-data-red { animation: pulseGlowRed 3s infinite ease-in-out; }
+        .line-ctrl-blue { animation: pulseGlowBlue 3s infinite ease-in-out; }
+
+        /* Active Unit Glow */
+        .unit-card {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .unit-card.active-unit {
+            transform: scale(1.05);
+            border-color: #38bdf8 !important;
+            box-shadow: 0 0 25px rgba(56, 189, 248, 0.7);
+        }
+
+        /* Dash Move Animation for Interactive Signals */
+        @keyframes dashMove {
+            to { stroke-dashoffset: -32; }
+        }
+        .animated-flow {
+            stroke-dasharray: 8, 8;
+            animation: dashMove 1s linear infinite;
+        }
+
+        /* Tech Cyber UI Glassmorphism Panels */
+        .tech-panel {
+            background: linear-gradient(135deg, rgba(15, 23, 42, 0.92) 0%, rgba(8, 14, 26, 0.96) 100%);
+            box-shadow: inset 0 0 20px rgba(6, 182, 212, 0.08);
+            backdrop-filter: blur(12px);
+        }
+        
+        .scanline {
+            background: linear-gradient(to bottom, transparent 50%, rgba(6, 182, 212, 0.04) 51%);
+            background-size: 100% 4px;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col bg-cyber-950 text-slate-100 selection:bg-cyan-500 selection:text-slate-950">
+
+    <!-- 網頁頂部 Navigation Header -->
+    <header class="h-16 bg-cyber-900/90 backdrop-blur border-b border-slate-800 px-4 sm:px-8 flex items-center justify-between sticky top-0 z-40 shadow-xl">
+        <div class="flex items-center gap-3">
+            <a href="index.html" class="text-xs text-sky-400 hover:text-sky-300 transition flex items-center gap-1">
+                <i class="fa-solid fa-arrow-left"></i> 回到首頁
+            </a>
+            <div class="w-10 h-10 rounded-xl bg-cyan-500/10 border border-cyan-500/40 flex items-center justify-center text-cyan-400 text-xl shadow-lg shadow-cyan-500/20">
+                <i class="fa-solid fa-microchip"></i>
+            </div>
+            <div>
+                <h1 class="text-base sm:text-lg font-black tracking-wider tech-font text-cyan-400 flex items-center gap-2">
+                    電腦五大單元
+                </h1>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-2 sm:gap-3">
+            <button onclick="switchTab('simulator')" id="nav-btn-simulator" class="px-3.5 py-1.5 rounded-xl text-xs font-mono font-bold transition flex items-center gap-2 bg-cyan-500 text-slate-950 shadow-lg shadow-cyan-500/20">
+                <i class="fa-solid fa-diagram-project"></i>
+                <span class="hidden sm:inline">運作流程模擬器</span>
+            </button>
+            <button onclick="switchTab('units')" id="nav-btn-units" class="px-3.5 py-1.5 rounded-xl text-xs font-mono font-bold transition flex items-center gap-2 bg-slate-800 text-slate-300 border border-slate-700 hover:bg-slate-700">
+                <i class="fa-solid fa-cubes"></i>
+                <span class="hidden sm:inline">五大單元詳解</span>
+            </button>
+            <button onclick="switchTab('quiz')" id="nav-btn-quiz" class="px-3.5 py-1.5 rounded-xl text-xs font-mono font-bold transition flex items-center gap-2 bg-slate-800 text-slate-300 border border-slate-700 hover:bg-slate-700">
+                <i class="fa-solid fa-graduation-cap"></i>
+                <span class="hidden sm:inline">隨堂測驗</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- 主體內容容器 Main Container -->
+    <main class="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 flex flex-col gap-6">
+
+        <!-- ================= PAGE 1: SIMULATOR & ARCHITECTURE ================= -->
+        <section id="view-simulator" class="space-y-6">
+            
+            <!-- 控制列 Control Toolbar -->
+            <div class="bg-cyber-900 border border-slate-800 rounded-2xl p-4 flex flex-wrap items-center justify-between gap-4 shadow-xl">
+                <div class="flex items-center gap-3">
+                    <span class="text-xs font-bold font-mono text-cyan-400 bg-cyan-950 px-3 py-1.5 rounded-xl border border-cyan-800">
+                        <i class="fa-solid fa-play text-xs mr-1"></i> 資料、位址與控制訊號模擬
+                    </span>
+                    <span id="cycle-step-badge" class="text-xs font-mono text-slate-300 bg-slate-950 px-3 py-1.5 rounded-xl border border-slate-800">
+                        狀態：<span class="text-amber-400 font-bold">待命 (Idle)</span>
+                    </span>
+                </div>
+
+                <!-- Simulation Action Buttons -->
+                <div class="flex items-center gap-2 flex-wrap">
+                    <button onclick="runNextCycleStep()" class="px-4 py-2 bg-gradient-to-r from-cyan-500 to-emerald-500 hover:from-cyan-400 hover:to-emerald-400 text-slate-950 font-bold font-mono text-xs rounded-xl transition shadow-lg shadow-cyan-500/20 active:scale-95 flex items-center gap-2">
+                        <i class="fa-solid fa-forward-step"></i> 單步執行 (Step)
+                    </button>
+                    <button onclick="autoPlayCycle()" id="btn-auto-play" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-mono text-xs rounded-xl transition active:scale-95 flex items-center gap-2">
+                        <i class="fa-solid fa-circle-play text-emerald-400"></i> 自動連續展示
+                    </button>
+                    <button onclick="resetSimulation()" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-400 border border-slate-700 font-mono text-xs rounded-xl transition active:scale-95">
+                        <i class="fa-solid fa-rotate-left"></i> 重置
+                    </button>
+                </div>
+            </div>
+
+            <!-- 主架構畫布區 (包含修正後的位址線與單向控制線) -->
+            <div class="relative w-full aspect-[16/10] sm:aspect-[16/9] min-h-[560px] tech-panel border border-cyan-900/50 rounded-2xl shadow-[0_0_30px_rgba(6,182,212,0.15)] overflow-hidden p-4 flex flex-col justify-between">
+                
+                <!-- 背景科技網格與掃描線 -->
+                <div class="absolute inset-0 bg-[radial-gradient(#1f2e4d_1px,transparent_1px)] [background-size:24px_24px] opacity-40 pointer-events-none"></div>
+                <div class="absolute inset-0 scanline pointer-events-none opacity-50"></div>
+
+                <!-- 向量 SVG 匯流排與箭頭 (強制 z-index:30 確保箭頭絕對覆蓋於單元上層不被遮擋) -->
+                <svg id="bus-svg-canvas" class="absolute inset-0 w-full h-full pointer-events-none" style="z-index: 30;" viewBox="0 0 1000 650" preserveAspectRatio="none">
+                    <defs>
+                        <!-- Red Arrow (Data) -->
+                        <marker id="arrow-red-end" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                            <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#ef4444" />
+                        </marker>
+
+                        <!-- Blue Arrow (Unidirectional Control) -->
+                        <marker id="arrow-blue-end" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                            <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#3b82f6" />
+                        </marker>
+
+                        <!-- Orange/Amber Arrow (Unidirectional Address Bus) -->
+                        <marker id="arrow-orange-end" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                            <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#f59e0b" />
+                        </marker>
+                    </defs>
+
+                    <!-- ================= 藍色箭頭：控制訊號 (Control Signals - CU 單向指揮) ================= -->
+                    <!-- 1. CU ➔ ALU (控制單元至 ALU，精確止於 ALU 下邊界外側) -->
+                    <path d="M 500 221 V 173" stroke="#3b82f6" stroke-width="3" class="line-ctrl-blue" marker-end="url(#arrow-blue-end)"/>
+                    
+                    <!-- 2. CU ➔ MU (控制單元至記憶單元，精確止於 MU 上邊界外側) -->
+                    <path d="M 530 339 V 443" stroke="#3b82f6" stroke-width="3" class="line-ctrl-blue" marker-end="url(#arrow-blue-end)"/>
+
+                    <!-- 3. CU ➔ IU (控制單元至輸入單元，精確止於 IU 右邊界外側) -->
+                    <path d="M 320 250 H 285" stroke="#3b82f6" stroke-width="3" class="line-ctrl-blue" marker-end="url(#arrow-blue-end)"/>
+
+                    <!-- 4. CU ➔ OU (控制單元至輸出單元，精確止於 OU 左邊界外側) -->
+                    <path d="M 680 250 H 715" stroke="#3b82f6" stroke-width="3" class="line-ctrl-blue" marker-end="url(#arrow-blue-end)"/>
+
+
+                    <!-- ================= 橙色箭頭：位址訊號 (Address Bus - CPU 定址) ================= -->
+                    <!-- 1. CPU/CU ➔ MU (位址線：止於 MU 上邊界外側) -->
+                    <path d="M 470 339 V 443" stroke="#f59e0b" stroke-width="3" stroke-dasharray="6,4" marker-end="url(#arrow-orange-end)"/>
+
+                    <!-- 2. CPU/CU ➔ IU (位址線：止於 IU 右邊界外側) -->
+                    <path d="M 320 285 H 285" stroke="#f59e0b" stroke-width="3" stroke-dasharray="6,4" marker-end="url(#arrow-orange-end)"/>
+
+                    <!-- 3. CPU/CU ➔ OU (位址線：止於 OU 左邊界外側) -->
+                    <path d="M 680 285 H 715" stroke="#f59e0b" stroke-width="3" stroke-dasharray="6,4" marker-end="url(#arrow-orange-end)"/>
+
+
+                    <!-- ================= 紅色箭頭：資料傳輸 (Data Transfer - 側邊繞線) ================= -->
+                    <!-- 1. 資料 (左) ➔ 輸入單元 (止於 IU 左邊界外側) -->
+                    <path d="M 130 280 H 175" stroke="#ef4444" stroke-width="3" class="line-data-red" marker-end="url(#arrow-red-end)"/>
+
+                    <!-- 2. 輸入單元 ➔ 記憶單元 (止於 MU 左邊界外側) -->
+                    <path d="M 230 351 V 490 H 365" stroke="#ef4444" stroke-width="3" fill="none" class="line-data-red" marker-end="url(#arrow-red-end)"/>
+
+                    <!-- 3. 記憶單元 ➔ 算術邏輯單元 (繞過 CU，止於 ALU 左邊界外側) -->
+                    <path d="M 390 449 V 400 H 300 V 110 H 327" stroke="#ef4444" stroke-width="3" fill="none" class="line-data-red" marker-end="url(#arrow-red-end)"/>
+
+                    <!-- 4. 算術邏輯單元 ➔ 記憶單元 (繞過 CU，止於 MU 上邊界外側) -->
+                    <path d="M 673 110 H 700 V 400 H 610 V 443" stroke="#ef4444" stroke-width="3" fill="none" class="line-data-red" marker-end="url(#arrow-red-end)"/>
+
+                    <!-- 5. 記憶單元 ➔ 輸出單元 (止於 OU 下邊界外側) -->
+                    <path d="M 630 490 H 770 V 356" stroke="#ef4444" stroke-width="3" fill="none" class="line-data-red" marker-end="url(#arrow-red-end)"/>
+
+                    <!-- 6. 輸出單元 ➔ 資料 (右) (止於 Data Out 左邊界外側) -->
+                    <path d="M 820 280 H 865" stroke="#ef4444" stroke-width="3" class="line-data-red" marker-end="url(#arrow-red-end)"/>
+
+                    <!-- 端點接點光圈裝飾 (Connection Pins) -->
+                    <circle cx="320" cy="250" r="3" fill="#3b82f6" />
+                    <circle cx="320" cy="285" r="3" fill="#f59e0b" />
+                    <circle cx="680" cy="250" r="3" fill="#3b82f6" />
+                    <circle cx="680" cy="285" r="3" fill="#f59e0b" />
+                    <circle cx="500" cy="221" r="3" fill="#3b82f6" />
+                    <circle cx="530" cy="339" r="3" fill="#3b82f6" />
+                    <circle cx="470" cy="339" r="3" fill="#f59e0b" />
+
+                    <!-- 動態模擬流動點疊送層 -->
+                    <g id="dynamic-signal-paths"></g>
+                </svg>
+
+                <!-- 五大單元與元件佈局 (設為 z-20) -->
+                <div class="relative z-20 w-full h-full pointer-events-none">
+
+                    <!-- 粉紅色外框：中央處理單元 (CPU) 包裹區 -->
+                    <div class="absolute top-[6%] left-[32%] w-[36%] h-[48%] rounded-2xl bg-pink-900/10 border-2 border-pink-500/50 shadow-[0_0_25px_rgba(236,72,153,0.2)] backdrop-blur-md p-3 flex flex-col justify-between pointer-events-auto">
+                        <div class="absolute -top-3 left-1/2 transform -translate-x-1/2 px-4 py-0.5 bg-pink-950 border border-pink-500/60 rounded-full flex items-center gap-2 shadow-md">
+                            <span class="w-2 h-2 rounded-full bg-pink-500 animate-pulse"></span>
+                            <span class="text-[11px] font-mono font-black text-pink-300 tracking-wider">中央處理單元 (CPU)</span>
+                        </div>
+
+                        <!-- 1. 算術邏輯單元 (ALU) - CPU 頂部 -->
+                        <div id="unit-alu" onclick="selectUnit('alu')" class="w-full h-[38%] unit-card bg-cyan-950/90 border-2 border-cyan-400/60 rounded-xl flex items-center justify-center gap-3 cursor-pointer hover:bg-cyan-900/50 transition shadow-lg">
+                            <i class="fa-solid fa-calculator text-cyan-300 text-xl"></i>
+                            <div class="text-center">
+                                <h3 class="font-black text-sm text-cyan-100">算術邏輯單元</h3>
+                                <p class="text-[10px] text-cyan-400 font-mono">Arithmetic Logic Unit (ALU)</p>
+                            </div>
+                        </div>
+
+                        <!-- 2. 控制單元 (CU) - CPU 核心正中央 -->
+                        <div id="unit-cu" onclick="selectUnit('cu')" class="w-full h-[38%] unit-card bg-cyan-950/90 border-2 border-cyan-400/60 rounded-xl flex items-center justify-center gap-3 cursor-pointer hover:bg-cyan-900/50 transition shadow-lg">
+                            <i class="fa-solid fa-compass text-cyan-300 text-xl"></i>
+                            <div class="text-center">
+                                <h3 class="font-black text-sm text-cyan-100">控制單元</h3>
+                                <p class="text-[10px] text-cyan-400 font-mono">Control Unit (CU)</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 3. 輸入單元 (IU) - 左側 -->
+                    <div id="unit-iu" onclick="selectUnit('iu')" class="absolute top-[32%] left-[18%] w-[10%] h-[22%] unit-card bg-cyan-950/90 border-2 border-cyan-400/60 rounded-xl flex flex-col items-center justify-center cursor-pointer hover:bg-cyan-900/50 transition shadow-lg py-2 pointer-events-auto">
+                        <i class="fa-solid fa-keyboard text-cyan-300 text-lg mb-1"></i>
+                        <h3 class="font-black text-xs text-cyan-100 text-center leading-tight">輸<br>入<br>單<br>元</h3>
+                        <p class="text-[8px] text-cyan-400 font-mono mt-0.5">Input Unit</p>
+                    </div>
+
+                    <!-- 外部「資料」點 - 最左側 -->
+                    <div id="node-data-in" class="absolute top-[36%] left-[5%] w-[8%] h-[14%] bg-amber-500/20 border-2 border-amber-400/80 rounded-full flex flex-col items-center justify-center shadow-[0_0_15px_rgba(245,158,11,0.3)] pointer-events-auto">
+                        <span class="font-black text-xs text-amber-300">資 料</span>
+                        <span class="text-[8px] text-amber-400 font-mono">Data In</span>
+                    </div>
+
+                    <!-- 4. 記憶單元 (MU) - 底部中央 -->
+                    <div id="unit-mu" onclick="selectUnit('mu')" class="absolute top-[69%] left-[37%] w-[26%] h-[16%] unit-card bg-cyan-950/90 border-2 border-cyan-400/60 rounded-xl flex items-center justify-center gap-3 cursor-pointer hover:bg-cyan-900/50 transition shadow-lg pointer-events-auto">
+                        <i class="fa-solid fa-memory text-cyan-300 text-2xl"></i>
+                        <div class="text-center">
+                            <h3 class="font-black text-sm text-cyan-100">記 憶 單 元</h3>
+                            <p class="text-[10px] text-cyan-400 font-mono">Memory Unit (MU / RAM)</p>
+                        </div>
+                    </div>
+
+                    <!-- 5. 輸出單元 (OU) - 右側 -->
+                    <div id="unit-ou" onclick="selectUnit('ou')" class="absolute top-[32%] left-[72%] w-[10%] h-[22%] unit-card bg-cyan-950/90 border-2 border-cyan-400/60 rounded-xl flex flex-col items-center justify-center cursor-pointer hover:bg-cyan-900/50 transition shadow-lg py-2 pointer-events-auto">
+                        <i class="fa-solid fa-desktop text-cyan-300 text-lg mb-1"></i>
+                        <h3 class="font-black text-xs text-cyan-100 text-center leading-tight">輸<br>出<br>單<br>元</h3>
+                        <p class="text-[8px] text-cyan-400 font-mono mt-0.5">Output Unit</p>
+                    </div>
+
+                    <!-- 外部「資料」點 - 最右側 -->
+                    <div id="node-data-out" class="absolute top-[36%] left-[87%] w-[8%] h-[14%] bg-amber-500/20 border-2 border-amber-400/80 rounded-full flex flex-col items-center justify-center shadow-[0_0_15px_rgba(245,158,11,0.3)] pointer-events-auto">
+                        <span class="font-black text-xs text-amber-300">資 料</span>
+                        <span class="text-[8px] text-amber-400 font-mono">Data Out</span>
+                    </div>
+
+                </div>
+
+                <!-- 圖例標籤 (Legend at Bottom Left) -->
+                <div class="absolute bottom-3 left-4 z-40 flex items-center gap-3 sm:gap-4 bg-slate-950/90 border border-slate-800 px-3.5 py-1.5 rounded-xl text-xs font-bold backdrop-blur flex-wrap">
+                    <div class="flex items-center gap-1.5">
+                        <span class="w-3 h-1 rounded-full bg-rose-500 inline-block"></span>
+                        <span class="text-rose-400">實線紅：資料傳輸</span>
+                    </div>
+                    <div class="flex items-center gap-1.5">
+                        <span class="w-3 h-1 rounded-full bg-amber-500 inline-block border border-dashed border-amber-300"></span>
+                        <span class="text-amber-400">虛線橙：位址訊號 (Address)</span>
+                    </div>
+                    <div class="flex items-center gap-1.5">
+                        <span class="w-3 h-1 rounded-full bg-blue-500 inline-block"></span>
+                        <span class="text-blue-400">實線藍：控制訊號 (CU發出)</span>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- 動態教學解說面板 Information Explainer Card -->
+            <div id="explainer-card" class="bg-cyber-900 border border-slate-800 rounded-2xl p-5 shadow-2xl transition-all duration-300 flex flex-col md:flex-row items-start gap-4">
+                <div id="explainer-icon-box" class="w-12 h-12 rounded-2xl bg-cyan-500/10 border border-cyan-500/40 text-cyan-400 text-2xl flex items-center justify-center shrink-0">
+                    <i class="fa-solid fa-lightbulb"></i>
+                </div>
+                <div class="flex-1 space-y-1">
+                    <div class="flex items-center justify-between">
+                        <h3 id="explainer-title" class="text-base font-bold text-cyan-300 font-mono">
+                            💡 請點擊「單步執行」觀察資料、位址與控制訊號正確運作
+                        </h3>
+                        <span id="explainer-tag" class="text-[10px] font-mono px-2.5 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700">
+                            觀念升級解說
+                        </span>
+                    </div>
+                    <p id="explainer-desc" class="text-xs sm:text-sm text-slate-300 leading-relaxed">
+                        【紅色實線】：資料傳輸路徑。資料經輸入單元存放至記憶體，再送入 ALU 運算後寫回記憶體，最後由輸出單元呈現。<br>
+                        【橙色虛線】：位址訊號（Address Bus）。CPU 發出記憶體門牌或 I/O 埠位址，指明資料要讀寫的位置。<br>
+                        【藍色實線】：控制訊號（Control Signals）。控制單元 (CU) 單向向 ALU、記憶體、輸入/輸出發射指令脈衝。
+                    </p>
+                </div>
+            </div>
+
+        </section>
+
+        <!-- ================= PAGE 2: UNITS DEEP DIVE ================= -->
+        <section id="view-units" class="hidden space-y-6">
+            <div class="bg-cyber-900 border border-slate-800 rounded-2xl p-6 shadow-xl">
+                <h2 class="text-lg font-black text-cyan-400 font-mono mb-2 flex items-center gap-2">
+                    <i class="fa-solid fa-cubes"></i> 電腦五大單元詳細功能解析
+                </h2>
+                <p class="text-xs text-slate-400 mb-6">
+                    電腦硬體主要由以下五大單元組合而成，彼此互相合作完成各項工作：
+                </p>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    
+                    <!-- 1. 控制單元 CU -->
+                    <div class="bg-slate-950 border-l-4 border-l-cyan-500 border-y border-r border-slate-800 rounded-xl p-4 space-y-2">
+                        <div class="flex items-center justify-between">
+                            <h3 class="font-bold text-cyan-300 text-sm flex items-center gap-2">
+                                <i class="fa-solid fa-compass"></i> 1. 控制單元 (Control Unit, CU)
+                            </h3>
+                            <span class="text-[10px] bg-pink-950 text-pink-300 border border-pink-800 px-2 py-0.5 rounded">CPU 內部</span>
+                        </div>
+                        <p class="text-xs text-slate-300 leading-relaxed">
+                            <strong>【電腦的指揮官】</strong> 負責控制與協調全電腦各單元的運作。它會從記憶體讀取指令、分析解碼，並透過<strong>藍色控制線</strong>發送控制訊號給其他單元。
+                        </p>
+                    </div>
+
+                    <!-- 2. 算術邏輯單元 ALU -->
+                    <div class="bg-slate-950 border-l-4 border-l-cyan-500 border-y border-r border-slate-800 rounded-xl p-4 space-y-2">
+                        <div class="flex items-center justify-between">
+                            <h3 class="font-bold text-cyan-300 text-sm flex items-center gap-2">
+                                <i class="fa-solid fa-calculator"></i> 2. 算術邏輯單元 (ALU)
+                            </h3>
+                            <span class="text-[10px] bg-pink-950 text-pink-300 border border-pink-800 px-2 py-0.5 rounded">CPU 內部</span>
+                        </div>
+                        <p class="text-xs text-slate-300 leading-relaxed">
+                            <strong>【電腦的運算核心】</strong> 負責執行所有加減乘除等算術運算，以及 AND、OR、NOT、比較大小等邏輯運算。
+                        </p>
+                    </div>
+
+                    <!-- 3. 記憶單元 MU -->
+                    <div class="bg-slate-950 border-l-4 border-l-emerald-500 border-y border-r border-slate-800 rounded-xl p-4 space-y-2">
+                        <h3 class="font-bold text-emerald-300 text-sm flex items-center gap-2">
+                            <i class="fa-solid fa-memory"></i> 3. 記憶單元 (Memory Unit, MU)
+                        </h3>
+                        <p class="text-xs text-slate-300 leading-relaxed">
+                            <strong>【資料的儲存倉庫】</strong> 用來存放等待處理的資料與執行中的程式指令。主要指主記憶體 (RAM)。
+                        </p>
+                    </div>
+
+                    <!-- 4. 輸入單元 IU -->
+                    <div class="bg-slate-950 border-l-4 border-l-amber-500 border-y border-r border-slate-800 rounded-xl p-4 space-y-2">
+                        <h3 class="font-bold text-amber-300 text-sm flex items-center gap-2">
+                            <i class="fa-solid fa-keyboard"></i> 4. 輸入單元 (Input Unit, IU)
+                        </h3>
+                        <p class="text-[11px] text-slate-300 leading-relaxed">
+                            <strong>【接收外部資料】</strong> 將人類的操作或外部資料轉換成電腦看得懂的數位訊號。常見設備：鍵盤、滑鼠、麥克風、掃描器。
+                        </p>
+                    </div>
+
+                    <!-- 5. 輸出單元 OU -->
+                    <div class="bg-slate-950 border-l-4 border-l-purple-500 border-y border-r border-slate-800 rounded-xl p-4 space-y-2 md:col-span-2">
+                        <h3 class="font-bold text-purple-300 text-sm flex items-center gap-2">
+                            <i class="fa-solid fa-desktop"></i> 5. 輸出單元 (Output Unit, OU)
+                        </h3>
+                        <p class="text-xs text-slate-300 leading-relaxed">
+                            <strong>【呈現處理結果】</strong> 將電腦運算完成的結果轉換成人類看得懂的形式（文字、影像、聲音）。常見設備：螢幕、印表機、喇叭。
+                        </p>
+                    </div>
+
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= PAGE 3: QUIZ ================= -->
+        <section id="view-quiz" class="hidden space-y-6">
+            <div class="bg-cyber-900 border border-slate-800 rounded-2xl p-6 shadow-xl max-w-3xl mx-auto">
+                <div class="flex items-center justify-between border-b border-slate-800 pb-4 mb-4">
+                    <div>
+                        <h2 class="text-lg font-black text-cyan-400 font-mono flex items-center gap-2">
+                            <i class="fa-solid fa-graduation-cap"></i> 五大單元與訊號隨堂測驗
+                        </h2>
+                        <p class="text-xs text-slate-400">測試你對電腦五大單元與圖中紅藍箭頭的理解</p>
+                    </div>
+                    <span id="quiz-score" class="text-sm font-bold font-mono px-3 py-1 bg-cyan-950 border border-cyan-800 text-cyan-300 rounded-xl">
+                        得分：0 / 5
+                    </span>
+                </div>
+
+                <!-- Quiz Questions Container -->
+                <div id="quiz-container" class="space-y-6">
+                    <!-- Dynamic Question Content populated by JS -->
+                </div>
+
+                <div class="mt-6 flex justify-end">
+                    <button onclick="resetQuiz()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 text-xs font-mono font-bold rounded-xl transition">
+                        重新測驗
+                    </button>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- 底部 Footer -->
+    <footer class="bg-cyber-950 border-t border-slate-800 py-4 text-center text-xs text-slate-500 font-mono">
+        電腦五大單元與訊號流向互動教學系統 &copy; Computer Science Interactive Module
+    </footer>
+
+    <!-- Toast Notification Overlay -->
+    <div id="toast" class="fixed bottom-5 right-5 z-50 transform translate-y-20 opacity-0 transition-all duration-300 pointer-events-none bg-slate-900 border border-cyan-500/50 text-cyan-300 font-mono text-xs px-4 py-3 rounded-xl shadow-2xl flex items-center gap-2">
+        <span id="toast-icon">✨</span>
+        <span id="toast-msg">提示訊息</span>
+    </div>
+
+    <!-- JAVASCRIPT SIMULATION LOGIC -->
+    <script>
+        const MACHINE_CYCLE_STEPS = [
+            {
+                step: 1,
+                title: "步驟 1：位址發送與輸入資料存入 (Address & Input)",
+                unit: "iu",
+                badge: "位址 (橙) + 控制 (藍) ➔ 輸入單元 ➔ 記憶體 (紅)",
+                desc: "1. 控制單元 (CU) 透過【橙色位址線】指定 I/O 位址，並發送【藍色控制訊號】指揮輸入單元。\n2. 外部資料經由輸入單元傳入【記憶單元 (MU)】儲存。",
+                flowPaths: [
+                    { pathD: "M 320 285 H 285", color: "#f59e0b", width: 3 }, // CU Address -> IU
+                    { pathD: "M 320 250 H 285", color: "#3b82f6", width: 3 }, // CU Control -> IU
+                    { pathD: "M 130 280 H 175", color: "#ef4444", width: 4 }, // Data in -> IU
+                    { pathD: "M 230 351 V 490 H 365", color: "#ef4444", width: 4 } // IU -> MU
+                ]
+            },
+            {
+                step: 2,
+                title: "步驟 2：指令讀取與記憶體定址 (Fetch & Address)",
+                unit: "cu",
+                badge: "CU 發送位址 (橙) 與讀取控制 (藍) 至記憶單元",
+                desc: "控制單元 (CU) 透過【橙色位址線】指定記憶體位址，並經由【藍色控制線】發送 Read 控制脈衝給記憶單元，準備讀取指令或數據。",
+                flowPaths: [
+                    { pathD: "M 470 339 V 443", color: "#f59e0b", width: 4 }, // Address CU -> MU
+                    { pathD: "M 530 339 V 443", color: "#3b82f6", width: 4 }  // Control CU -> MU
+                ]
+            },
+            {
+                step: 3,
+                title: "步驟 3：數據送入 ALU 執行運算 (Execute in ALU)",
+                unit: "alu",
+                badge: "記憶單元 ➔ (左通道紅線) ➔ ALU 運算 🧮",
+                desc: "1. 記憶體資料經由左側通道【紅色資料線】繞過控制單元送入「算術邏輯單元 (ALU)」。\n2. CU 透過【藍色控制線】向 ALU 發射運算指令（如加法、邏輯 AND）。",
+                flowPaths: [
+                    { pathD: "M 390 449 V 400 H 300 V 110 H 327", color: "#ef4444", width: 5 }, // MU -> ALU bypass
+                    { pathD: "M 500 221 V 173", color: "#3b82f6", width: 3 }  // CU -> ALU Control
+                ]
+            },
+            {
+                step: 4,
+                title: "步驟 4：結果寫回與輸出呈現 (Write-back & Output)",
+                unit: "ou",
+                badge: "ALU ➔ (右通道紅線) ➔ 記憶體 ➔ 輸出單元 ➔ Data Out",
+                desc: "1. ALU 計算結果經由右側通道【紅色資料線】寫回記憶體。\n2. CU 發送位址 (橙) 與控制訊號 (藍) 指揮【輸出單元 (OU)】將結果呈現給使用者。",
+                flowPaths: [
+                    { pathD: "M 673 110 H 700 V 400 H 610 V 443", color: "#ef4444", width: 4 }, // ALU -> MU bypass
+                    { pathD: "M 680 285 H 715", color: "#f59e0b", width: 3 }, // CU Address -> OU
+                    { pathD: "M 680 250 H 715", color: "#3b82f6", width: 3 }, // CU Control -> OU
+                    { pathD: "M 630 490 H 770 V 356", color: "#ef4444", width: 4 }, // MU -> OU
+                    { pathD: "M 820 280 H 865", color: "#ef4444", width: 4 }  // OU -> Data Out
+                ]
+            }
+        ];
+
+        /* 2. UNIT DETAILS */
+        const UNIT_DETAILS = {
+            iu: {
+                title: "輸入單元 (Input Unit)",
+                tag: "接收外部輸入",
+                desc: "接收鍵盤、滑鼠輸入，受 CU 的位址線與控制訊號指揮，將資料透過紅色線寫入「記憶單元」存放。"
+            },
+            cu: {
+                title: "控制單元 (Control Unit)",
+                tag: "CPU 指揮中心",
+                desc: "電腦的指揮官，負責解碼指令，並向 ALU、MU、IU、OU 發射【藍色單向控制訊號】與【橙色位址訊號】。"
+            },
+            alu: {
+                title: "算術邏輯單元 (ALU)",
+                tag: "CPU 運算核心",
+                desc: "從記憶單元接收數據進行加減乘除與邏輯判斷，接收 CU 的控制脈衝執行指定運算。"
+            },
+            mu: {
+                title: "記憶單元 (Memory Unit / RAM)",
+                tag: "資料與位址樞紐",
+                desc: "接收 CPU 發出的位址訊號 (Address) 進行定位，存放數據與指令，並經由資料線與 ALU、IU、OU 傳輸資料。"
+            },
+            ou: {
+                title: "輸出單元 (Output Unit)",
+                tag: "結果呈現",
+                desc: "在 CU 發出的位址與控制訊號協調下，從記憶單元接收處理好的數據並呈現至螢幕或印表機。"
+            }
+        };
+
+        /* 3. QUIZ DATA UPDATED WITH CORRECT COMPUTER ARCHITECTURE */
+        const QUIZ_DATA = [
+            {
+                q: "1. 在修正後的電腦架構圖中，【橙色虛線】代表什麼匯流排訊號？",
+                options: ["資料匯流排 (Data Bus)", "位址匯流排 (Address Bus)", "電源線 (Power Line)", "網路線"],
+                ans: 1,
+                explain: "橙色虛線代表位址匯流排 (Address Bus)，由 CPU 發出用以指定記憶體或 I/O 門牌位址。"
+            },
+            {
+                q: "2. 控制單元 (CU) 發出的「控制訊號 (藍線)」傳輸方向應該是如何？",
+                options: ["由各單元傳給 CU", "由 CU 單向發射給其他單元進行指揮", "隨機雙向亂傳", "僅能在記憶體間傳輸"],
+                ans: 1,
+                explain: "CU 是指揮官，控制訊號是由 CU 單向發射給 ALU、記憶體、IU 與 OU 以協調運作。"
+            },
+            {
+                q: "3. 「中央處理單元 (CPU)」是由哪兩個單元組合而成的？",
+                options: ["輸入單元 + 輸出單元", "記憶單元 + 控制單元", "控制單元 (CU) + 算術邏輯單元 (ALU)", "ALU + 記憶單元"],
+                ans: 2,
+                explain: "CPU (Central Processing Unit) 包含控制單元 (CU) 與算術邏輯單元 (ALU)。"
+            },
+            {
+                q: "4. CPU 要讀取記憶體 (MU) 中的特定數據時，必須先發出什麼訊號來指定位置？",
+                options: ["位址訊號 (Address Signal)", "聲音訊號", "列印訊號", "圖形訊號"],
+                ans: 0,
+                explain: "CPU 必須先透過位址匯流排 (Address Bus) 指定記憶體位址，記憶體才能提供該位址的數據。"
+            },
+            {
+                q: "5. 哪一個單元被稱為「電腦的指揮官」，負責發射控制與位址訊號？",
+                options: ["控制單元 (CU)", "算術邏輯單元 (ALU)", "輸入單元 (IU)", "輸出單元 (OU)"],
+                ans: 0,
+                explain: "控制單元 (CU) 位於中央處理單元內，負責指揮協調電腦全系統。"
+            }
+        ];
+
+        let currentCycleIndex = -1;
+        let isAutoPlaying = false;
+        let autoPlayTimer = null;
+        let userQuizAnswers = Array(QUIZ_DATA.length).fill(null);
+
+        function switchTab(tabKey) {
+            ['simulator', 'units', 'quiz'].forEach(t => {
+                const el = document.getElementById(`view-${t}`);
+                const btn = document.getElementById(`nav-btn-${t}`);
+                if (!el || !btn) return;
+                if (t === tabKey) {
+                    el.classList.remove('hidden');
+                    btn.className = "px-3.5 py-1.5 rounded-xl text-xs font-mono font-bold transition flex items-center gap-2 bg-cyan-500 text-slate-950 shadow-lg shadow-cyan-500/20";
+                } else {
+                    el.classList.add('hidden');
+                    btn.className = "px-3.5 py-1.5 rounded-xl text-xs font-mono font-bold transition flex items-center gap-2 bg-slate-800 text-slate-300 border border-slate-700 hover:bg-slate-700";
+                }
+            });
+
+            if (tabKey === 'quiz') {
+                renderQuiz();
+            }
+        }
+
+        function runNextCycleStep() {
+            currentCycleIndex = (currentCycleIndex + 1) % MACHINE_CYCLE_STEPS.length;
+            const currentStep = MACHINE_CYCLE_STEPS[currentCycleIndex];
+
+            document.getElementById('cycle-step-badge').innerHTML = `
+                狀態：<span class="text-cyan-400 font-bold">${currentStep.title}</span>
+            `;
+
+            document.querySelectorAll('.unit-card').forEach(card => card.classList.remove('active-unit'));
+            const activeCard = document.getElementById(`unit-${currentStep.unit}`);
+            if (activeCard) activeCard.classList.add('active-unit');
+
+            document.getElementById('explainer-title').textContent = currentStep.title;
+            document.getElementById('explainer-desc').textContent = currentStep.desc;
+            document.getElementById('explainer-tag').textContent = currentStep.badge;
+            document.getElementById('explainer-tag').className = "text-[10px] font-mono px-2.5 py-0.5 rounded bg-cyan-950 text-cyan-300 border border-cyan-800 font-bold";
+
+            drawSignalPaths(currentStep.flowPaths);
+
+            showToast(`🚀 ${currentStep.title}`, "⚡");
+        }
+
+        function drawSignalPaths(paths) {
+            const container = document.getElementById('dynamic-signal-paths');
+            if (!container) return;
+            container.innerHTML = '';
+
+            paths.forEach((p) => {
+                const pathEl = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                pathEl.setAttribute('d', p.pathD);
+                pathEl.setAttribute('stroke', p.color);
+                pathEl.setAttribute('stroke-width', p.width || 4);
+                pathEl.setAttribute('fill', 'none');
+                pathEl.setAttribute('class', 'animated-flow');
+                pathEl.setAttribute('stroke-linecap', 'round');
+                pathEl.setAttribute('filter', `drop-shadow(0 0 8px ${p.color})`);
+
+                container.appendChild(pathEl);
+            });
+        }
+
+        function autoPlayCycle() {
+            if (isAutoPlaying) {
+                stopAutoPlay();
+                return;
+            }
+
+            isAutoPlaying = true;
+            const btn = document.getElementById('btn-auto-play');
+            btn.innerHTML = `<i class="fa-solid fa-circle-pause text-amber-400"></i> 暫停展示`;
+            btn.className = "px-4 py-2 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/50 font-mono text-xs rounded-xl transition flex items-center gap-2";
+
+            runNextCycleStep();
+            autoPlayTimer = setInterval(() => {
+                runNextCycleStep();
+            }, 3200);
+        }
+
+        function stopAutoPlay() {
+            isAutoPlaying = false;
+            if (autoPlayTimer) clearInterval(autoPlayTimer);
+            const btn = document.getElementById('btn-auto-play');
+            if (btn) {
+                btn.innerHTML = `<i class="fa-solid fa-circle-play text-emerald-400"></i> 自動連續展示`;
+                btn.className = "px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-mono text-xs rounded-xl transition flex items-center gap-2";
+            }
+        }
+
+        function resetSimulation() {
+            stopAutoPlay();
+            currentCycleIndex = -1;
+            document.querySelectorAll('.unit-card').forEach(card => card.classList.remove('active-unit'));
+            const dynamicPaths = document.getElementById('dynamic-signal-paths');
+            if (dynamicPaths) dynamicPaths.innerHTML = '';
+
+            document.getElementById('cycle-step-badge').innerHTML = `狀態：<span class="text-amber-400 font-bold">待命 (Idle)</span>`;
+            document.getElementById('explainer-title').textContent = "💡 請點擊「單步執行」觀察資料、位址與控制訊號正確運作";
+            document.getElementById('explainer-desc').innerHTML = "【紅色實線】：資料傳輸路徑。資料經輸入單元存入記憶體，送入 ALU 運算後寫回記憶體，最後由輸出單元呈現。<br>【橙色虛線】：位址訊號 (Address Bus)。CPU 發出記憶體或 I/O 門牌位址。<br>【藍色實線】：控制訊號 (Control Signals)。CU 單向指揮全系統。";
+            document.getElementById('explainer-tag').textContent = "觀念升級解說";
+            document.getElementById('explainer-tag').className = "text-[10px] font-mono px-2.5 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700";
+
+            showToast("已重置模擬狀態", "🔄");
+        }
+
+        function selectUnit(key) {
+            stopAutoPlay();
+            const info = UNIT_DETAILS[key];
+            if (!info) return;
+
+            document.querySelectorAll('.unit-card').forEach(card => card.classList.remove('active-unit'));
+            const activeCard = document.getElementById(`unit-${key}`);
+            if (activeCard) activeCard.classList.add('active-unit');
+
+            document.getElementById('explainer-title').textContent = info.title;
+            document.getElementById('explainer-desc').textContent = info.desc;
+            document.getElementById('explainer-tag').textContent = info.tag;
+            document.getElementById('explainer-tag').className = "text-[10px] font-mono px-2.5 py-0.5 rounded bg-cyan-950 text-cyan-300 border border-cyan-800 font-bold";
+
+            showToast(`已點選：${info.title}`, "🔍");
+        }
+
+        function renderQuiz() {
+            const container = document.getElementById('quiz-container');
+            if (!container) return;
+            container.innerHTML = '';
+
+            QUIZ_DATA.forEach((qItem, qIdx) => {
+                const card = document.createElement('div');
+                card.className = "bg-slate-950 border border-slate-800 rounded-xl p-4 space-y-3";
+
+                let optionsHtml = '';
+                qItem.options.forEach((opt, optIdx) => {
+                    const isSelected = userQuizAnswers[qIdx] === optIdx;
+                    let optionStyle = "bg-slate-900 border-slate-800 hover:border-cyan-500/50 text-slate-300";
+                    
+                    if (userQuizAnswers[qIdx] !== null) {
+                        if (optIdx === qItem.ans) {
+                            optionStyle = "bg-emerald-950/80 border-emerald-500 text-emerald-300 font-bold";
+                        } else if (isSelected && optIdx !== qItem.ans) {
+                            optionStyle = "bg-rose-950/80 border-rose-500 text-rose-300 font-bold";
+                        }
+                    }
+
+                    optionsHtml += `
+                        <button onclick="answerQuiz(${qIdx}, ${optIdx})" class="w-full text-left p-3 rounded-lg border ${optionStyle} transition text-xs flex items-center justify-between">
+                            <span>${String.fromCharCode(65 + optIdx)}. ${opt}</span>
+                            ${isSelected ? (optIdx === qItem.ans ? '<i class="fa-solid fa-circle-check text-emerald-400"></i>' : '<i class="fa-solid fa-circle-xmark text-rose-400"></i>') : ''}
+                        </button>
+                    `;
+                });
+
+                let explanationHtml = '';
+                if (userQuizAnswers[qIdx] !== null) {
+                    explanationHtml = `
+                        <div class="mt-2 p-2.5 rounded bg-slate-900 border border-slate-800 text-[11px] text-cyan-300 font-mono">
+                            💡 解析：${qItem.explain}
+                        </div>
+                    `;
+                }
+
+                card.innerHTML = `
+                    <div class="font-bold text-xs sm:text-sm text-slate-100 flex items-start gap-2">
+                        <span class="text-cyan-400 font-mono">Q${qIdx + 1}.</span>
+                        <span>${qItem.q.substring(3)}</span>
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        ${optionsHtml}
+                    </div>
+                    ${explanationHtml}
+                `;
+
+                container.appendChild(card);
+            });
+
+            updateQuizScore();
+        }
+
+        function answerQuiz(qIdx, optIdx) {
+            if (userQuizAnswers[qIdx] !== null) return;
+            userQuizAnswers[qIdx] = optIdx;
+            renderQuiz();
+        }
+
+        function updateQuizScore() {
+            let score = 0;
+            userQuizAnswers.forEach((ans, idx) => {
+                if (ans === QUIZ_DATA[idx].ans) score++;
+            });
+            const scoreEl = document.getElementById('quiz-score');
+            if (scoreEl) scoreEl.textContent = `得分：${score} / ${QUIZ_DATA.length}`;
+        }
+
+        function resetQuiz() {
+            userQuizAnswers = Array(QUIZ_DATA.length).fill(null);
+            renderQuiz();
+            showToast("測驗已重置", "🔄");
+        }
+
+        function showToast(msg, icon = "✨") {
+            const toast = document.getElementById('toast');
+            if (!toast) return;
+            document.getElementById('toast-msg').textContent = msg;
+            document.getElementById('toast-icon').textContent = icon;
+
+            toast.classList.remove('translate-y-20', 'opacity-0');
+            toast.classList.add('translate-y-0', 'opacity-100');
+
+            setTimeout(() => {
+                toast.classList.remove('translate-y-0', 'opacity-0');
+                toast.classList.add('translate-y-20', 'opacity-0');
+            }, 2200);
+        }
+    </script>
+</body>
+</html>

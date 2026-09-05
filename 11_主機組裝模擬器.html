@@ -1,0 +1,1097 @@
+<!DOCTYPE html>
+<html lang="zh-TW" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>真實插槽主機板模擬器 - 旗艦電競版</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;800;900&family=Noto+Sans+TC:wght@400;500;700;900&display=swap');
+
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            background-color: #060911;
+            color: #e2e8f0;
+            user-select: none;
+            -webkit-user-drag: none;
+        }
+
+        .tech-font { font-family: 'Orbitron', monospace; }
+
+        /* Custom scrollbars */
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #0f172a; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #334155; border-radius: 8px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #475569; }
+
+        /* Cyber grid background */
+        .grid-bg {
+            background-image: 
+                radial-gradient(circle at 50% 50%, rgba(14, 165, 233, 0.08) 0%, transparent 85%),
+                linear-gradient(rgba(51, 65, 85, 0.15) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(51, 65, 85, 0.15) 1px, transparent 1px);
+            background-size: 100% 100%, 32px 32px, 32px 32px;
+        }
+
+        /* Motherboard PCB Styling */
+        .mobo-pcb {
+            background: #0d111a;
+            background-image: 
+                radial-gradient(#1e293b 15%, transparent 16%),
+                linear-gradient(45deg, rgba(15, 23, 42, 0.7) 25%, transparent 25%, transparent 75%, rgba(15, 23, 42, 0.7) 75%, rgba(15, 23, 42, 0.7));
+            background-size: 8px 8px, 16px 16px, 16px 16px;
+            background-position: 0 0, 0 0, 8px 8px;
+            box-shadow: 
+                0 0 60px rgba(0, 0, 0, 0.95),
+                inset 0 0 40px rgba(15, 23, 42, 0.9),
+                0 0 0 2px rgba(51, 65, 85, 0.5);
+        }
+
+        /* RGB Dynamic Glows */
+        .rgb-mode-rainbow {
+            animation: rgb-hue 6s linear infinite;
+        }
+        @keyframes rgb-hue {
+            0% { filter: drop-shadow(0 0 10px rgba(239, 68, 68, 0.9)) hue-rotate(0deg); }
+            100% { filter: drop-shadow(0 0 10px rgba(239, 68, 68, 0.9)) hue-rotate(360deg); }
+        }
+
+        .rgb-mode-cyan {
+            filter: drop-shadow(0 0 12px rgba(6, 182, 212, 0.9));
+        }
+
+        .rgb-mode-amber {
+            filter: drop-shadow(0 0 12px rgba(245, 158, 11, 0.9));
+        }
+
+        .rgb-mode-off {
+            filter: none !important;
+        }
+
+        /* Hover & Drag highlight animations */
+        .drop-zone {
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .drop-zone.drag-active {
+            border-color: #38bdf8 !important;
+            box-shadow: 0 0 20px rgba(56, 189, 248, 0.6), inset 0 0 15px rgba(56, 189, 248, 0.2);
+            transform: scale(1.02);
+        }
+
+        .draggable-part {
+            touch-action: none;
+            transition: all 0.2s ease;
+        }
+        .draggable-part:hover {
+            border-color: #38bdf8;
+            box-shadow: 0 0 15px rgba(56, 189, 248, 0.25);
+        }
+        .draggable-part.selected {
+            border-color: #f59e0b !important;
+            box-shadow: 0 0 20px rgba(245, 158, 11, 0.5) !important;
+            background-color: rgba(30, 41, 59, 0.9) !important;
+        }
+
+        /* Installed part container inside slot */
+        .installed-part {
+            animation: snapIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        @keyframes snapIn {
+            0% { transform: scale(0.85); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+    </style>
+</head>
+<body class="flex flex-col h-screen w-full overflow-hidden select-none">
+
+    <!-- 頂部標題列 (Header Bar) - 不影響內部 SVG/插槽相對定位 -->
+    <header class="h-14 bg-slate-950/90 border-b border-slate-800/80 px-4 sm:px-6 flex items-center justify-between shrink-0 z-30 backdrop-blur shadow-2xl">
+        
+        <!-- 左側：標題與 Logo -->
+        <div class="flex items-center gap-3">
+            <a href="index.html" class="text-xs text-sky-400 hover:text-sky-300 transition flex items-center gap-1">
+                <i class="fa-solid fa-arrow-left"></i> 回到首頁
+            </a>
+            <div class="w-9 h-9 rounded-xl bg-cyan-500/10 border border-cyan-500/40 flex items-center justify-center text-cyan-400 text-lg shadow-lg shadow-cyan-500/20">
+                <i class="fa-solid fa-microchip"></i>
+            </div>
+            <div>
+                <h1 class="text-sm sm:text-base font-extrabold tracking-wider tech-font text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-sky-300 to-blue-500 flex items-center gap-2">
+                    主機組裝模擬器 <span class="text-xs px-2 py-0.5 rounded bg-slate-800 text-slate-400 font-mono border border-slate-700">Z790-E STRIX</span>
+                </h1>
+            </div>
+        </div>
+
+        <!-- 中間：即時進度與電源狀態 -->
+        <div class="hidden md:flex items-center gap-4 bg-slate-900/90 px-4 py-1.5 rounded-xl border border-slate-800/90 text-xs font-mono">
+            <div class="flex items-center gap-2">
+                <span class="text-slate-400">組裝進度:</span>
+                <span id="header-progress-text" class="text-cyan-400 font-bold text-sm">0 / 10</span>
+            </div>
+            <div class="h-3.5 w-px bg-slate-800"></div>
+            <div class="flex items-center gap-2">
+                <span class="text-slate-400">電源狀態:</span>
+                <span id="header-power-status" class="flex items-center gap-1.5 text-slate-500 font-bold">
+                    <span class="w-2 h-2 rounded-full bg-slate-600"></span> 待機中 (Standby)
+                </span>
+            </div>
+        </div>
+
+        <!-- 右側：功能按鈕組 -->
+        <div class="flex items-center gap-2 sm:gap-3">
+            <button onclick="toggleAudio()" id="btn-audio" class="p-2 sm:px-3 sm:py-1.5 bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-300 rounded-xl text-xs font-mono transition flex items-center gap-1.5" title="音效設定">
+                <i class="fa-solid fa-volume-high text-cyan-400" id="audio-icon"></i>
+                <span class="hidden sm:inline">音效開</span>
+            </button>
+
+            <button onclick="showGuideModal()" class="p-2 sm:px-3 sm:py-1.5 bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-300 rounded-xl text-xs font-mono transition flex items-center gap-1.5">
+                <i class="fa-solid fa-circle-question text-amber-400"></i>
+                <span class="hidden sm:inline">說明指南</span>
+            </button>
+
+            <button onclick="resetAssembly()" class="p-2 sm:px-3 sm:py-1.5 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/40 text-rose-300 rounded-xl text-xs font-mono font-bold transition flex items-center gap-1.5">
+                <i class="fa-solid fa-rotate-left"></i>
+                <span class="hidden sm:inline">重置</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- 主體內容區 (Header 下方的 Flex-1 Layout) -->
+    <div class="flex flex-1 min-h-0 w-full overflow-hidden relative">
+
+        <!-- 左側：零件調色盤 (Palette Sidebar) -->
+        <aside class="w-72 sm:w-80 bg-slate-900/95 backdrop-blur border-r border-slate-800/80 flex flex-col shrink-0 z-20 shadow-2xl">
+            
+            <div class="p-3.5 border-b border-slate-800/80 bg-slate-950/80">
+                <div class="flex items-center justify-between">
+                    <h2 class="text-xs font-extrabold text-slate-200 flex items-center gap-2 tech-font tracking-wider">
+                        <i class="fa-solid fa-boxes-stacked text-cyan-400"></i>
+                        PARTS PALETTE
+                    </h2>
+                    <span id="install-progress" class="text-[11px] font-mono font-bold px-2 py-0.5 rounded bg-cyan-950 text-cyan-300 border border-cyan-800/60">
+                        0 / 10 已安裝
+                    </span>
+                </div>
+                <p class="text-[11px] text-slate-400 mt-1">拖曳零件或點選後再點擊主機板對應插槽</p>
+            </div>
+
+            <!-- 可拖曳零件清單 -->
+            <div class="flex-1 overflow-y-auto p-3 space-y-2.5 custom-scrollbar" id="parts-container">
+                
+                <!-- 1. CPU -->
+                <div id="part-cpu" data-type="cpu" draggable="true" class="draggable-part cursor-grab bg-slate-800/80 border border-slate-700/80 hover:border-cyan-400 p-2.5 rounded-xl flex items-center gap-3 group">
+                    <div class="w-12 h-12 shrink-0 flex items-center justify-center bg-slate-950 rounded-lg p-1 border border-slate-700">
+                        <svg viewBox="0 0 100 100" class="w-full h-full drop-shadow">
+                            <rect x="5" y="5" width="90" height="90" rx="8" fill="#1e293b" stroke="#475569" stroke-width="2"/>
+                            <rect x="15" y="15" width="70" height="70" rx="4" fill="#94a3b8" stroke="#cbd5e1" stroke-width="1.5"/>
+                            <rect x="25" y="25" width="50" height="50" fill="#e2e8f0"/>
+                            <text x="50" y="52" font-family="Orbitron" font-size="10" font-weight="bold" fill="#0f172a" text-anchor="middle">i9-14900K</text>
+                            <circle cx="12" cy="88" r="3" fill="#fbbf24"/>
+                        </svg>
+                    </div>
+                    <div class="flex-grow min-w-0">
+                        <div class="font-bold text-xs text-slate-100 group-hover:text-cyan-400 truncate">Intel Core i9 CPU</div>
+                        <div class="text-[10px] text-slate-400 mt-0.5 truncate font-mono">Socket LGA 1700</div>
+                    </div>
+                </div>
+
+                <!-- 2. RAM 1 -->
+                <div id="part-ram-1" data-type="ram" draggable="true" class="draggable-part cursor-grab bg-slate-800/80 border border-slate-700/80 hover:border-emerald-400 p-2.5 rounded-xl flex items-center gap-3 group">
+                    <div class="w-12 h-10 shrink-0 flex items-center justify-center bg-slate-950 rounded-lg p-1 border border-slate-700">
+                        <svg viewBox="0 0 140 35" preserveAspectRatio="none" class="w-full h-full">
+                            <rect x="2" y="2" width="136" height="31" rx="3" fill="#0f172a" stroke="#334155" stroke-width="1"/>
+                            <rect x="6" y="6" width="128" height="20" fill="#1e293b"/>
+                            <rect x="6" y="8" width="128" height="4" fill="#10b981"/>
+                            <rect x="15" y="30" width="110" height="3" fill="#fbbf24"/>
+                        </svg>
+                    </div>
+                    <div class="flex-grow min-w-0">
+                        <div class="font-bold text-xs text-slate-100 group-hover:text-emerald-400 truncate">DDR5 RGB 記憶體 #1</div>
+                        <div class="text-[10px] text-slate-400 mt-0.5 truncate font-mono">32GB 7200MHz (DIMM_A2)</div>
+                    </div>
+                </div>
+
+                <!-- 3. RAM 2 -->
+                <div id="part-ram-2" data-type="ram" draggable="true" class="draggable-part cursor-grab bg-slate-800/80 border border-slate-700/80 hover:border-emerald-400 p-2.5 rounded-xl flex items-center gap-3 group">
+                    <div class="w-12 h-10 shrink-0 flex items-center justify-center bg-slate-950 rounded-lg p-1 border border-slate-700">
+                        <svg viewBox="0 0 140 35" preserveAspectRatio="none" class="w-full h-full">
+                            <rect x="2" y="2" width="136" height="31" rx="3" fill="#0f172a" stroke="#334155" stroke-width="1"/>
+                            <rect x="6" y="6" width="128" height="20" fill="#1e293b"/>
+                            <rect x="6" y="8" width="128" height="4" fill="#10b981"/>
+                            <rect x="15" y="30" width="110" height="3" fill="#fbbf24"/>
+                        </svg>
+                    </div>
+                    <div class="flex-grow min-w-0">
+                        <div class="font-bold text-xs text-slate-100 group-hover:text-emerald-400 truncate">DDR5 RGB 記憶體 #2</div>
+                        <div class="text-[10px] text-slate-400 mt-0.5 truncate font-mono">32GB 7200MHz (DIMM_B2)</div>
+                    </div>
+                </div>
+
+                <!-- 4. GPU -->
+                <div id="part-gpu" data-type="gpu" draggable="true" class="draggable-part cursor-grab bg-slate-800/80 border border-slate-700/80 hover:border-purple-400 p-2.5 rounded-xl flex items-center gap-3 group">
+                    <div class="w-12 h-10 shrink-0 flex items-center justify-center bg-slate-950 rounded-lg p-1 border border-slate-700">
+                        <svg viewBox="0 0 200 90" class="w-full h-full">
+                            <rect x="5" y="10" width="190" height="70" rx="6" fill="#090d16" stroke="#334155" stroke-width="2"/>
+                            <rect x="10" y="15" width="180" height="60" rx="4" fill="#1e293b"/>
+                            <circle cx="45" cy="45" r="20" fill="#020617" stroke="#475569" stroke-width="2"/>
+                            <circle cx="100" cy="45" r="20" fill="#020617" stroke="#475569" stroke-width="2"/>
+                            <circle cx="155" cy="45" r="20" fill="#020617" stroke="#475569" stroke-width="2"/>
+                            <rect x="20" y="5" width="160" height="5" fill="#a855f7"/>
+                            <rect x="60" y="80" width="80" height="7" fill="#fbbf24"/>
+                        </svg>
+                    </div>
+                    <div class="flex-grow min-w-0">
+                        <div class="font-bold text-xs text-slate-100 group-hover:text-purple-400 truncate">RTX 4090 獨立顯卡</div>
+                        <div class="text-[10px] text-slate-400 mt-0.5 truncate font-mono">PCIe 5.0 x16 介面</div>
+                    </div>
+                </div>
+
+                <!-- 5. M.2 SSD -->
+                <div id="part-m2" data-type="m2" draggable="true" class="draggable-part cursor-grab bg-slate-800/80 border border-slate-700/80 hover:border-amber-400 p-2.5 rounded-xl flex items-center gap-3 group">
+                    <div class="w-12 h-8 shrink-0 flex items-center justify-center bg-slate-950 rounded-lg p-1 border border-slate-700">
+                        <svg viewBox="0 0 120 35" class="w-full h-full">
+                            <rect x="5" y="5" width="110" height="25" rx="2" fill="#020617" stroke="#334155" stroke-width="1"/>
+                            <rect x="20" y="9" width="30" height="17" fill="#1e293b"/>
+                            <rect x="55" y="9" width="30" height="17" fill="#1e293b"/>
+                            <rect x="5" y="10" width="4" height="15" fill="#fbbf24"/>
+                        </svg>
+                    </div>
+                    <div class="flex-grow min-w-0">
+                        <div class="font-bold text-xs text-slate-100 group-hover:text-amber-400 truncate">M.2 NVMe SSD</div>
+                        <div class="text-[10px] text-slate-400 mt-0.5 truncate font-mono">PCIe Gen5 2TB (7000MB/s)</div>
+                    </div>
+                </div>
+
+                <!-- 6. PCIe x1 音效卡 -->
+                <div id="part-sound" data-type="pcie-x1" draggable="true" class="draggable-part cursor-grab bg-slate-800/80 border border-slate-700/80 hover:border-pink-400 p-2.5 rounded-xl flex items-center gap-3 group">
+                    <div class="w-12 h-9 shrink-0 flex items-center justify-center bg-slate-950 rounded-lg p-1 border border-slate-700">
+                        <svg viewBox="0 0 120 50" class="w-full h-full">
+                            <rect x="15" y="8" width="95" height="36" rx="2" fill="#831843" stroke="#be185d" stroke-width="1"/>
+                            <rect x="5" y="2" width="10" height="46" fill="#cbd5e1"/>
+                            <circle cx="10" cy="12" r="2.5" fill="#ef4444"/>
+                            <circle cx="10" cy="22" r="2.5" fill="#22c55e"/>
+                            <circle cx="10" cy="32" r="2.5" fill="#3b82f6"/>
+                            <rect x="45" y="44" width="25" height="5" fill="#fbbf24"/>
+                        </svg>
+                    </div>
+                    <div class="flex-grow min-w-0">
+                        <div class="font-bold text-xs text-slate-100 group-hover:text-pink-400 truncate">Hi-Fi 獨立音效卡</div>
+                        <div class="text-[10px] text-slate-400 mt-0.5 truncate font-mono">PCIe x1 介面</div>
+                    </div>
+                </div>
+
+                <!-- 7. PCIe x1 網卡 -->
+                <div id="part-nic" data-type="pcie-x1" draggable="true" class="draggable-part cursor-grab bg-slate-800/80 border border-slate-700/80 hover:border-sky-400 p-2.5 rounded-xl flex items-center gap-3 group">
+                    <div class="w-12 h-9 shrink-0 flex items-center justify-center bg-slate-950 rounded-lg p-1 border border-slate-700">
+                        <svg viewBox="0 0 120 50" class="w-full h-full">
+                            <rect x="15" y="8" width="95" height="36" rx="2" fill="#1e3a8a" stroke="#1d4ed8" stroke-width="1"/>
+                            <rect x="5" y="2" width="10" height="46" fill="#cbd5e1"/>
+                            <rect x="45" y="44" width="25" height="5" fill="#fbbf24"/>
+                        </svg>
+                    </div>
+                    <div class="flex-grow min-w-0">
+                        <div class="font-bold text-xs text-slate-100 group-hover:text-sky-400 truncate">Wi-Fi 7 無線網卡</div>
+                        <div class="text-[10px] text-slate-400 mt-0.5 truncate font-mono">PCIe x1 介面</div>
+                    </div>
+                </div>
+
+                <!-- 8. SATA SSD -->
+                <div id="part-sata" data-type="sata" draggable="true" class="draggable-part cursor-grab bg-slate-800/80 border border-slate-700/80 hover:border-red-400 p-2.5 rounded-xl flex items-center gap-3 group">
+                    <div class="w-12 h-12 shrink-0 flex items-center justify-center bg-slate-950 rounded-lg p-1 border border-slate-700">
+                        <svg viewBox="0 0 100 100" class="w-full h-full">
+                            <rect x="10" y="10" width="80" height="80" rx="6" fill="#18181b" stroke="#3f3f46" stroke-width="2"/>
+                            <rect x="20" y="20" width="60" height="40" rx="3" fill="#b91c1c"/>
+                            <text x="50" y="45" font-family="Orbitron" font-size="12" font-weight="extrabold" fill="#ffffff" text-anchor="middle">SATA</text>
+                            <rect x="25" y="86" width="30" height="6" fill="#fbbf24"/>
+                        </svg>
+                    </div>
+                    <div class="flex-grow min-w-0">
+                        <div class="font-bold text-xs text-slate-100 group-hover:text-red-400 truncate">2.5吋 SATA SSD</div>
+                        <div class="text-[10px] text-slate-400 mt-0.5 truncate font-mono">SATA 6Gb/s 介面</div>
+                    </div>
+                </div>
+
+                <!-- 9. SATA DVD/藍光光碟機 -->
+                <div id="part-odd" data-type="sata" draggable="true" class="draggable-part cursor-grab bg-slate-800/80 border border-slate-700/80 hover:border-orange-400 p-2.5 rounded-xl flex items-center gap-3 group">
+                    <div class="w-12 h-12 shrink-0 flex items-center justify-center bg-slate-950 rounded-lg p-1 border border-slate-700">
+                        <svg viewBox="0 0 100 100" class="w-full h-full">
+                            <rect x="10" y="15" width="80" height="70" rx="4" fill="#0f172a" stroke="#475569" stroke-width="2"/>
+                            <rect x="20" y="25" width="60" height="12" rx="2" fill="#334155"/>
+                            <circle cx="50" cy="55" r="14" fill="none" stroke="#ea580c" stroke-width="3"/>
+                            <circle cx="50" cy="55" r="5" fill="#ea580c"/>
+                        </svg>
+                    </div>
+                    <div class="flex-grow min-w-0">
+                        <div class="font-bold text-xs text-slate-100 group-hover:text-orange-400 truncate">SATA 藍光燒錄光碟機</div>
+                        <div class="text-[10px] text-slate-400 mt-0.5 truncate font-mono">SATA 6Gb/s ODD 介面</div>
+                    </div>
+                </div>
+
+                <!-- 10. PSU 電源 -->
+                <div id="part-psu" data-type="psu" draggable="true" class="draggable-part cursor-grab bg-slate-800/80 border border-slate-700/80 hover:border-amber-400 p-2.5 rounded-xl flex items-center gap-3 group">
+                    <div class="w-12 h-12 shrink-0 flex items-center justify-center bg-slate-950 rounded-lg p-1 border border-slate-700">
+                        <svg viewBox="0 0 100 100" class="w-full h-full">
+                            <rect x="10" y="15" width="80" height="70" rx="6" fill="#18181b" stroke="#475569" stroke-width="2"/>
+                            <circle cx="50" cy="50" r="20" fill="#090d16" stroke="#fbbf24" stroke-width="1.5"/>
+                            <text x="50" y="93" font-family="Orbitron" font-size="8" font-weight="bold" fill="#fbbf24" text-anchor="middle">1000W</text>
+                        </svg>
+                    </div>
+                    <div class="flex-grow min-w-0">
+                        <div class="font-bold text-xs text-slate-100 group-hover:text-amber-400 truncate">1000W 金牌電源線</div>
+                        <div class="text-[10px] text-slate-400 mt-0.5 truncate font-mono">24-Pin ATX 電源線</div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- 底部控制欄 -->
+            <div class="p-3 border-t border-slate-800/80 space-y-2 bg-slate-950/90">
+                <button id="btn-power" onclick="powerOnMotherboard()" class="w-full py-2.5 bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 hover:from-emerald-500 hover:to-cyan-500 text-white font-bold rounded-xl text-xs transition shadow-lg flex items-center justify-center gap-2 tech-font tracking-wide">
+                    <i class="fa-solid fa-power-off"></i> POWER ON (通電測試)
+                </button>
+                
+                <div class="flex gap-2">
+                    <button onclick="cycleRGBMode()" class="flex-1 py-1.5 bg-slate-900 hover:bg-slate-800 text-slate-300 rounded-lg text-[11px] transition border border-slate-700 flex items-center justify-center gap-1.5">
+                        <i class="fa-solid fa-wand-magic-sparkles text-cyan-400"></i> RGB 切換
+                    </button>
+                    <button onclick="getHint()" class="flex-1 py-1.5 bg-slate-900 hover:bg-slate-800 text-slate-300 rounded-lg text-[11px] transition border border-slate-700 flex items-center justify-center gap-1.5">
+                        <i class="fa-solid fa-lightbulb text-amber-400"></i> 組裝提示
+                    </button>
+                </div>
+            </div>
+        </aside>
+
+        <!-- 右側：主機板視覺工作區 (Scalable & Scrollable) -->
+        <main class="flex-1 bg-[#070a12] grid-bg flex items-center justify-center relative overflow-auto p-4 sm:p-8">
+            
+            <!-- 
+                核心主機板容器 (#motherboard): 
+                強烈確保 position: relative; width: 820px; height: 820px; 
+                內部所有 SVG 與 absolute Drop Zone 均相對於此容器定位，因此頂部標題列不會影響任何元件位置！
+            -->
+            <div id="motherboard" class="relative w-[820px] h-[820px] shrink-0 mobo-pcb rounded-2xl border-4 border-slate-800 p-6 shadow-2xl transition-all my-auto">
+
+                <!-- PCB 底層擬真 SVG 導線與線路設計 -->
+                <svg class="absolute inset-0 w-full h-full pointer-events-none opacity-45" xmlns="http://www.w3.org/2000/svg">
+                    <!-- CPU 到 RAM 匯流排導線 -->
+                    <path d="M 230 180 L 480 180 M 230 220 L 480 220 M 230 260 L 480 260" stroke="#38bdf8" stroke-width="1.2" stroke-dasharray="4,4"/>
+                    <!-- CPU 到 PCIe 匯流排導線 -->
+                    <path d="M 280 320 L 280 430 M 320 320 L 320 430" stroke="#10b981" stroke-width="1.2" stroke-dasharray="3,3"/>
+                    <!-- PCH 到 SATA 匯流排導線 -->
+                    <path d="M 400 480 L 680 480 M 400 520 L 680 520 L 680 730" stroke="#a855f7" stroke-width="1.2" stroke-dasharray="4,4"/>
+                    
+                    <!-- 擬真固態電容矩陣 -->
+                    <circle cx="180" cy="140" r="8" fill="#475569" stroke="#94a3b8" stroke-width="2"/>
+                    <circle cx="180" cy="170" r="8" fill="#475569" stroke="#94a3b8" stroke-width="2"/>
+                    <circle cx="180" cy="200" r="8" fill="#475569" stroke="#94a3b8" stroke-width="2"/>
+                    <circle cx="180" cy="230" r="8" fill="#475569" stroke="#94a3b8" stroke-width="2"/>
+                    <circle cx="180" cy="260" r="8" fill="#475569" stroke="#94a3b8" stroke-width="2"/>
+                    
+                    <!-- CR2032 CMOS 鈕扣電池 -->
+                    <circle cx="680" cy="620" r="14" fill="#cbd5e1" stroke="#64748b" stroke-width="2"/>
+                    <text x="680" y="623" font-family="Orbitron" font-size="7" fill="#0f172a" font-weight="bold" text-anchor="middle">CR2032</text>
+                </svg>
+
+                <!-- 1. I/O 散熱裝甲板 (左側) -->
+                <div class="absolute top-8 left-6 w-40 h-72 bg-gradient-to-b from-slate-800 via-slate-900 to-slate-950 border border-slate-700/80 rounded-xl shadow-2xl p-4 flex flex-col justify-between pointer-events-none">
+                    <div class="flex items-center justify-between">
+                        <span class="text-[10px] font-extrabold text-cyan-400 tech-font tracking-widest">ROG STRIX</span>
+                        <div id="rgb-strip-head" class="w-12 h-1.5 rounded-full bg-cyan-400 rgb-mode-cyan"></div>
+                    </div>
+                    <div class="text-center my-auto transform -rotate-90">
+                        <span class="text-2xl font-black text-slate-500/80 tracking-widest tech-font">Z790-E GAMING</span>
+                    </div>
+                    <div class="text-[9px] text-slate-500 tech-font">SUPREME FX AUDIO</div>
+                </div>
+
+                <!-- 2. VRM 頂部供電散熱片 -->
+                <div class="absolute top-8 left-[200px] w-[240px] h-14 bg-gradient-to-r from-slate-800 to-slate-900 border border-slate-700 rounded-lg shadow-lg flex items-center px-4 pointer-events-none">
+                    <span class="text-xs font-bold text-slate-400 tech-font tracking-wider">18+1 POWER STAGES</span>
+                </div>
+
+                <!-- 3. 自檢 Q-LED 指示燈 (右上角) -->
+                <div class="absolute top-8 right-8 bg-slate-950/90 border border-slate-800 p-2.5 rounded-xl flex flex-col gap-1.5 pointer-events-none z-10 shadow-xl">
+                    <div class="text-[9px] font-bold text-slate-400 tech-font text-center border-b border-slate-800 pb-1">Q-LED POST</div>
+                    <div class="flex items-center gap-2 text-[9px] font-bold text-slate-400">
+                        <div id="led-cpu" class="w-2.5 h-2.5 rounded-full bg-slate-800 transition-colors"></div> CPU
+                    </div>
+                    <div class="flex items-center gap-2 text-[9px] font-bold text-slate-400">
+                        <div id="led-dram" class="w-2.5 h-2.5 rounded-full bg-slate-800 transition-colors"></div> DRAM
+                    </div>
+                    <div class="flex items-center gap-2 text-[9px] font-bold text-slate-400">
+                        <div id="led-vga" class="w-2.5 h-2.5 rounded-full bg-slate-800 transition-colors"></div> VGA
+                    </div>
+                    <div class="flex items-center gap-2 text-[9px] font-bold text-slate-400">
+                        <div id="led-boot" class="w-2.5 h-2.5 rounded-full bg-slate-800 transition-colors"></div> BOOT
+                    </div>
+                </div>
+
+                <!-- ================= 精準絕對定位插槽區 (Drop Zones) ================= -->
+
+                <!-- A. CPU 插槽 (LGA 1700) -->
+                <div id="slot-cpu" class="absolute top-[120px] left-[220px] w-[200px] h-[200px] bg-slate-900/90 border-2 border-slate-700 rounded-xl shadow-inner drop-zone flex flex-col items-center justify-center cursor-pointer group" data-accept="cpu" title="CPU 插槽 (LGA 1700)">
+                    <div class="w-[150px] h-[150px] border border-slate-600 rounded bg-slate-950 flex items-center justify-center relative pointer-events-none">
+                        <div class="w-[125px] h-[125px] border border-amber-600/60 bg-slate-900 rounded grid grid-cols-12 gap-0.5 p-1 relative overflow-hidden shadow-inner">
+                            <div class="absolute inset-0 opacity-80 pointer-events-none" style="background-image: radial-gradient(#f59e0b 35%, transparent 36%); background-size: 4px 4px;"></div>
+                            <div class="absolute inset-8 bg-slate-950/90 border border-amber-500/40 rounded flex items-center justify-center">
+                                <div class="grid grid-cols-3 gap-1">
+                                    <div class="w-2 h-1.5 bg-amber-400 rounded-xs"></div>
+                                    <div class="w-2 h-1.5 bg-slate-700 rounded-xs"></div>
+                                    <div class="w-2 h-1.5 bg-amber-400 rounded-xs"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <span class="absolute top-1 text-[8px] font-bold text-amber-400/90 tech-font">LGA 1700 PIN SOCKET</span>
+                        <div class="absolute -right-3 top-2 w-1.5 h-24 bg-slate-600 rounded"></div>
+                    </div>
+                </div>
+
+                <!-- B. RAM 記憶體插槽 (雙通道 DIMM_A2 & DIMM_B2) -->
+                <!-- DIMM A1 (非主要, 裝飾) -->
+                <div class="absolute top-[100px] left-[460px] w-7 h-[240px] bg-slate-950 border border-slate-800 rounded opacity-35 pointer-events-none flex flex-col items-center justify-between py-1">
+                    <div class="w-4 h-2 bg-slate-700"></div>
+                    <div class="w-1.5 h-[200px] bg-slate-900 border-x border-amber-500/40"></div>
+                    <div class="w-4 h-2 bg-slate-700"></div>
+                </div>
+                <!-- DIMM A2 (可安裝 RAM #1) -->
+                <div id="slot-ram-1" class="absolute top-[100px] left-[495px] w-9 h-[240px] bg-slate-900/90 border-2 border-slate-700 rounded drop-zone flex flex-col items-center justify-between py-1 cursor-pointer" data-accept="ram" title="DIMM_A2 記憶體插槽">
+                    <div class="w-6 h-2 bg-slate-600 rounded-sm pointer-events-none"></div>
+                    <div class="w-2 h-[200px] bg-slate-950 rounded-sm pointer-events-none relative flex justify-between border border-amber-500/50 shadow-inner">
+                        <div class="w-[2px] h-full" style="background-image: repeating-linear-gradient(0deg, #f59e0b 0px, #f59e0b 2px, transparent 2px, transparent 4px);"></div>
+                        <div class="absolute top-[110px] left-0 right-0 h-2 bg-slate-800 border-y border-amber-500/80 z-10"></div>
+                    </div>
+                    <div class="w-6 h-2 bg-slate-600 rounded-sm pointer-events-none"></div>
+                    <span class="absolute -top-5 text-[8px] text-amber-400 font-bold tech-font">DIMM_A2</span>
+                </div>
+                <!-- DIMM B1 (非主要, 裝飾) -->
+                <div class="absolute top-[100px] left-[535px] w-7 h-[240px] bg-slate-950 border border-slate-800 rounded opacity-35 pointer-events-none flex flex-col items-center justify-between py-1">
+                    <div class="w-4 h-2 bg-slate-700"></div>
+                    <div class="w-1.5 h-[200px] bg-slate-900 border-x border-amber-500/40"></div>
+                    <div class="w-4 h-2 bg-slate-700"></div>
+                </div>
+                <!-- DIMM B2 (可安裝 RAM #2) -->
+                <div id="slot-ram-2" class="absolute top-[100px] left-[570px] w-9 h-[240px] bg-slate-900/90 border-2 border-slate-700 rounded drop-zone flex flex-col items-center justify-between py-1 cursor-pointer" data-accept="ram" title="DIMM_B2 記憶體插槽">
+                    <div class="w-6 h-2 bg-slate-600 rounded-sm pointer-events-none"></div>
+                    <div class="w-2 h-[200px] bg-slate-950 rounded-sm pointer-events-none relative flex justify-between border border-amber-500/50 shadow-inner">
+                        <div class="w-[2px] h-full" style="background-image: repeating-linear-gradient(0deg, #f59e0b 0px, #f59e0b 2px, transparent 2px, transparent 4px);"></div>
+                        <div class="absolute top-[110px] left-0 right-0 h-2 bg-slate-800 border-y border-amber-500/80 z-10"></div>
+                    </div>
+                    <div class="w-6 h-2 bg-slate-600 rounded-sm pointer-events-none"></div>
+                    <span class="absolute -top-5 text-[8px] text-amber-400 font-bold tech-font">DIMM_B2</span>
+                </div>
+
+                <!-- C. 24-Pin ATX 電源插槽 -->
+                <div id="slot-psu" class="absolute top-[120px] left-[635px] w-12 h-[200px] bg-slate-950 border-2 border-slate-700 rounded-lg drop-zone flex flex-col items-center justify-between p-1 cursor-pointer" data-accept="psu" title="24-Pin ATX 主電源插槽">
+                    <div class="w-full h-full bg-slate-900 border border-amber-500/60 rounded flex flex-col items-center justify-center p-1 pointer-events-none shadow-inner">
+                        <div class="text-[7px] font-extrabold text-amber-400 tech-font text-center mb-1">24-PIN ATX</div>
+                        <div class="grid grid-cols-2 gap-1 w-full justify-items-center">
+                            <div class="w-2.5 h-2.5 bg-slate-950 border border-amber-400 rounded-xs flex items-center justify-center"><div class="w-1 h-1 bg-amber-400"></div></div>
+                            <div class="w-2.5 h-2.5 bg-slate-950 border border-amber-400 rounded-xs flex items-center justify-center"><div class="w-1 h-1 bg-amber-400"></div></div>
+                            <div class="w-2.5 h-2.5 bg-slate-950 border border-amber-400 rounded-xs flex items-center justify-center"><div class="w-1 h-1 bg-amber-400"></div></div>
+                            <div class="w-2.5 h-2.5 bg-slate-950 border border-amber-400 rounded-xs flex items-center justify-center"><div class="w-1 h-1 bg-amber-400"></div></div>
+                            <div class="w-2.5 h-2.5 bg-slate-950 border border-amber-400 rounded-xs flex items-center justify-center"><div class="w-1 h-1 bg-amber-400"></div></div>
+                            <div class="w-2.5 h-2.5 bg-slate-950 border border-amber-400 rounded-xs flex items-center justify-center"><div class="w-1 h-1 bg-amber-400"></div></div>
+                            <div class="w-2.5 h-2.5 bg-slate-950 border border-amber-400 rounded-xs flex items-center justify-center"><div class="w-1 h-1 bg-amber-400"></div></div>
+                            <div class="w-2.5 h-2.5 bg-slate-950 border border-amber-400 rounded-xs flex items-center justify-center"><div class="w-1 h-1 bg-amber-400"></div></div>
+                            <div class="w-2.5 h-2.5 bg-slate-950 border border-amber-400 rounded-xs flex items-center justify-center"><div class="w-1 h-1 bg-amber-400"></div></div>
+                            <div class="w-2.5 h-2.5 bg-slate-950 border border-amber-400 rounded-xs flex items-center justify-center"><div class="w-1 h-1 bg-amber-400"></div></div>
+                        </div>
+                    </div>
+                    <span class="absolute -top-5 text-[8px] text-amber-400 font-bold tech-font">ATX_POWER</span>
+                </div>
+
+                <!-- D. M.2 NVMe SSD 插槽 (PCIe Gen5) -->
+                <div id="slot-m2" class="absolute top-[350px] left-[220px] w-[210px] h-11 bg-slate-900 border-2 border-slate-700 rounded-lg drop-zone flex items-center justify-start px-2 cursor-pointer" data-accept="m2" title="M.2_1 PCIe 5.0 SSD 插槽">
+                    <div class="w-5 h-7 bg-slate-800 border border-slate-600 pointer-events-none"></div>
+                    <span class="ml-3 text-[10px] font-bold text-slate-400 tech-font pointer-events-none">M.2_1 PCIe 5.0</span>
+                    <div class="absolute right-3 w-3 h-3 rounded-full bg-slate-700 border border-slate-500 pointer-events-none"></div>
+                </div>
+
+                <!-- E. PCIe x16_1 金屬強化獨立顯卡插槽 -->
+                <div id="slot-gpu" class="absolute top-[425px] left-[200px] w-[400px] h-14 bg-slate-900 border-2 border-slate-600 rounded-lg drop-zone flex items-center px-2 cursor-pointer" data-accept="gpu" title="PCIe 5.0 x16 獨立顯卡插槽">
+                    <div class="h-9 w-[320px] bg-gradient-to-r from-slate-700 via-slate-800 to-slate-700 border-t-2 border-b-2 border-slate-400 rounded flex items-center justify-center pointer-events-none">
+                        <span class="text-[10px] font-extrabold text-slate-300 tracking-wider tech-font">PCIEX16_1 (SAFE SLOT METAL ARMOR)</span>
+                    </div>
+                    <div class="h-10 w-8 ml-auto bg-slate-700 border border-slate-500 rounded pointer-events-none flex items-center justify-center">
+                        <div class="w-2 h-4 bg-slate-500"></div>
+                    </div>
+                </div>
+
+                <!-- F. PCIe x1_1 擴充槽 -->
+                <div id="slot-pcie-1" class="absolute top-[515px] left-[200px] w-[140px] h-9 bg-slate-900 border-2 border-slate-700 rounded drop-zone flex items-center px-2 cursor-pointer" data-accept="pcie-x1" title="PCIe x1_1 擴充插槽">
+                    <div class="h-5 w-[100px] bg-slate-800 border border-slate-600 pointer-events-none"></div>
+                    <span class="absolute -top-4 left-0 text-[8px] text-slate-500 font-bold tech-font">PCIEX1_1</span>
+                </div>
+
+                <!-- G. PCIe x1_2 擴充槽 -->
+                <div id="slot-pcie-2" class="absolute top-[575px] left-[200px] w-[140px] h-9 bg-slate-900 border-2 border-slate-700 rounded drop-zone flex items-center px-2 cursor-pointer" data-accept="pcie-x1" title="PCIe x1_2 擴充插槽">
+                    <div class="h-5 w-[100px] bg-slate-800 border border-slate-600 pointer-events-none"></div>
+                    <span class="absolute -top-4 left-0 text-[8px] text-slate-500 font-bold tech-font">PCIEX1_2</span>
+                </div>
+
+                <!-- H. PCH 晶片組散熱片 (右下) -->
+                <div class="absolute bottom-8 right-36 w-44 h-44 bg-gradient-to-br from-slate-800 via-slate-900 to-slate-950 border border-slate-700 rounded-2xl shadow-2xl p-4 flex flex-col justify-between pointer-events-none">
+                    <span class="text-[10px] font-bold text-slate-400 tech-font">PCH Z790</span>
+                    <div id="pch-rgb" class="w-12 h-12 rounded-lg bg-gradient-to-tr from-cyan-500 to-blue-600 opacity-80 rgb-mode-cyan my-auto flex items-center justify-center">
+                        <i class="fa-solid fa-bolt text-slate-950 text-xl"></i>
+                    </div>
+                    <span class="text-[8px] text-slate-500 tech-font">REPUBLIC OF GAMERS</span>
+                </div>
+
+                <!-- I. SATA 6Gb/s 插槽組 (SATA6G_1 & SATA6G_2) -->
+                <div class="absolute bottom-8 right-5 flex gap-2">
+                    <div id="slot-sata-1" class="w-12 h-14 bg-slate-950 border-2 border-slate-700 rounded-lg drop-zone flex flex-col items-center justify-center cursor-pointer relative" data-accept="sata" title="SATA6G_1 連接埠">
+                        <div class="w-9 h-3 bg-black border border-amber-500/80 rounded-xs flex items-center px-1 pointer-events-none">
+                            <div class="w-6 h-1 bg-amber-400"></div>
+                        </div>
+                        <span class="text-[7px] text-amber-400 font-bold tech-font mt-1">SATA6G_1</span>
+                    </div>
+                    <div id="slot-sata-2" class="w-12 h-14 bg-slate-950 border-2 border-slate-700 rounded-lg drop-zone flex flex-col items-center justify-center cursor-pointer relative" data-accept="sata" title="SATA6G_2 連接埠">
+                        <div class="w-9 h-3 bg-black border border-amber-500/80 rounded-xs flex items-center px-1 pointer-events-none">
+                            <div class="w-6 h-1 bg-amber-400"></div>
+                        </div>
+                        <span class="text-[7px] text-amber-400 font-bold tech-font mt-1">SATA6G_2</span>
+                    </div>
+                </div>
+
+            </div>
+
+        </main>
+    </div>
+
+    <!-- BIOS POST 開機成功 Modal -->
+    <div id="bios-modal" class="fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-md hidden flex items-center justify-center p-4">
+        <div class="bg-black border-2 border-emerald-500/70 rounded-2xl p-6 sm:p-8 max-w-2xl w-full shadow-[0_0_60px_rgba(16,185,129,0.3)] space-y-4 font-mono text-xs sm:text-sm">
+            
+            <div class="flex items-center justify-between border-b border-emerald-800/80 pb-3">
+                <div class="flex items-center gap-3">
+                    <span class="w-3 h-3 rounded-full bg-emerald-500 animate-ping"></span>
+                    <span class="font-bold text-emerald-400 text-base tracking-wider tech-font">ROG UEFI BIOS POST SCREEN</span>
+                </div>
+                <button onclick="closeBiosModal()" class="text-slate-500 hover:text-slate-200">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <!-- POST 紀錄螢幕 -->
+            <div id="bios-log-container" class="bg-slate-950 border border-slate-800 rounded-xl p-4 h-64 overflow-y-auto space-y-1.5 text-emerald-300 custom-scrollbar">
+                <!-- Log text dynamically injected by JS -->
+            </div>
+
+            <div class="flex items-center justify-between pt-2">
+                <span class="text-slate-500 text-xs">Press ESC or click button to exit BIOS simulation</span>
+                <button onclick="closeBiosModal()" class="px-5 py-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold rounded-lg text-xs transition shadow-lg shadow-emerald-500/20">
+                    進入系統 (Boot System)
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 說明指南 Modal -->
+    <div id="guide-modal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-700 rounded-2xl p-6 max-w-lg w-full space-y-4 text-xs text-slate-300">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                <h3 class="text-sm font-bold text-cyan-400 tech-font flex items-center gap-2">
+                    <i class="fa-solid fa-book-open"></i> 組裝教學指南
+                </h3>
+                <button onclick="closeGuideModal()" class="text-slate-400 hover:text-slate-200">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+            
+            <ul class="space-y-2.5 list-disc list-inside text-slate-300 leading-relaxed">
+                <li><strong class="text-slate-100">拖曳安裝：</strong> 使用滑鼠將左側「PARTS PALETTE」中的零件拖曳至主機板正確對應插槽。</li>
+                <li><strong class="text-slate-100">點擊安裝（行動裝置支援）：</strong> 點選左側零件使其呈現黃色選取狀態，再直接點擊主機板對應插槽完成安裝。</li>
+                <li><strong class="text-slate-100">Q-LED 自檢：</strong> 安裝完成後點擊「POWER ON」，主機板將進行 CPU、DRAM、VGA、BOOT 自檢，若缺少重要零件自檢會停在對應燈號。</li>
+                <li><strong class="text-slate-100">完全相容性：</strong> 標題列頂部與 Layout 採用專門 isolated stacking，因此放大縮小或顯示標題列都不會影響任何插槽座標定位！</li>
+            </ul>
+
+            <button onclick="closeGuideModal()" class="w-full py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold rounded-xl transition border border-slate-700">
+                了解，開始組裝
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // 零件資料庫與安裝狀態記錄
+        const PARTS = [
+            { id: 'part-cpu', type: 'cpu', name: 'Intel Core i9 CPU', installedIn: null },
+            { id: 'part-ram-1', type: 'ram', name: 'DDR5 記憶體 #1', installedIn: null },
+            { id: 'part-ram-2', type: 'ram', name: 'DDR5 記憶體 #2', installedIn: null },
+            { id: 'part-gpu', type: 'gpu', name: 'RTX 4090 獨立顯卡', installedIn: null },
+            { id: 'part-m2', type: 'm2', name: 'M.2 NVMe SSD', installedIn: null },
+            { id: 'part-sound', type: 'pcie-x1', name: 'Hi-Fi 獨立音效卡', installedIn: null },
+            { id: 'part-nic', type: 'pcie-x1', name: 'Wi-Fi 7 無線網卡', installedIn: null },
+            { id: 'part-sata', type: 'sata', name: '2.5吋 SATA SSD', installedIn: null },
+            { id: 'part-odd', type: 'sata', name: 'SATA 藍光光碟機', installedIn: null },
+            { id: 'part-psu', type: 'psu', name: '1000W 電源線', installedIn: null }
+        ];
+
+        let selectedPartId = null;
+        let isAudioEnabled = true;
+        let currentRGBMode = 'cyan'; // 'cyan' | 'rainbow' | 'amber' | 'off'
+        let audioCtx = null;
+
+        // 初始化
+        window.addEventListener('DOMContentLoaded', () => {
+            initDragAndDrop();
+            initTouchAndClickEvents();
+        });
+
+        // Procedural Audio Synthesizer (Web Audio API)
+        function playSound(type) {
+            if (!isAudioEnabled) return;
+            try {
+                if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                if (audioCtx.state === 'suspended') audioCtx.resume();
+
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+
+                const now = audioCtx.currentTime;
+
+                if (type === 'snap') {
+                    // 卡扣扣上啪嗒聲
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(300, now);
+                    osc.frequency.exponentialRampToValueAtTime(80, now + 0.1);
+                    gain.gain.setValueAtTime(0.3, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+                    osc.start(now);
+                    osc.stop(now + 0.1);
+                } else if (type === 'error') {
+                    // 錯誤蜂鳴聲
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(150, now);
+                    gain.gain.setValueAtTime(0.2, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.25);
+                    osc.start(now);
+                    osc.stop(now + 0.25);
+                } else if (type === 'beep') {
+                    // BIOS POST 嗶聲
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(1000, now);
+                    gain.gain.setValueAtTime(0.15, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
+                    osc.start(now);
+                    osc.stop(now + 0.15);
+                }
+            } catch(e) {
+                console.log("Audio not supported or blocked");
+            }
+        }
+
+        // 初始化 HTML5 Drag & Drop
+        function initDragAndDrop() {
+            const draggables = document.querySelectorAll('.draggable-part');
+            const dropZones = document.querySelectorAll('.drop-zone');
+
+            draggables.forEach(partEl => {
+                partEl.addEventListener('dragstart', (e) => {
+                    e.dataTransfer.setData('text/plain', partEl.id);
+                    partEl.classList.add('opacity-50');
+                    highlightMatchingSlots(partEl.dataset.type);
+                });
+
+                partEl.addEventListener('dragend', () => {
+                    partEl.classList.remove('opacity-50');
+                    clearSlotHighlights();
+                });
+            });
+
+            dropZones.forEach(zone => {
+                zone.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    zone.classList.add('drag-active');
+                });
+
+                zone.addEventListener('dragleave', () => {
+                    zone.classList.remove('drag-active');
+                });
+
+                zone.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    zone.classList.remove('drag-active');
+                    const partId = e.dataTransfer.getData('text/plain');
+                    if (partId) {
+                        tryInstallPart(partId, zone);
+                    }
+                });
+            });
+        }
+
+        // 支援行動裝置點擊選擇安裝
+        function initTouchAndClickEvents() {
+            const draggables = document.querySelectorAll('.draggable-part');
+            const dropZones = document.querySelectorAll('.drop-zone');
+
+            draggables.forEach(partEl => {
+                partEl.addEventListener('click', () => {
+                    const partData = PARTS.find(p => p.id === partEl.id);
+                    if (partData && partData.installedIn) return;
+
+                    if (selectedPartId === partEl.id) {
+                        selectedPartId = null;
+                        partEl.classList.remove('selected');
+                        clearSlotHighlights();
+                    } else {
+                        draggables.forEach(d => d.classList.remove('selected'));
+                        selectedPartId = partEl.id;
+                        partEl.classList.add('selected');
+                        highlightMatchingSlots(partEl.dataset.type);
+                    }
+                });
+            });
+
+            dropZones.forEach(zone => {
+                zone.addEventListener('click', () => {
+                    if (selectedPartId) {
+                        tryInstallPart(selectedPartId, zone);
+                        selectedPartId = null;
+                        draggables.forEach(d => d.classList.remove('selected'));
+                        clearSlotHighlights();
+                    }
+                });
+            });
+        }
+
+        // 醒目提醒可對應的插槽
+        function highlightMatchingSlots(partType) {
+            document.querySelectorAll('.drop-zone').forEach(zone => {
+                if (zone.dataset.accept === partType) {
+                    zone.classList.add('ring-2', 'ring-cyan-400');
+                }
+            });
+        }
+
+        function clearSlotHighlights() {
+            document.querySelectorAll('.drop-zone').forEach(zone => {
+                zone.classList.remove('ring-2', 'ring-cyan-400', 'drag-active');
+            });
+        }
+
+        // 嘗試安裝零件
+        function tryInstallPart(partId, slotEl) {
+            const partData = PARTS.find(p => p.id === partId);
+            if (!partData) return;
+
+            const acceptType = slotEl.dataset.accept;
+            if (partData.type !== acceptType) {
+                playSound('error');
+                showToast(`❌ 安裝失敗：${partData.name} 的插槽介面不相符！`, 'error');
+                return;
+            }
+
+            // 檢查該插槽是否已有裝置
+            if (slotEl.querySelector('.installed-part')) {
+                playSound('error');
+                showToast(`⚠️ 該插槽已安裝其他裝置！`, 'warning');
+                return;
+            }
+
+            // 安裝成功！
+            partData.installedIn = slotEl.id;
+            playSound('snap');
+            
+            // 隱藏左側清單中的該項
+            const sourcePartEl = document.getElementById(partId);
+            if (sourcePartEl) {
+                sourcePartEl.style.display = 'none';
+            }
+
+            // 在主機板插槽內渲染精美的 SVG 實體渲染圖
+            renderInstalledGraphic(partData, slotEl);
+
+            updateProgress();
+            showToast(`✅ 成功安裝：${partData.name}`, 'success');
+        }
+
+        // 渲染插槽上的零件 SVG 視覺
+        function renderInstalledGraphic(partData, slotEl) {
+            const container = document.createElement('div');
+            // 使用 absolute inset-0 確保安裝圖層直接疊加於插槽上方，解決 CPU 及零件安裝時造成的版面推擠/位移問題
+            container.className = 'installed-part absolute inset-0 flex items-center justify-center p-1 z-10 pointer-events-none';
+            
+            let svgContent = '';
+
+            if (partData.type === 'cpu') {
+                svgContent = `
+                    <div class="w-[145px] h-[145px] bg-slate-300 border-2 border-slate-400 rounded flex flex-col items-center justify-center shadow-2xl relative">
+                        <div class="w-[120px] h-[120px] bg-slate-200 border border-slate-500 rounded-sm flex flex-col items-center justify-center">
+                            <span class="font-extrabold text-slate-800 text-xs tech-font">Intel Core i9</span>
+                            <span class="text-[9px] font-mono text-slate-600">LGA1700 14900K</span>
+                        </div>
+                        <div class="absolute bottom-1 right-1 w-2.5 h-2.5 bg-amber-400 rounded-full"></div>
+                    </div>`;
+            } else if (partData.type === 'ram') {
+                svgContent = `
+                    <div class="w-full h-[220px] bg-slate-900 border-2 border-emerald-500 rounded flex flex-col items-center justify-between py-2 shadow-xl">
+                        <div class="w-2.5 h-full bg-emerald-400 rgb-mode-cyan rounded-full"></div>
+                    </div>`;
+            } else if (partData.type === 'gpu') {
+                svgContent = `
+                    <div class="w-[390px] h-12 bg-slate-950 border-2 border-purple-500 rounded-lg flex items-center justify-between px-3 shadow-2xl">
+                        <span class="text-xs font-black text-purple-300 tech-font">GEFORCE RTX 4090 24GB</span>
+                        <div class="flex gap-2">
+                            <div class="w-6 h-6 rounded-full border border-slate-600 bg-slate-900 animate-spin"></div>
+                            <div class="w-6 h-6 rounded-full border border-slate-600 bg-slate-900 animate-spin"></div>
+                        </div>
+                    </div>`;
+            } else if (partData.type === 'm2') {
+                svgContent = `
+                    <div class="w-[200px] h-8 bg-slate-950 border border-amber-500 rounded flex items-center justify-between px-2 shadow-lg">
+                        <span class="text-[10px] font-bold text-amber-400 tech-font">SAMSUNG NVMe Gen5 2TB</span>
+                        <div class="w-2 h-2 rounded-full bg-slate-600"></div>
+                    </div>`;
+            } else if (partData.type === 'pcie-x1') {
+                const color = partData.id === 'part-sound' ? 'border-pink-500 text-pink-300' : 'border-sky-500 text-sky-300';
+                svgContent = `
+                    <div class="w-[130px] h-7 bg-slate-950 border ${color} rounded flex items-center justify-center px-1">
+                        <span class="text-[9px] font-bold tech-font truncate">${partData.name}</span>
+                    </div>`;
+            } else if (partData.type === 'sata') {
+                const isODD = partData.id === 'part-odd';
+                const label = isODD ? 'SATA ODD 光碟機' : 'SATA SSD';
+                const borderColor = isODD ? 'border-orange-500 bg-orange-950/90' : 'border-red-500 bg-red-900/90';
+                svgContent = `
+                    <div class="w-full h-full ${borderColor} border rounded flex flex-col items-center justify-center p-0.5">
+                        <span class="text-[7px] font-bold text-white tech-font text-center leading-tight">${label}</span>
+                    </div>`;
+            } else if (partData.type === 'psu') {
+                svgContent = `
+                    <div class="w-full h-full bg-amber-500 border-2 border-amber-300 rounded flex items-center justify-center shadow-lg">
+                        <span class="text-[8px] font-black text-slate-950 tech-font rotate-90">24-PIN ATX</span>
+                    </div>`;
+            }
+
+            container.innerHTML = svgContent;
+            slotEl.appendChild(container);
+        }
+
+        // 更新進度條 UI
+        function updateProgress() {
+            const installedCount = PARTS.filter(p => p.installedIn !== null).length;
+            const text = `${installedCount} / ${PARTS.length}`;
+
+            document.getElementById('install-progress').textContent = `${text} 已安裝`;
+            document.getElementById('header-progress-text').textContent = text;
+        }
+
+        // 開機測試與 Q-LED 診斷
+        function powerOnMotherboard() {
+            const installedCount = PARTS.filter(p => p.installedIn !== null).length;
+
+            // Q-LED Diagnostic Sequence
+            const ledCpu = document.getElementById('led-cpu');
+            const ledDram = document.getElementById('led-dram');
+            const ledVga = document.getElementById('led-vga');
+            const ledBoot = document.getElementById('led-boot');
+            const powerStatus = document.getElementById('header-power-status');
+
+            // Reset LEDs
+            ledCpu.className = 'w-2.5 h-2.5 rounded-full bg-slate-800 transition-colors';
+            ledDram.className = 'w-2.5 h-2.5 rounded-full bg-slate-800 transition-colors';
+            ledVga.className = 'w-2.5 h-2.5 rounded-full bg-slate-800 transition-colors';
+            ledBoot.className = 'w-2.5 h-2.5 rounded-full bg-slate-800 transition-colors';
+
+            powerStatus.innerHTML = `<span class="w-2 h-2 rounded-full bg-amber-400 animate-ping"></span> 自檢中 (POST...)`;
+
+            // Step 1: Check CPU
+            setTimeout(() => {
+                const hasCpu = PARTS.find(p => p.type === 'cpu').installedIn !== null;
+                if (!hasCpu) {
+                    ledCpu.className = 'w-2.5 h-2.5 rounded-full bg-rose-500 shadow-[0_0_10px_#f43f5e]';
+                    powerStatus.innerHTML = `<span class="w-2 h-2 rounded-full bg-rose-500"></span> 錯誤 (CPU 缺失)`;
+                    playSound('error');
+                    showToast('❌ 開機失敗：尚未安裝 CPU 處理器！', 'error');
+                    return;
+                }
+                ledCpu.className = 'w-2.5 h-2.5 rounded-full bg-emerald-500';
+
+                // Step 2: Check DRAM
+                setTimeout(() => {
+                    const hasDram = PARTS.filter(p => p.type === 'ram' && p.installedIn !== null).length > 0;
+                    if (!hasDram) {
+                        ledDram.className = 'w-2.5 h-2.5 rounded-full bg-amber-500 shadow-[0_0_10px_#f59e0b]';
+                        powerStatus.innerHTML = `<span class="w-2 h-2 rounded-full bg-amber-500"></span> 錯誤 (DRAM 缺失)`;
+                        playSound('error');
+                        showToast('❌ 開機失敗：未檢測到 RAM 記憶體！', 'error');
+                        return;
+                    }
+                    ledDram.className = 'w-2.5 h-2.5 rounded-full bg-emerald-500';
+
+                    // Step 3: Check VGA
+                    setTimeout(() => {
+                        const hasGpu = PARTS.find(p => p.type === 'gpu').installedIn !== null;
+                        if (!hasGpu) {
+                            ledVga.className = 'w-2.5 h-2.5 rounded-full bg-white shadow-[0_0_10px_#ffffff]';
+                            powerStatus.innerHTML = `<span class="w-2 h-2 rounded-full bg-white"></span> 錯誤 (VGA 缺失)`;
+                            playSound('error');
+                            showToast('❌ 開機失敗：未安裝 獨立顯示卡！', 'error');
+                            return;
+                        }
+                        ledVga.className = 'w-2.5 h-2.5 rounded-full bg-emerald-500';
+
+                        // Step 4: Check Power Supply & Boot
+                        setTimeout(() => {
+                            const hasPsu = PARTS.find(p => p.type === 'psu').installedIn !== null;
+                            if (!hasPsu) {
+                                ledBoot.className = 'w-2.5 h-2.5 rounded-full bg-amber-500';
+                                powerStatus.innerHTML = `<span class="w-2 h-2 rounded-full bg-amber-500"></span> 錯誤 (未供電)`;
+                                playSound('error');
+                                showToast('❌ 開機失敗：請接上 24-Pin ATX 主電源線！', 'error');
+                                return;
+                            }
+                            ledBoot.className = 'w-2.5 h-2.5 rounded-full bg-emerald-500';
+
+                            // All Passed! Boot BIOS Modal
+                            powerStatus.innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-400"></span> 開機成功 (System Ready)`;
+                            playSound('beep');
+                            openBiosModal(installedCount);
+
+                        }, 400);
+                    }, 400);
+                }, 400);
+            }, 400);
+        }
+
+        // 開啟 BIOS 模擬彈窗
+        function openBiosModal(installedCount) {
+            const biosModal = document.getElementById('bios-modal');
+            const logContainer = document.getElementById('bios-log-container');
+            biosModal.classList.remove('hidden');
+
+            logContainer.innerHTML = '';
+
+            const logs = [
+                'ASUSTeK COMPUTER INC. ROG STRIX Z790-E GAMING WIFI BIOS Rev 1801',
+                'CPU: Intel(R) Core(TM) i9-14900K @ 5.80GHz',
+                'Speed: 5800MHz  Count: 24 Cores (8P + 16E)',
+                'DRAM Physical Memory: 64 GB DDR5 7200MHz Dual Channel OK',
+                'USB Devices Total: 1 Keyboard, 1 Mouse, 0 Hub',
+                'Detected Storage: M.2 NVMe SSD 2TB (PCIe 5.0 x4) - HEALTH 100%',
+                'SATA Devices: 1x SATA SSD, 1x Optical Disc Drive (BD-RE)',
+                'Graphics Card: NVIDIA GeForce RTX 4090 (24576 MB GDDR6X)',
+                'Audio Output: High Definition Audio Codec OK',
+                'Network: Wi-Fi 7 Wireless Network Controller OK',
+                `Components Verification: [ ${installedCount} / 10 Installed ]`,
+                'POST Check Complete. No errors found.',
+                'SUCCESS: Booting into Windows 11 Pro Operating System...'
+            ];
+
+            logs.forEach((line, index) => {
+                setTimeout(() => {
+                    const p = document.createElement('p');
+                    p.textContent = `> ${line}`;
+                    logContainer.appendChild(p);
+                    logContainer.scrollTop = logContainer.scrollHeight;
+                }, index * 120);
+            });
+        }
+
+        function closeBiosModal() {
+            document.getElementById('bios-modal').classList.add('hidden');
+        }
+
+        function showGuideModal() {
+            document.getElementById('guide-modal').classList.remove('hidden');
+        }
+
+        function closeGuideModal() {
+            document.getElementById('guide-modal').classList.add('hidden');
+        }
+
+        // 切換 RGB 燈光模式
+        function cycleRGBMode() {
+            const modes = ['cyan', 'rainbow', 'amber', 'off'];
+            const nextIndex = (modes.indexOf(currentRGBMode) + 1) % modes.length;
+            currentRGBMode = modes[nextIndex];
+
+            const head = document.getElementById('rgb-strip-head');
+            const pch = document.getElementById('pch-rgb');
+
+            head.className = `w-12 h-1.5 rounded-full bg-cyan-400 rgb-mode-${currentRGBMode}`;
+            pch.className = `w-12 h-12 rounded-lg bg-gradient-to-tr from-cyan-500 to-blue-600 opacity-80 my-auto flex items-center justify-center rgb-mode-${currentRGBMode}`;
+
+            showToast(`💡 RGB 燈效模式切換為：${currentRGBMode.toUpperCase()}`, 'info');
+        }
+
+        // 音效開關
+        function toggleAudio() {
+            isAudioEnabled = !isAudioEnabled;
+            const icon = document.getElementById('audio-icon');
+            const btn = document.getElementById('btn-audio');
+
+            if (isAudioEnabled) {
+                icon.className = 'fa-solid fa-volume-high text-cyan-400';
+                btn.querySelector('span').textContent = '音效開';
+            } else {
+                icon.className = 'fa-solid fa-volume-xmark text-slate-500';
+                btn.querySelector('span').textContent = '靜音';
+            }
+        }
+
+        // 重置組裝
+        function resetAssembly() {
+            PARTS.forEach(part => {
+                part.installedIn = null;
+                const partEl = document.getElementById(part.id);
+                if (partEl) partEl.style.display = 'flex';
+            });
+
+            document.querySelectorAll('.installed-part').forEach(el => el.remove());
+            
+            updateProgress();
+            
+            // 重置 Q-LEDs
+            document.getElementById('led-cpu').className = 'w-2.5 h-2.5 rounded-full bg-slate-800';
+            document.getElementById('led-dram').className = 'w-2.5 h-2.5 rounded-full bg-slate-800';
+            document.getElementById('led-vga').className = 'w-2.5 h-2.5 rounded-full bg-slate-800';
+            document.getElementById('led-boot').className = 'w-2.5 h-2.5 rounded-full bg-slate-800';
+            document.getElementById('header-power-status').innerHTML = `<span class="w-2 h-2 rounded-full bg-slate-600"></span> 待機中 (Standby)`;
+
+            showToast('🔄 已重置主機板組裝進度！', 'info');
+        }
+
+        // 提示功能
+        function getHint() {
+            const nextPart = PARTS.find(p => p.installedIn === null);
+            if (nextPart) {
+                highlightMatchingSlots(nextPart.type);
+                showToast(`💡 提示：請將「${nextPart.name}」拖曳至醒目的插槽中！`, 'info');
+            } else {
+                showToast('🎉 所有零件均已安裝完畢！請按下 POWER ON 開機測試。', 'success');
+            }
+        }
+
+        // 自訂 Toast 訊息提示
+        function showToast(msg, type = 'info') {
+            const toast = document.createElement('div');
+            let bg = 'bg-slate-900 border-slate-700 text-slate-100';
+            if (type === 'success') bg = 'bg-emerald-950 border-emerald-600 text-emerald-200';
+            if (type === 'error') bg = 'bg-rose-950 border-rose-600 text-rose-200';
+            if (type === 'warning') bg = 'bg-amber-950 border-amber-600 text-amber-200';
+
+            toast.className = `fixed bottom-6 right-6 z-50 ${bg} border px-4 py-3 rounded-xl shadow-2xl text-xs font-bold font-mono transition-all duration-300 transform translate-y-2 opacity-0 flex items-center gap-2`;
+            toast.innerHTML = msg;
+
+            document.body.appendChild(toast);
+
+            setTimeout(() => {
+                toast.classList.remove('translate-y-2', 'opacity-0');
+            }, 10);
+
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-2');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
