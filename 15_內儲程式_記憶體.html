@@ -1,0 +1,1721 @@
+<!DOCTYPE html>
+<html lang="zh-TW" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>內儲程式與記憶體功能特性 - 互動教學網頁</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600;700&family=Noto+Sans+TC:wght@400;500;700;900&family=Orbitron:wght@600;800;900&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            background-color: #080c14;
+            color: #f1f5f9;
+        }
+        .tech-font { font-family: 'Orbitron', sans-serif; }
+        .code-font { font-family: 'Fira Code', monospace; }
+
+        /* Custom Scrollbars */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #0f172a; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #475569; }
+
+        /* Glowing effects */
+        .glow-blue { box-shadow: 0 0 25px rgba(37, 99, 235, 0.4); }
+        .glow-amber { box-shadow: 0 0 25px rgba(245, 158, 11, 0.4); }
+        .glow-emerald { box-shadow: 0 0 25px rgba(16, 185, 129, 0.4); }
+        .glow-purple { box-shadow: 0 0 25px rgba(168, 85, 247, 0.4); }
+        .glow-rose { box-shadow: 0 0 25px rgba(244, 63, 94, 0.4); }
+
+        /* Tab Transition */
+        .tab-btn.active {
+            background-color: #1e293b;
+            color: #38bdf8;
+            border-color: #0284c7;
+            box-shadow: 0 4px 12px rgba(14, 165, 233, 0.2);
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col bg-slate-950 text-slate-100">
+
+    <!-- Header with Tab Navigation -->
+    <header class="bg-slate-900/90 border-b border-slate-800 sticky top-0 z-50 backdrop-blur-md">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex flex-col sm:flex-row items-center justify-between gap-3 py-2 sm:py-0">
+            <div class="flex items-center gap-3">
+                <a href="index.html" class="text-xs text-sky-400 hover:text-sky-300 transition flex items-center gap-1">
+                    <i class="fa-solid fa-arrow-left"></i> 回到首頁
+                </a>
+                <div class="w-10 h-10 rounded-xl bg-blue-500/20 border border-blue-500/40 flex items-center justify-center text-blue-400 text-xl glow-blue">
+                    <i class="fa-solid fa-microchip"></i>
+                </div>
+                <div>
+                    <h1 class="text-base sm:text-lg font-black tracking-wider tech-font bg-clip-text text-transparent bg-gradient-to-r from-blue-400 via-sky-300 to-indigo-400">
+                        STORED-PROGRAM & MEMORY ARCHITECTURE
+                    </h1>
+                    <p class="text-[11px] text-slate-400 font-mono">內儲程式概念與記憶體分類特性 – 互動教學網頁</p>
+                </div>
+            </div>
+
+            <!-- Page Tabs Switcher -->
+            <div class="flex items-center bg-slate-950 p-1 rounded-xl border border-slate-800">
+                <button onclick="switchTab('tab1')" id="tab1-btn" class="tab-btn active px-3 py-2 sm:px-4 sm:py-2 rounded-lg text-xs font-bold transition flex items-center gap-2 border border-transparent">
+                    <i class="fa-solid fa-play"></i> 分頁一：執行流程動畫
+                </button>
+                <button onclick="switchTab('tab2')" id="tab2-btn" class="tab-btn text-slate-400 hover:text-slate-200 px-3 py-2 sm:px-4 sm:py-2 rounded-lg text-xs font-bold transition flex items-center gap-2 border border-transparent">
+                    <i class="fa-solid fa-layer-group"></i> 分頁二：記憶體分類與特性
+                </button>
+                <button onclick="switchTab('tab3')" id="tab3-btn" class="tab-btn text-slate-400 hover:text-slate-200 px-3 py-2 sm:px-4 sm:py-2 rounded-lg text-xs font-bold transition flex items-center gap-2 border border-transparent">
+                    <i class="fa-solid fa-bolt-lightning text-amber-400"></i> 分頁三：HDD vs SSD 速度比較
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6">
+
+        <!-- ========================================== -->
+        <!-- TAB 1: EXECUTION PROCESS & ANIMATIONS      -->
+        <!-- ========================================== -->
+        <div id="tab1-content" class="space-y-10">
+
+            <!-- SECTION 1: LIFE ANALOGY (STUDENT, DRAWER, BACKPACK, LOCKER) -->
+            <section class="bg-slate-900/90 border border-amber-500/30 rounded-2xl p-5 sm:p-6 shadow-2xl space-y-6 relative overflow-hidden">
+                <div class="absolute top-0 left-0 w-2 h-full bg-gradient-to-b from-amber-400 to-orange-500"></div>
+
+                <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-slate-800 pb-4">
+                    <div>
+                        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs font-mono font-bold mb-2">
+                            <i class="fa-solid fa-lightbulb"></i> 第一階段：生活化比喻動畫
+                        </div>
+                        <h2 class="text-xl sm:text-2xl font-black text-amber-300 flex items-center gap-2">
+                            📚 學生唸書的故事（理解記憶體階層與 CPU 運作）
+                        </h2>
+                        <p class="text-xs sm:text-sm text-slate-300 mt-1">
+                            把學生唸書的過程對應到電腦：<strong>學生 (CPU)</strong> 要唸書時，把常用書放進<strong>書包 (主記憶體)</strong>，閱讀時再取出；更常用的重點講義放身邊的<strong>抽屜 (Cache 快取)</strong>！而更多書則放在遠處<strong>置物櫃 (硬碟)</strong>。
+                        </p>
+                    </div>
+
+                    <!-- Analogy Controls -->
+                    <div class="flex items-center gap-2 shrink-0">
+                        <button onclick="startAnalogyAnimation()" id="btn-analogy-play" class="px-5 py-2.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black rounded-xl text-xs transition shadow-lg glow-amber flex items-center gap-2">
+                            <i class="fa-solid fa-play" id="icon-analogy"></i> <span id="text-analogy">播放情境動畫</span>
+                        </button>
+                        <button onclick="resetAnalogyAnimation()" class="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold rounded-xl text-xs transition border border-slate-700 flex items-center gap-2">
+                            <i class="fa-solid fa-rotate-left"></i> 重置 (Reset)
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Analogy Canvas & Interactive Stage -->
+                <div class="space-y-4">
+                    <div class="bg-slate-950 rounded-2xl p-3 sm:p-5 border border-slate-800/80 relative">
+                        <canvas id="analogyCanvas" class="w-full h-80 sm:h-96 bg-slate-900/60 rounded-xl border border-slate-800 block"></canvas>
+                    </div>
+
+                    <!-- Real-time Analogy Status Banner -->
+                    <div id="analogy-status-banner" class="bg-slate-950 p-4 rounded-xl border border-amber-500/30 flex items-start gap-3 text-xs sm:text-sm font-mono text-slate-200">
+                        <div class="w-3 h-3 rounded-full bg-amber-400 animate-ping shrink-0 mt-1"></div>
+                        <div id="analogy-status-text" class="leading-relaxed">
+                            <strong class="text-amber-400">[情境就緒]</strong> 點擊右上角「播放情境動畫」，觀察學生如何從置物櫃、書包、抽屜拿取書籍並進行閱讀！
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Analogy Mapping Cards (Ordered Left-to-Right: Student, Drawer, Backpack, Locker) -->
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
+                    <div class="bg-slate-950 p-3.5 rounded-xl border border-red-500/30 text-center space-y-1">
+                        <div class="text-2xl">🎓</div>
+                        <div class="font-bold text-slate-100">學生 (Student)</div>
+                        <div class="text-red-400 font-mono font-bold text-[11px]">對應 ➔ CPU</div>
+                        <p class="text-[10px] text-slate-400 leading-tight">負責讀書、運算與思考處理的核心主體</p>
+                    </div>
+
+                    <div class="bg-slate-950 p-3.5 rounded-xl border border-orange-500/30 text-center space-y-1">
+                        <div class="text-2xl">📥</div>
+                        <div class="font-bold text-slate-100">抽屜 (Desk Drawer)</div>
+                        <div class="text-orange-400 font-mono font-bold text-[11px]">對應 ➔ Cache (快取)</div>
+                        <p class="text-[10px] text-slate-400 leading-tight">座位旁，伸手即可極速拿取最常用重點講義</p>
+                    </div>
+
+                    <div class="bg-slate-950 p-3.5 rounded-xl border border-cyan-500/30 text-center space-y-1">
+                        <div class="text-2xl">🎒</div>
+                        <div class="font-bold text-slate-100">書包 (Backpack)</div>
+                        <div class="text-cyan-400 font-mono font-bold text-[11px]">對應 ➔ 主記憶體 (RAM)</div>
+                        <p class="text-[10px] text-slate-400 leading-tight">隨身攜帶，容量中等，存放今天準備閱讀的書本</p>
+                    </div>
+
+                    <div class="bg-slate-950 p-3.5 rounded-xl border border-blue-500/30 text-center space-y-1">
+                        <div class="text-2xl">🚪</div>
+                        <div class="font-bold text-slate-100">置物櫃 (Locker)</div>
+                        <div class="text-blue-400 font-mono font-bold text-[11px]">對應 ➔ 硬碟 (HDD/SSD)</div>
+                        <p class="text-[10px] text-slate-400 leading-tight">距離較遠，容量極大，永久存放所有課本資料</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SECTION 2: HARDWARE ARCHITECTURE (CPU, RAM, HARD DRIVE) -->
+            <section class="bg-slate-900/90 border border-blue-900/40 rounded-2xl p-5 sm:p-6 shadow-2xl space-y-6 relative overflow-hidden">
+                <div class="absolute top-0 left-0 w-2 h-full bg-gradient-to-b from-blue-400 to-indigo-600"></div>
+
+                <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-slate-800 pb-4">
+                    <div>
+                        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/30 text-blue-400 text-xs font-mono font-bold mb-2">
+                            <i class="fa-solid fa-microchip"></i> 第二階段：電腦實體硬體架構動畫
+                        </div>
+                        <h3 class="text-lg sm:text-xl font-bold text-slate-100 flex items-center gap-2">
+                            <i class="fa-solid fa-diagram-project text-blue-400"></i> 動態模擬：程式如何從硬碟載入記憶體並被 CPU 執行
+                        </h3>
+                        <p class="text-xs text-slate-400 mt-1">選擇欲執行的軟體，點擊「執行軟體」觀察資料與指令在三個區域之間的流動！</p>
+                    </div>
+
+                    <!-- Control Panel -->
+                    <div class="flex flex-wrap items-center gap-3">
+                        <div class="flex items-center gap-2 bg-slate-950 p-2 rounded-xl border border-slate-800">
+                            <span class="text-xs font-mono text-slate-400 pl-1">選擇軟體:</span>
+                            <select id="app-select" onchange="resetAnimation()" class="bg-slate-900 border border-slate-700 text-blue-300 text-xs font-bold font-mono rounded-lg p-1.5 outline-none focus:border-blue-400">
+                                <option value="GAME">🎮 3D 遊戲 (Game.exe - 8 GB)</option>
+                                <option value="BROWSER">🌐 網頁瀏覽器 (Browser.exe - 2 GB)</option>
+                                <option value="WORD">📝 文書處理器 (Word.exe - 500 MB)</option>
+                            </select>
+                        </div>
+
+                        <button onclick="startExecutionAnimation()" id="btn-run" class="px-5 py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl text-xs transition shadow-lg glow-blue flex items-center gap-2">
+                            <i class="fa-solid fa-circle-play" id="icon-run"></i> <span id="text-run">執行軟體 (Start)</span>
+                        </button>
+
+                        <button onclick="resetAnimation()" class="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold rounded-xl text-xs transition border border-slate-700 flex items-center gap-2">
+                            <i class="fa-solid fa-rotate-left"></i> 重置 (Reset)
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Visual Diagram Canvas & Interactive Area -->
+                <div class="space-y-4">
+                    <div class="bg-slate-950 rounded-2xl p-3 sm:p-5 border border-slate-800 relative">
+                        <canvas id="architectureCanvas" class="w-full h-80 sm:h-96 bg-slate-900/60 rounded-xl border border-slate-800/80 block"></canvas>
+                    </div>
+
+                    <!-- Real-time Status Banner -->
+                    <div id="status-banner" class="bg-slate-950 p-4 rounded-xl border border-blue-900/50 flex items-start gap-3 text-xs sm:text-sm font-mono text-slate-200">
+                        <div class="w-3 h-3 rounded-full bg-blue-400 animate-ping shrink-0 mt-1"></div>
+                        <div id="status-text" class="leading-relaxed">
+                            <strong class="text-blue-400">[就緒狀態 IDLE]</strong> 軟體當前靜態儲存在<strong>硬碟 (Hard Drive)</strong> 中。請點擊右上角「執行軟體」啟動流程式模擬。
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SECTION 3: CORE CONCEPTS & QUIZ -->
+            <section class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-3">
+                    <h3 class="text-base sm:text-lg font-bold text-amber-400 flex items-center gap-2">
+                        <i class="fa-solid fa-lightbulb"></i> 什麼是「內儲程式概念」 (Stored-Program)？
+                    </h3>
+                    <p class="text-xs sm:text-sm text-slate-300 leading-relaxed">
+                        由數學家約翰·馮·紐曼（John von Neumann）提出：
+                    </p>
+                    <ul class="list-disc list-inside text-xs text-slate-300 space-y-1.5 leading-relaxed pl-1">
+                        <li><strong class="text-amber-300">程式即資料：</strong> 將計算指令與資料一同儲存在記憶體中。</li>
+                        <li><strong class="text-amber-300">靈活更換軟體：</strong> 電腦不需要修改硬體線路，只需從硬碟載入不同軟體到主記憶體，就能執行完全不同的功能！</li>
+                    </ul>
+                </div>
+
+                <!-- Quiz Block -->
+                <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-4">
+                    <h3 class="text-base sm:text-lg font-bold text-emerald-400 flex items-center gap-2 tech-font">
+                        <i class="fa-solid fa-graduation-cap"></i> 觀念小測驗 (Tab 1)
+                    </h3>
+                    
+                    <div id="quiz-box" class="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-3">
+                        <p class="text-xs sm:text-sm font-bold text-slate-200">
+                            問題：當我們雙擊打開桌面上的「遊戲軟體」時，電腦內部主要發生了什麼事情？
+                        </p>
+
+                        <div class="space-y-2 text-xs">
+                            <button onclick="checkAnswer(1)" class="w-full text-left p-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-300 transition flex items-center gap-2">
+                                <span class="w-5 h-5 rounded-full bg-slate-800 flex items-center justify-center font-bold font-mono text-[10px]">A</span>
+                                CPU 直接在硬碟裡讀取遊戲指令並運算
+                            </button>
+                            <button onclick="checkAnswer(2)" class="w-full text-left p-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-300 transition flex items-center gap-2">
+                                <span class="w-5 h-5 rounded-full bg-slate-800 flex items-center justify-center font-bold font-mono text-[10px]">B</span>
+                                將遊戲程式從硬碟載入至「主記憶體 (RAM)」，CPU 再從主記憶體/Cache 取出執行
+                            </button>
+                            <button onclick="checkAnswer(3)" class="w-full text-left p-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-300 transition flex items-center gap-2">
+                                <span class="w-5 h-5 rounded-full bg-slate-800 flex items-center justify-center font-bold font-mono text-[10px]">C</span>
+                                遊戲程式自動刪除硬碟備份，轉移到 CPU 中
+                            </button>
+                        </div>
+
+                        <div id="quiz-result" class="hidden p-3 rounded-xl text-xs font-mono"></div>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <!-- ========================================== -->
+        <!-- TAB 2: MEMORY CLASSIFICATION & CHARACTERISTICS -->
+        <!-- ========================================== -->
+        <div id="tab2-content" class="hidden space-y-8">
+
+            <!-- Header & Perspective Selector -->
+            <section class="bg-slate-900/90 border border-sky-500/30 rounded-2xl p-5 sm:p-6 shadow-2xl space-y-6 relative overflow-hidden">
+                <div class="absolute top-0 left-0 w-2 h-full bg-gradient-to-b from-sky-400 via-purple-500 to-indigo-600"></div>
+
+                <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-slate-800 pb-4">
+                    <div>
+                        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-sky-500/10 border border-sky-500/30 text-sky-400 text-xs font-mono font-bold mb-2">
+                            <i class="fa-solid fa-layer-group"></i> 記憶體特性與分類 – 架構整合對照
+                        </div>
+                        <h2 class="text-xl sm:text-2xl font-black text-sky-300 flex items-center gap-2">
+                            🧩 記憶體特性與分類互動圖解
+                        </h2>
+                        <p class="text-xs sm:text-sm text-slate-300 mt-1">
+                            點擊上方<strong>分析觀點</strong>或<strong>架構圖元件</strong>，下方動態文字區將以平滑動畫切換對應的特性與分類！
+                        </p>
+                    </div>
+
+                    <!-- Mode Control Tabs & Auto-play Button -->
+                    <div class="flex flex-wrap items-center gap-2">
+                        <button onclick="setTab2Perspective('category')" id="persp-btn-category" class="persp-btn active-persp px-3 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 bg-sky-950 text-sky-300 border border-sky-700 shadow-md">
+                            <i class="fa-solid fa-sitemap"></i> 觀點一：主/輔分類
+                        </button>
+                        <button onclick="setTab2Perspective('volatility')" id="persp-btn-volatility" class="persp-btn px-3 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 bg-slate-900 text-slate-400 border border-slate-800 hover:text-slate-200">
+                            <i class="fa-solid fa-bolt"></i> 觀點二：斷電揮發性
+                        </button>
+                        <button onclick="setTab2Perspective('hardware')" id="persp-btn-hardware" class="persp-btn px-3 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 bg-slate-900 text-slate-400 border border-slate-800 hover:text-slate-200">
+                            <i class="fa-solid fa-gauge-high"></i> 觀念三：材質與速度
+                        </button>
+                        <button onclick="toggleTab2Autoplay()" id="btn-tab2-autoplay" class="px-3 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 bg-purple-950 text-purple-300 border border-purple-700 hover:bg-purple-900">
+                            <i class="fa-solid fa-play" id="icon-tab2-play"></i> <span id="text-tab2-play">自動輪播切換</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- ARCHITECTURE DIAGRAM (Matching the user screenshot: CPU [Cache] <-> Main Memory <-> Hard Drive) -->
+                <div class="space-y-6">
+                    <div class="bg-slate-950 rounded-2xl p-4 sm:p-6 border border-slate-800 relative shadow-inner">
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 items-center relative">
+                            
+                            <!-- BLOCK 1: CPU + Cache (Red badge at bottom right) -->
+                            <div id="arch-card-cpu" onclick="selectArchComponent('cpu')" class="arch-card group relative bg-gradient-to-b from-blue-900/60 to-blue-950/80 border-2 border-blue-500 rounded-2xl p-5 sm:p-6 cursor-pointer transition-all duration-300 hover:scale-[1.02] hover:border-blue-400 hover:shadow-[0_0_25px_rgba(59,130,246,0.5)] min-h-[170px] flex flex-col justify-between overflow-hidden">
+                                <div class="text-center my-auto space-y-1">
+                                    <h3 class="text-2xl sm:text-3xl font-black text-white tracking-wide tech-font">CPU</h3>
+                                    <p class="text-[11px] text-blue-300 font-mono">中央處理器</p>
+                                </div>
+
+                                <!-- Cache Badge inside CPU (Matches user screenshot) -->
+                                <div class="self-end mt-2 px-3 py-1.5 rounded-xl bg-gradient-to-r from-red-600 to-rose-600 text-white font-black text-xs sm:text-sm tech-font shadow-lg shadow-rose-900/50 border border-rose-400 animate-pulse flex items-center gap-1.5">
+                                    <i class="fa-solid fa-bolt text-[10px]"></i> Cache
+                                </div>
+                            </div>
+
+                            <!-- Connector Diamond Line 1 (Desktop view) -->
+                            <div class="hidden md:flex absolute left-[31.5%] top-1/2 -translate-y-1/2 z-10 items-center justify-center">
+                                <div class="w-3.5 h-3.5 bg-blue-500 rotate-45 shadow-[0_0_12px_#3b82f6]"></div>
+                            </div>
+
+                            <!-- BLOCK 2: Main Memory (RAM) (With progress bar at bottom) -->
+                            <div id="arch-card-ram" onclick="selectArchComponent('ram')" class="arch-card group relative bg-gradient-to-b from-blue-900/60 to-blue-950/80 border-2 border-blue-500 rounded-2xl p-5 sm:p-6 cursor-pointer transition-all duration-300 hover:scale-[1.02] hover:border-blue-400 hover:shadow-[0_0_25px_rgba(59,130,246,0.5)] min-h-[170px] flex flex-col justify-between">
+                                <div class="text-center my-auto space-y-1">
+                                    <h3 class="text-xl sm:text-2xl font-black text-white tracking-wide">主記憶體</h3>
+                                    <p class="text-[11px] text-blue-300 font-mono">Main Memory (RAM)</p>
+                                </div>
+
+                                <!-- Status bar inside RAM (Matches user screenshot) -->
+                                <div class="w-full bg-slate-950 h-3 rounded-full overflow-hidden border border-slate-800 mt-3 p-0.5">
+                                    <div id="ram-arch-progress" class="bg-gradient-to-r from-blue-500 to-cyan-400 h-full rounded-full w-2/3 transition-all duration-700"></div>
+                                </div>
+                            </div>
+
+                            <!-- Connector Diamond Line 2 (Desktop view) -->
+                            <div class="hidden md:flex absolute left-[65%] top-1/2 -translate-y-1/2 z-10 items-center justify-center">
+                                <div class="w-3.5 h-3.5 bg-blue-500 rotate-45 shadow-[0_0_12px_#3b82f6]"></div>
+                            </div>
+
+                            <!-- BLOCK 3: Hard Drive / SSD -->
+                            <div id="arch-card-storage" onclick="selectArchComponent('storage')" class="arch-card group relative bg-gradient-to-b from-blue-900/60 to-blue-950/80 border-2 border-blue-500 rounded-2xl p-5 sm:p-6 cursor-pointer transition-all duration-300 hover:scale-[1.02] hover:border-blue-400 hover:shadow-[0_0_25px_rgba(59,130,246,0.5)] min-h-[170px] flex flex-col justify-between">
+                                <div class="text-center my-auto space-y-1">
+                                    <h3 class="text-xl sm:text-2xl font-black text-white tracking-wide">硬碟</h3>
+                                    <p class="text-[11px] text-blue-300 font-mono">Hard Drive / SSD</p>
+                                </div>
+                                <div class="text-center text-[10px] text-slate-400 font-mono mt-2">
+                                    輔助記憶體 Secondary Storage
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+
+                    <!-- DYNAMIC ANIMATED TEXT CONTENT PANELS (Positioned directly under the 3 diagram blocks) -->
+                    <div class="space-y-3">
+                        <div class="flex items-center justify-between px-1">
+                            <span class="text-xs font-mono text-slate-400 flex items-center gap-2">
+                                <span class="w-2.5 h-2.5 rounded-full bg-cyan-400 animate-ping"></span>
+                                當前展示觀點：<strong id="current-view-title" class="text-cyan-300 font-bold">1. 依功能與架構分類 (主記憶體 vs 輔助記憶體)</strong>
+                            </span>
+                            <span class="text-[11px] text-slate-500 font-mono hidden sm:inline">✨ 點擊觀點按鈕自動切換動態文字</span>
+                        </div>
+
+                        <!-- 3 Column Animated Text Cards directly aligned under CPU, RAM, and Hard Drive -->
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            
+                            <!-- Under CPU / Cache Panel -->
+                            <div id="panel-cpu" class="detail-panel bg-slate-950 p-4 sm:p-5 rounded-2xl border border-rose-500/40 space-y-3 transition-all duration-500">
+                                <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+                                    <span class="text-xs font-bold text-rose-400 flex items-center gap-1.5">
+                                        <i class="fa-solid fa-microchip"></i> Cache (快取記憶體)
+                                    </span>
+                                    <span id="badge-cpu" class="px-2 py-0.5 rounded bg-rose-950 text-rose-300 text-[10px] font-mono border border-rose-800">
+                                        主記憶體類 (SRAM)
+                                    </span>
+                                </div>
+                                
+                                <!-- Animated Text Block -->
+                                <div id="text-box-cpu" class="space-y-2 min-h-[100px] transition-all duration-300 opacity-100 transform translate-y-0">
+                                    <!-- JS populated dynamically with smooth text transitions -->
+                                </div>
+                            </div>
+
+                            <!-- Under Main Memory Panel -->
+                            <div id="panel-ram" class="detail-panel bg-slate-950 p-4 sm:p-5 rounded-2xl border border-cyan-500/40 space-y-3 transition-all duration-500">
+                                <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+                                    <span class="text-xs font-bold text-cyan-400 flex items-center gap-1.5">
+                                        <i class="fa-solid fa-memory"></i> 主記憶體 (RAM)
+                                    </span>
+                                    <span id="badge-ram" class="px-2 py-0.5 rounded bg-cyan-950 text-cyan-300 text-[10px] font-mono border border-cyan-800">
+                                        主記憶體類 (DRAM)
+                                    </span>
+                                </div>
+
+                                <!-- Animated Text Block -->
+                                <div id="text-box-ram" class="space-y-2 min-h-[100px] transition-all duration-300 opacity-100 transform translate-y-0">
+                                    <!-- JS populated dynamically with smooth text transitions -->
+                                </div>
+                            </div>
+
+                            <!-- Under Hard Drive Panel -->
+                            <div id="panel-storage" class="detail-panel bg-slate-950 p-4 sm:p-5 rounded-2xl border border-indigo-500/40 space-y-3 transition-all duration-500">
+                                <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+                                    <span class="text-xs font-bold text-indigo-400 flex items-center gap-1.5">
+                                        <i class="fa-solid fa-hard-drive"></i> 硬碟 (HDD / SSD)
+                                    </span>
+                                    <span id="badge-storage" class="px-2 py-0.5 rounded bg-indigo-950 text-indigo-300 text-[10px] font-mono border border-indigo-800">
+                                        輔助記憶體類
+                                    </span>
+                                </div>
+
+                                <!-- Animated Text Block -->
+                                <div id="text-box-storage" class="space-y-2 min-h-[100px] transition-all duration-300 opacity-100 transform translate-y-0">
+                                    <!-- JS populated dynamically with smooth text transitions -->
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Interactive Power Volatility Simulation Widget & Summary -->
+            <section class="bg-slate-900/90 border border-purple-500/30 rounded-2xl p-5 sm:p-6 shadow-2xl space-y-4">
+                <div class="flex flex-col sm:flex-row items-center justify-between gap-4 border-b border-slate-800 pb-4">
+                    <div>
+                        <h3 class="text-base sm:text-lg font-bold text-purple-300 flex items-center gap-2">
+                            <i class="fa-solid fa-power-off text-purple-400"></i> 即時測試：突發斷電實驗 (Power Interruption Test)
+                        </h3>
+                        <p class="text-xs text-slate-400">按下開關模擬停電，直觀觀察上述三者資料的消失或保留情況。</p>
+                    </div>
+
+                    <button onclick="togglePowerTab2()" id="tab2-power-btn" class="px-5 py-2.5 rounded-xl font-bold text-xs transition-all flex items-center gap-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 glow-emerald shrink-0">
+                        <i class="fa-solid fa-bolt"></i> <span id="tab2-power-text">電源狀態：通電中 (ON)</span>
+                    </button>
+                </div>
+
+                <div id="tab2-power-status-banner" class="bg-slate-950 p-4 rounded-xl border border-emerald-500/40 text-xs font-mono text-emerald-300 leading-relaxed flex items-center gap-3">
+                    <i class="fa-solid fa-circle-check text-emerald-400 text-base shrink-0"></i>
+                    <span id="tab2-power-status-text">
+                        <strong>[電源正常 ON]</strong> Cache (SRAM) 與 主記憶體 (DRAM) 正持續通電維護資料；硬碟 (SSD/HDD) 穩固儲存系統檔案。
+                    </span>
+                </div>
+            </section>
+
+            <!-- SECTION 3: TAB 2 QUIZ -->
+            <section class="bg-slate-900/80 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-4">
+                <h3 class="text-base sm:text-lg font-bold text-purple-400 flex items-center gap-2 tech-font">
+                    <i class="fa-solid fa-graduation-cap"></i> 觀念小測驗 (Tab 2)
+                </h3>
+
+                <div id="quiz2-box" class="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-3">
+                    <p class="text-xs sm:text-sm font-bold text-slate-200">
+                        問題：突然發生家裡停電，關於電腦記憶體內資料的變化，下列敘述何者正確？
+                    </p>
+
+                    <div class="space-y-2 text-xs">
+                        <button onclick="checkAnswerTab2(1)" class="w-full text-left p-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-300 transition flex items-center gap-2">
+                            <span class="w-5 h-5 rounded-full bg-slate-800 flex items-center justify-center font-bold font-mono text-[10px]">A</span>
+                            主記憶體 (RAM) 與 Cache (SRAM) 中的資料會消失，但固態硬碟 (SSD) 裡的檔案仍完好保存
+                        </button>
+                        <button onclick="checkAnswerTab2(2)" class="w-full text-left p-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-300 transition flex items-center gap-2">
+                            <span class="w-5 h-5 rounded-full bg-slate-800 flex items-center justify-center font-bold font-mono text-[10px]">B</span>
+                            所有記憶體的資料都會因為斷電而完全消失
+                        </button>
+                        <button onclick="checkAnswerTab2(3)" class="w-full text-left p-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-300 transition flex items-center gap-2">
+                            <span class="w-5 h-5 rounded-full bg-slate-800 flex items-center justify-center font-bold font-mono text-[10px]">C</span>
+                            Cache 是 SRAM 所以不會揮發，但 DRAM 會揮發
+                        </button>
+                    </div>
+
+                    <div id="quiz2-result" class="hidden p-3 rounded-xl text-xs font-mono"></div>
+                </div>
+            </section>
+
+        </div>
+
+        <!-- ========================================== -->
+        <!-- TAB 3: HDD VS SSD SPEED COMPARISON ANIMATION-->
+        <!-- ========================================== -->
+        <div id="tab3-content" class="hidden space-y-8">
+
+            <!-- Header & Control Panel -->
+            <section class="bg-slate-900/90 border border-amber-500/30 rounded-2xl p-5 sm:p-6 shadow-2xl space-y-6 relative overflow-hidden">
+                <div class="absolute top-0 left-0 w-2 h-full bg-gradient-to-b from-amber-400 via-rose-500 to-indigo-600"></div>
+
+                <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-slate-800 pb-4">
+                    <div>
+                        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs font-mono font-bold mb-2">
+                            <i class="fa-solid fa-gauge-high"></i> 實體儲存媒體效能賽跑 (HDD vs SSD)
+                        </div>
+                        <h2 class="text-xl sm:text-2xl font-black text-amber-300 flex items-center gap-2">
+                            ⚡ 傳統機械硬碟 (HDD) vs 固態硬碟 (SSD) 速度與原理動畫
+                        </h2>
+                        <p class="text-xs sm:text-sm text-slate-300 mt-1">
+                            觀察 HDD <strong>機械馬達旋轉與磁頭擺動尋道（Seek Time）</strong>對速度的限制，對比 SSD <strong>純電子快閃記憶體 (NAND Flash)</strong> 的瞬時回應！
+                        </p>
+                    </div>
+
+                    <!-- Simulation Control Buttons -->
+                    <div class="flex flex-wrap items-center gap-2 shrink-0">
+                        <button onclick="startHddSsdTest('sequential')" id="btn-test-seq" class="px-4 py-2.5 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 font-black rounded-xl text-xs transition shadow-lg glow-amber flex items-center gap-2">
+                            <i class="fa-solid fa-file-video"></i> 測試 1：單一大檔傳輸 (5 GB)
+                        </button>
+                        <button onclick="startHddSsdTest('random')" id="btn-test-rand" class="px-4 py-2.5 bg-gradient-to-r from-rose-600 to-purple-600 hover:from-rose-500 hover:to-purple-500 text-white font-black rounded-xl text-xs transition shadow-lg glow-rose flex items-center gap-2">
+                            <i class="fa-solid fa-folder-tree"></i> 測試 2：海量碎檔讀取 (4K 隨機)
+                        </button>
+                        <button onclick="resetHddSsdTest()" class="px-3.5 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold rounded-xl text-xs transition border border-slate-700 flex items-center gap-2">
+                            <i class="fa-solid fa-rotate-left"></i> 重置
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Dual Animation Canvas -->
+                <div class="space-y-4">
+                    <div class="bg-slate-950 rounded-2xl p-3 sm:p-5 border border-slate-800 relative">
+                        <canvas id="hddSsdCanvas" class="w-full h-96 sm:h-[420px] bg-slate-900/60 rounded-xl border border-slate-800 block"></canvas>
+                    </div>
+
+                    <!-- Real-time Status Banner -->
+                    <div id="hddssd-status-banner" class="bg-slate-950 p-4 rounded-xl border border-amber-500/30 flex items-start gap-3 text-xs sm:text-sm font-mono text-slate-200">
+                        <div class="w-3 h-3 rounded-full bg-amber-400 animate-ping shrink-0 mt-1"></div>
+                        <div id="hddssd-status-text" class="leading-relaxed">
+                            <strong class="text-amber-400">[就緒狀態]</strong> 選擇上方「單一大檔傳輸」或「海量碎檔讀取」，觀察 HDD 機械結構與 SSD 晶片的即時速度與回應時間競技！
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Telemetry Comparison Dashboard Cards -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs font-mono">
+                    <!-- HDD Telemetry Card -->
+                    <div class="bg-slate-950 p-4 rounded-xl border border-amber-500/40 space-y-3">
+                        <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+                            <span class="text-amber-400 font-bold text-sm flex items-center gap-2">
+                                <i class="fa-solid fa-compact-disc animate-spin" style="animation-duration: 4s;"></i> HDD 傳統機械硬碟
+                            </span>
+                            <span id="hdd-status-badge" class="px-2 py-0.5 rounded bg-amber-950 text-amber-300 text-[10px] border border-amber-800">
+                                待命 IDLE
+                            </span>
+                        </div>
+                        <div class="grid grid-cols-3 gap-2 text-center">
+                            <div class="bg-slate-900 p-2 rounded-lg border border-slate-800">
+                                <div class="text-[10px] text-slate-400">傳輸速率</div>
+                                <div id="hdd-speed-text" class="text-sm font-bold text-amber-300 mt-0.5">0 MB/s</div>
+                            </div>
+                            <div class="bg-slate-900 p-2 rounded-lg border border-slate-800">
+                                <div class="text-[10px] text-slate-400">尋道延遲</div>
+                                <div id="hdd-delay-text" class="text-sm font-bold text-rose-400 mt-0.5">12.5 ms</div>
+                            </div>
+                            <div class="bg-slate-900 p-2 rounded-lg border border-slate-800">
+                                <div class="text-[10px] text-slate-400">已完成耗時</div>
+                                <div id="hdd-time-text" class="text-sm font-bold text-slate-200 mt-0.5">0.0 秒</div>
+                            </div>
+                        </div>
+                        <!-- Progress Bar -->
+                        <div class="space-y-1">
+                            <div class="flex justify-between text-[11px] text-slate-400">
+                                <span>HDD 讀寫進度</span>
+                                <span id="hdd-progress-pct" class="text-amber-400 font-bold">0%</span>
+                            </div>
+                            <div class="w-full bg-slate-900 h-2.5 rounded-full overflow-hidden border border-slate-800">
+                                <div id="hdd-progress-bar" class="h-full bg-gradient-to-r from-amber-600 to-yellow-400 w-0 transition-all duration-100"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- SSD Telemetry Card -->
+                    <div class="bg-slate-950 p-4 rounded-xl border border-cyan-500/40 space-y-3">
+                        <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+                            <span class="text-cyan-400 font-bold text-sm flex items-center gap-2">
+                                <i class="fa-solid fa-microchip"></i> SSD 固態硬碟 (NVMe / SATA)
+                            </span>
+                            <span id="ssd-status-badge" class="px-2 py-0.5 rounded bg-cyan-950 text-cyan-300 text-[10px] border border-cyan-800">
+                                待命 IDLE
+                            </span>
+                        </div>
+                        <div class="grid grid-cols-3 gap-2 text-center">
+                            <div class="bg-slate-900 p-2 rounded-lg border border-slate-800">
+                                <div class="text-[10px] text-slate-400">傳輸速率</div>
+                                <div id="ssd-speed-text" class="text-sm font-bold text-cyan-300 mt-0.5">0 MB/s</div>
+                            </div>
+                            <div class="bg-slate-900 p-2 rounded-lg border border-slate-800">
+                                <div class="text-[10px] text-slate-400">尋道延遲</div>
+                                <div id="ssd-delay-text" class="text-sm font-bold text-emerald-400 mt-0.5">0.04 ms</div>
+                            </div>
+                            <div class="bg-slate-900 p-2 rounded-lg border border-slate-800">
+                                <div class="text-[10px] text-slate-400">已完成耗時</div>
+                                <div id="ssd-time-text" class="text-sm font-bold text-slate-200 mt-0.5">0.0 秒</div>
+                            </div>
+                        </div>
+                        <!-- Progress Bar -->
+                        <div class="space-y-1">
+                            <div class="flex justify-between text-[11px] text-slate-400">
+                                <span>SSD 讀寫進度</span>
+                                <span id="ssd-progress-pct" class="text-cyan-400 font-bold">0%</span>
+                            </div>
+                            <div class="w-full bg-slate-900 h-2.5 rounded-full overflow-hidden border border-slate-800">
+                                <div id="ssd-progress-bar" class="h-full bg-gradient-to-r from-cyan-500 to-blue-400 w-0 transition-all duration-100"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Detailed Structural Differences Comparison Grid -->
+            <section class="grid grid-cols-1 md:grid-cols-4 gap-4 text-xs">
+                <div class="bg-slate-900/80 p-4 rounded-xl border border-slate-800 space-y-2">
+                    <div class="text-amber-400 font-bold text-sm flex items-center gap-1.5">
+                        <i class="fa-solid fa-gear"></i> 內部結構
+                    </div>
+                    <p class="text-slate-300 leading-relaxed">
+                        <strong class="text-amber-300">HDD：</strong> 馬達、高速旋轉磁碟片、機械讀寫臂。<br>
+                        <strong class="text-cyan-300">SSD：</strong> 純晶體電路、NAND Flash 快閃記憶體與主控晶片。
+                    </p>
+                </div>
+
+                <div class="bg-slate-900/80 p-4 rounded-xl border border-slate-800 space-y-2">
+                    <div class="text-rose-400 font-bold text-sm flex items-center gap-1.5">
+                        <i class="fa-solid fa-stopwatch"></i> 隨機讀取延遲
+                    </div>
+                    <p class="text-slate-300 leading-relaxed">
+                        <strong class="text-amber-300">HDD：</strong> 約 10~15 ms (需要實體擺動磁頭找磁軌)。<br>
+                        <strong class="text-cyan-300">SSD：</strong> 低於 0.1 ms (電子直接訊號定址)。
+                    </p>
+                </div>
+
+                <div class="bg-slate-900/80 p-4 rounded-xl border border-slate-800 space-y-2">
+                    <div class="text-emerald-400 font-bold text-sm flex items-center gap-1.5">
+                        <i class="fa-solid fa-shield-halved"></i> 抗震與耐用度
+                    </div>
+                    <p class="text-slate-300 leading-relaxed">
+                        <strong class="text-amber-300">HDD：</strong> 撞擊易導致讀寫頭刮傷磁碟片造成壞軌。<br>
+                        <strong class="text-cyan-300">SSD：</strong> 無機械零組件，高度抗震且零噪音運轉。
+                    </p>
+                </div>
+
+                <div class="bg-slate-900/80 p-4 rounded-xl border border-slate-800 space-y-2">
+                    <div class="text-purple-400 font-bold text-sm flex items-center gap-1.5">
+                        <i class="fa-solid fa-coins"></i> 單位容量成本
+                    </div>
+                    <p class="text-slate-300 leading-relaxed">
+                        <strong class="text-amber-300">HDD：</strong> 大容量 (4TB~20TB) 價格極便宜。<br>
+                        <strong class="text-cyan-300">SSD：</strong> 每 GB 價格較高，但為現代電腦系統碟標配。
+                    </p>
+                </div>
+            </section>
+
+            <!-- SECTION 4: TAB 3 QUIZ -->
+            <section class="bg-slate-900/80 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-4">
+                <h3 class="text-base sm:text-lg font-bold text-amber-400 flex items-center gap-2 tech-font">
+                    <i class="fa-solid fa-graduation-cap"></i> 觀念小測驗 (Tab 3)
+                </h3>
+
+                <div id="quiz3-box" class="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-3">
+                    <p class="text-xs sm:text-sm font-bold text-slate-200">
+                        問題：為什麼 SSD 在讀取包含數萬個小檔案的資料夾時，速度遠遠超過 HDD 機械硬碟？
+                    </p>
+
+                    <div class="space-y-2 text-xs">
+                        <button onclick="checkAnswerTab3(1)" class="w-full text-left p-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-300 transition flex items-center gap-2">
+                            <span class="w-5 h-5 rounded-full bg-slate-800 flex items-center justify-center font-bold font-mono text-[10px]">A</span>
+                            因為 SSD 內部體積比較大，可以容納更多硬碟線路
+                        </button>
+                        <button onclick="checkAnswerTab3(2)" class="w-full text-left p-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-300 transition flex items-center gap-2">
+                            <span class="w-5 h-5 rounded-full bg-slate-800 flex items-center justify-center font-bold font-mono text-[10px]">B</span>
+                            因為 HDD 讀取碎檔時，機械臂必須在實體磁碟片上頻繁來回移動（搜尋時間延遲高）；而 SSD 無機械移動元件，以電子訊號極速定址
+                        </button>
+                        <button onclick="checkAnswerTab3(3)" class="w-full text-left p-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-300 transition flex items-center gap-2">
+                            <span class="w-5 h-5 rounded-full bg-slate-800 flex items-center justify-center font-bold font-mono text-[10px]">C</span>
+                            因為 HDD 遇到小檔案時會自動冷卻停止旋轉
+                        </button>
+                    </div>
+
+                    <div id="quiz3-result" class="hidden p-3 rounded-xl text-xs font-mono"></div>
+                </div>
+            </section>
+
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-slate-950 border-t border-slate-800/80 py-4 text-center text-xs text-slate-500 font-mono">
+        <p>Stored-Program Architecture & Memory Classification Interactive Module © 2026</p>
+    </footer>
+
+    <script>
+        // ==========================================
+        // TAB SWITCHING LOGIC
+        // ==========================================
+        function switchTab(tabId) {
+            const tab1Content = document.getElementById('tab1-content');
+            const tab2Content = document.getElementById('tab2-content');
+            const tab3Content = document.getElementById('tab3-content');
+            const tab1Btn = document.getElementById('tab1-btn');
+            const tab2Btn = document.getElementById('tab2-btn');
+            const tab3Btn = document.getElementById('tab3-btn');
+
+            tab1Content.classList.add('hidden');
+            tab2Content.classList.add('hidden');
+            tab3Content.classList.add('hidden');
+
+            tab1Btn.classList.remove('active');
+            tab2Btn.classList.remove('active');
+            tab3Btn.classList.remove('active');
+
+            if (tabId === 'tab1') {
+                tab1Content.classList.remove('hidden');
+                tab1Btn.classList.add('active');
+                setTimeout(() => { drawAnalogyCanvas(); drawCanvas(); }, 50);
+            } else if (tabId === 'tab2') {
+                tab2Content.classList.remove('hidden');
+                tab2Btn.classList.add('active');
+                setTab2Perspective(currentPerspective);
+            } else if (tabId === 'tab3') {
+                tab3Content.classList.remove('hidden');
+                tab3Btn.classList.add('active');
+                setTimeout(() => { drawHddSsdCanvas(); }, 50);
+            }
+        }
+
+        // ==========================================
+        // 1. ANALOGY ANIMATION ENGINE (STUDENT, DRAWER, BACKPACK, LOCKER)
+        // Order: Student -> Drawer -> Backpack -> Locker
+        // ==========================================
+        let analogyStep = 0; // 0: Idle, 1: Locker -> Backpack, 2: Backpack -> Table/Student, 3: Drawer -> Student
+        let analogyProgress = 0;
+        let analogyReqId = null;
+        let activeBooks = [];
+
+        function startAnalogyAnimation() {
+            analogyStep = 1;
+            analogyProgress = 0;
+            activeBooks = [
+                { id: 1, name: "📘 數學課本", from: "LOCKER", to: "BACKPACK", progress: 0 },
+                { id: 2, name: "📗 程式課本", from: "LOCKER", to: "BACKPACK", progress: -0.2 }
+            ];
+
+            document.getElementById('btn-analogy-play').disabled = true;
+            document.getElementById('btn-analogy-play').classList.add('opacity-50', 'cursor-not-allowed');
+            updateAnalogyStatusText();
+        }
+
+        function resetAnalogyAnimation() {
+            analogyStep = 0;
+            analogyProgress = 0;
+            activeBooks = [];
+            document.getElementById('btn-analogy-play').disabled = false;
+            document.getElementById('btn-analogy-play').classList.remove('opacity-50', 'cursor-not-allowed');
+            updateAnalogyStatusText();
+            drawAnalogyCanvas();
+        }
+
+        function updateAnalogyStatusText() {
+            const statusBox = document.getElementById('analogy-status-text');
+
+            if (analogyStep === 0) {
+                statusBox.innerHTML = `<strong class="text-amber-400">[情境就緒]</strong> 點擊「播放情境動畫」，觀察學生如何從置物櫃拿出課本放進書包，再拿出閱讀！`;
+            } else if (analogyStep === 1) {
+                statusBox.innerHTML = `<strong class="text-blue-400 font-bold">[步驟 1：置物櫃 ➔ 書包]</strong> 學生準備唸書，先去遠處的<strong>置物櫃 (硬碟)</strong> 取出今天需要的課本，放入隨身<strong>書包 (主記憶體 RAM)</strong> 中...`;
+            } else if (analogyStep === 2) {
+                statusBox.innerHTML = `<strong class="text-cyan-400 font-bold">[步驟 2：書包 ➔ 桌上閱讀]</strong> 坐定後，學生從<strong>書包 (RAM)</strong> 拿課本開始專心閱讀與思考 (<strong>學生 ➔ CPU 運算</strong>)！`;
+            } else if (analogyStep === 3) {
+                statusBox.innerHTML = `<strong class="text-orange-400 font-bold">[步驟 3：抽屜極速拿取 (Cache)]</strong> 對於最常翻閱的「重點講義」，學生直接放進身邊的<strong>抽屜 (Cache 快取)</strong>！伸手即拿，閱讀速度快了數十倍！`;
+            }
+        }
+
+        function drawAnalogyCanvas() {
+            const canvas = document.getElementById('analogyCanvas');
+            if (!canvas || canvas.offsetParent === null) return;
+            const ctx = canvas.getContext('2d');
+
+            canvas.width = canvas.parentElement.clientWidth;
+            canvas.height = canvas.parentElement.clientHeight || 360;
+
+            const W = canvas.width;
+            const H = canvas.height;
+
+            ctx.clearRect(0, 0, W, H);
+
+            // Left to Right: Student (CPU) -> Drawer (Cache) -> Backpack (RAM) -> Locker (HDD)
+            const boxW = Math.min(130, W * 0.20);
+            const boxH = Math.min(150, H * 0.52);
+            const boxY = (H - boxH) / 2 - 10;
+
+            const studentX = W * 0.08;
+            const drawerX = W * 0.33;
+            const backpackX = W * 0.58;
+            const lockerX = W * 0.81;
+
+            // Connection Lines
+            drawArrow(ctx, studentX + boxW, boxY + boxH/2, drawerX, boxY + boxH/2, '#f97316');
+            drawArrow(ctx, drawerX + boxW, boxY + boxH/2, backpackX, boxY + boxH/2, '#06b6d4');
+            drawArrow(ctx, backpackX + boxW, boxY + boxH/2, lockerX, boxY + boxH/2, '#3b82f6');
+
+            // --- 1. 學生 (Student - CPU) ---
+            ctx.fillStyle = '#31121d'; ctx.strokeStyle = '#ef4444'; ctx.lineWidth = 3;
+            ctx.beginPath(); ctx.roundRect(studentX, boxY, boxW, boxH, 16); ctx.fill(); ctx.stroke();
+
+            ctx.fillStyle = '#f87171'; ctx.font = 'bold 15px Noto Sans TC'; ctx.textAlign = 'center';
+            ctx.fillText('🎓 學生', studentX + boxW/2, boxY + 35);
+            ctx.fillStyle = '#94a3b8'; ctx.font = '10px Fira Code';
+            ctx.fillText('(CPU 運算器)', studentX + boxW/2, boxY + 55);
+
+            if (analogyStep === 2 || analogyStep === 3) {
+                ctx.fillStyle = '#10b981'; ctx.font = 'bold 11px Noto Sans TC';
+                ctx.fillText('📖 專心閱讀中...', studentX + boxW/2, boxY + boxH - 25);
+            }
+
+            // --- 2. 抽屜 (Desk Drawer - Cache) ---
+            ctx.fillStyle = '#451a03'; ctx.strokeStyle = '#f97316'; ctx.lineWidth = 3;
+            ctx.beginPath(); ctx.roundRect(drawerX, boxY, boxW, boxH, 16); ctx.fill(); ctx.stroke();
+
+            ctx.fillStyle = '#fb923c'; ctx.font = 'bold 15px Noto Sans TC'; ctx.textAlign = 'center';
+            ctx.fillText('📥 抽屜', drawerX + boxW/2, boxY + 35);
+            ctx.fillStyle = '#94a3b8'; ctx.font = '10px Fira Code';
+            ctx.fillText('(Cache 快取)', drawerX + boxW/2, boxY + 55);
+            
+            if (analogyStep >= 3) {
+                ctx.fillStyle = '#f97316'; ctx.font = '10px Noto Sans TC';
+                ctx.fillText('⚡ 放置極常用講義', drawerX + boxW/2, boxY + boxH - 25);
+            }
+
+            // --- 3. 書包 (Backpack - RAM) ---
+            ctx.fillStyle = '#0f2942'; ctx.strokeStyle = '#06b6d4'; ctx.lineWidth = 3;
+            ctx.beginPath(); ctx.roundRect(backpackX, boxY, boxW, boxH, 16); ctx.fill(); ctx.stroke();
+
+            ctx.fillStyle = '#22d3ee'; ctx.font = 'bold 15px Noto Sans TC'; ctx.textAlign = 'center';
+            ctx.fillText('🎒 書包', backpackX + boxW/2, boxY + 35);
+            ctx.fillStyle = '#94a3b8'; ctx.font = '10px Fira Code';
+            ctx.fillText('(主記憶體 RAM)', backpackX + boxW/2, boxY + 55);
+            
+            if (analogyStep >= 1) {
+                ctx.fillStyle = '#06b6d4'; ctx.font = '10px Noto Sans TC';
+                ctx.fillText('[已裝入今天課本]', backpackX + boxW/2, boxY + boxH - 25);
+            }
+
+            // --- 4. 置物櫃 (Locker - HDD) ---
+            ctx.fillStyle = '#1e293b'; ctx.strokeStyle = '#3b82f6'; ctx.lineWidth = 3;
+            ctx.beginPath(); ctx.roundRect(lockerX, boxY, boxW, boxH, 16); ctx.fill(); ctx.stroke();
+            
+            ctx.fillStyle = '#60a5fa'; ctx.font = 'bold 15px Noto Sans TC'; ctx.textAlign = 'center';
+            ctx.fillText('🚪 置物櫃', lockerX + boxW/2, boxY + 35);
+            ctx.fillStyle = '#94a3b8'; ctx.font = '10px Fira Code';
+            ctx.fillText('(硬碟 HDD)', lockerX + boxW/2, boxY + 55);
+            ctx.fillStyle = '#38bdf8'; ctx.font = '11px Noto Sans TC';
+            ctx.fillText('📚 所有課本', lockerX + boxW/2, boxY + boxH - 25);
+
+            // --- ANIMATED BOOKS ---
+            activeBooks.forEach(b => {
+                if (b.progress >= 0 && b.progress <= 1) {
+                    let startX, endX;
+                    if (b.from === 'LOCKER' && b.to === 'BACKPACK') {
+                        startX = lockerX + boxW/2; endX = backpackX + boxW/2;
+                    } else if (b.from === 'BACKPACK' && b.to === 'STUDENT') {
+                        startX = backpackX + boxW/2; endX = studentX + boxW/2;
+                    } else if (b.from === 'DRAWER' && b.to === 'STUDENT') {
+                        startX = drawerX + boxW/2; endX = studentX + boxW/2;
+                    }
+
+                    const curX = startX + (endX - startX) * b.progress;
+                    const curY = boxY + boxH / 2;
+
+                    ctx.fillStyle = '#f59e0b'; ctx.shadowColor = '#f59e0b'; ctx.shadowBlur = 10;
+                    ctx.beginPath(); ctx.roundRect(curX - 40, curY - 14, 80, 28, 8); ctx.fill();
+                    ctx.shadowBlur = 0;
+
+                    ctx.fillStyle = '#0f172a'; ctx.font = 'bold 11px Noto Sans TC'; ctx.textAlign = 'center';
+                    ctx.fillText(b.name, curX, curY + 4);
+                }
+            });
+
+            // Analogy State Progress Handler
+            if (analogyStep === 1) {
+                analogyProgress += 0.01;
+                activeBooks.forEach(b => b.progress += 0.015);
+
+                if (analogyProgress >= 1.2) {
+                    analogyStep = 2; analogyProgress = 0;
+                    activeBooks = [{ id: 3, name: "📘 數學課本", from: "BACKPACK", to: "STUDENT", progress: 0 }];
+                    updateAnalogyStatusText();
+                }
+            } else if (analogyStep === 2) {
+                analogyProgress += 0.01;
+                activeBooks.forEach(b => b.progress += 0.02);
+
+                if (analogyProgress >= 1.2) {
+                    analogyStep = 3; analogyProgress = 0;
+                    activeBooks = [{ id: 4, name: "⚡ 重點講義", from: "DRAWER", to: "STUDENT", progress: 0 }];
+                    updateAnalogyStatusText();
+                }
+            } else if (analogyStep === 3) {
+                analogyProgress += 0.015;
+                activeBooks.forEach(b => b.progress += 0.035);
+
+                if (activeBooks[0].progress > 1) {
+                    activeBooks[0].progress = 0;
+                }
+            }
+
+            analogyReqId = requestAnimationFrame(drawAnalogyCanvas);
+        }
+
+        // ==========================================
+        // 2. HARDWARE ARCHITECTURE ENGINE (CPU, RAM, HDD)
+        // ==========================================
+        let animState = 'IDLE';
+        let animProgress = 0;
+        let animationFrameId = null;
+
+        const APP_DATA = {
+            GAME: { name: "🎮 3D 遊戲 (Game.exe)", size: "8 GB", ramPercent: 0.7 },
+            BROWSER: { name: "🌐 網頁瀏覽器 (Browser.exe)", size: "2 GB", ramPercent: 0.35 },
+            WORD: { name: "📝 文書處理器 (Word.exe)", size: "500 MB", ramPercent: 0.15 }
+        };
+
+        let packets = [];
+
+        function getSelectedApp() {
+            const key = document.getElementById('app-select').value;
+            return APP_DATA[key];
+        }
+
+        function startExecutionAnimation() {
+            if (animState !== 'IDLE') return;
+
+            animState = 'LOADING_TO_RAM';
+            animProgress = 0;
+            packets = [];
+
+            for (let i = 0; i < 6; i++) {
+                packets.push({ type: 'HDD_TO_RAM', progress: -i * 0.15, speed: 0.012 });
+            }
+
+            document.getElementById('btn-run').disabled = true;
+            document.getElementById('btn-run').classList.add('opacity-50', 'cursor-not-allowed');
+            updateStatusText();
+        }
+
+        function resetAnimation() {
+            animState = 'IDLE';
+            animProgress = 0;
+            packets = [];
+            document.getElementById('btn-run').disabled = false;
+            document.getElementById('btn-run').classList.remove('opacity-50', 'cursor-not-allowed');
+            updateStatusText();
+            drawCanvas();
+        }
+
+        function updateStatusText() {
+            const statusBox = document.getElementById('status-text');
+            const app = getSelectedApp();
+
+            if (animState === 'IDLE') {
+                statusBox.innerHTML = `<strong class="text-blue-400">[就緒 IDLE]</strong> 軟體 <span class="text-amber-400 font-bold">${app.name}</span> 靜態存放在硬碟中。點擊「執行軟體」觀察載入過程。`;
+            } else if (animState === 'LOADING_TO_RAM') {
+                statusBox.innerHTML = `<strong class="text-cyan-400 font-bold">[步驟 1：載入至主記憶體]</strong> 作業系統正將 <span class="text-amber-400 font-bold">${app.name}</span> 從<strong>硬碟</strong>載入到<strong>主記憶體 (RAM)</strong>...`;
+            } else if (animState === 'FETCHING_TO_CPU') {
+                statusBox.innerHTML = `<strong class="text-purple-400 font-bold">[步驟 2：CPU 擷取與快取]</strong> CPU 開始經由 Cache (快取) 擷取主記憶體中的指令！`;
+            } else if (animState === 'RUNNING') {
+                statusBox.innerHTML = `<strong class="text-emerald-400 font-bold">[步驟 3：高速執行中]</strong> CPU 正在高速處理指令！<span class="text-cyan-300">${app.name}</span> 正在順暢運行中。`;
+            }
+        }
+
+        function drawCanvas() {
+            const canvas = document.getElementById('architectureCanvas');
+            if (!canvas || canvas.offsetParent === null) return;
+            const ctx = canvas.getContext('2d');
+
+            canvas.width = canvas.parentElement.clientWidth;
+            canvas.height = canvas.parentElement.clientHeight || 360;
+
+            const W = canvas.width;
+            const H = canvas.height;
+
+            ctx.clearRect(0, 0, W, H);
+
+            const boxW = Math.min(180, W * 0.26);
+            const boxH = Math.min(170, H * 0.55);
+            const boxY = (H - boxH) / 2 - 10;
+
+            const cpuX = W * 0.08;
+            const ramX = W * 0.37;
+            const hddX = W * 0.66;
+
+            const app = getSelectedApp();
+
+            drawArrow(ctx, ramX + boxW, boxY + boxH / 2, hddX, boxY + boxH / 2, '#3b82f6');
+            drawArrow(ctx, cpuX + boxW, boxY + boxH / 2, ramX, boxY + boxH / 2, '#3b82f6');
+
+            // --- Hard Drive Box ---
+            ctx.fillStyle = '#1e3a8a'; ctx.strokeStyle = '#3b82f6'; ctx.lineWidth = 3;
+            ctx.shadowColor = 'rgba(59, 130, 246, 0.3)'; ctx.shadowBlur = 15;
+            ctx.beginPath(); ctx.roundRect(hddX, boxY, boxW, boxH, 20); ctx.fill(); ctx.stroke();
+            ctx.shadowBlur = 0;
+
+            ctx.fillStyle = '#ffffff'; ctx.font = 'bold 20px Noto Sans TC'; ctx.textAlign = 'center';
+            ctx.fillText('硬碟', hddX + boxW / 2, boxY + boxH / 2 - 5);
+            ctx.fillStyle = '#93c5fd'; ctx.font = '11px Fira Code';
+            ctx.fillText('Hard Drive / SSD', hddX + boxW / 2, boxY + boxH / 2 + 18);
+
+            // --- Main Memory Box ---
+            ctx.fillStyle = '#1e3a8a'; ctx.strokeStyle = '#3b82f6'; ctx.lineWidth = 3;
+            ctx.shadowColor = 'rgba(59, 130, 246, 0.3)'; ctx.shadowBlur = 15;
+            ctx.beginPath(); ctx.roundRect(ramX, boxY, boxW, boxH, 20); ctx.fill(); ctx.stroke();
+            ctx.shadowBlur = 0;
+
+            ctx.fillStyle = '#ffffff'; ctx.font = 'bold 20px Noto Sans TC'; ctx.textAlign = 'center';
+            ctx.fillText('主記憶體', ramX + boxW / 2, boxY + boxH / 2 - 15);
+            ctx.fillStyle = '#93c5fd'; ctx.font = '11px Fira Code';
+            ctx.fillText('Main Memory (RAM)', ramX + boxW / 2, boxY + boxH / 2 + 10);
+
+            const ramBarW = boxW * 0.75; const ramBarH = 10;
+            const ramBarX = ramX + (boxW - ramBarW) / 2;
+            const ramBarY = boxY + boxH - 30;
+
+            ctx.fillStyle = '#0f172a'; ctx.beginPath(); ctx.roundRect(ramBarX, ramBarY, ramBarW, ramBarH, 5); ctx.fill();
+
+            let fillRatio = 0;
+            if (animState === 'LOADING_TO_RAM') fillRatio = Math.min(1, animProgress);
+            else if (animState === 'FETCHING_TO_CPU' || animState === 'RUNNING') fillRatio = 1;
+
+            if (fillRatio > 0) {
+                ctx.fillStyle = '#06b6d4'; ctx.shadowColor = '#06b6d4'; ctx.shadowBlur = 8;
+                ctx.beginPath(); ctx.roundRect(ramBarX, ramBarY, ramBarW * fillRatio * app.ramPercent, ramBarH, 5); ctx.fill();
+                ctx.shadowBlur = 0;
+            }
+
+            // --- CPU Box ---
+            ctx.fillStyle = '#1e3a8a'; ctx.strokeStyle = '#3b82f6'; ctx.lineWidth = 3;
+            ctx.shadowColor = 'rgba(59, 130, 246, 0.3)'; ctx.shadowBlur = 15;
+            ctx.beginPath(); ctx.roundRect(cpuX, boxY, boxW, boxH, 20); ctx.fill(); ctx.stroke();
+            ctx.shadowBlur = 0;
+
+            ctx.fillStyle = '#ffffff'; ctx.font = 'bold 24px Noto Sans TC'; ctx.textAlign = 'center';
+            ctx.fillText('CPU', cpuX + boxW / 2, boxY + boxH / 2 - 20);
+
+            // Cache Block
+            const cacheW = boxW * 0.55; const cacheH = 36;
+            const cacheX = cpuX + boxW * 0.38; const cacheY = boxY + boxH - 48;
+
+            ctx.fillStyle = '#dc2626'; ctx.strokeStyle = '#ef4444'; ctx.lineWidth = 2;
+            ctx.shadowColor = 'rgba(239, 68, 68, 0.4)'; ctx.shadowBlur = 10;
+            ctx.beginPath(); ctx.roundRect(cacheX, cacheY, cacheW, cacheH, 10); ctx.fill(); ctx.stroke();
+            ctx.shadowBlur = 0;
+
+            ctx.fillStyle = '#ffffff'; ctx.font = 'bold 13px Orbitron'; ctx.textAlign = 'center';
+            ctx.fillText('Cache', cacheX + cacheW / 2, cacheY + 22);
+
+            packets.forEach((p) => {
+                if (p.progress >= 0 && p.progress <= 1) {
+                    let startX, endX, yPos = boxY + boxH / 2;
+                    if (p.type === 'HDD_TO_RAM') {
+                        startX = hddX; endX = ramX + boxW;
+                    } else if (p.type === 'RAM_TO_CPU') {
+                        startX = ramX; endX = cpuX + boxW;
+                    }
+
+                    const currentX = startX + (endX - startX) * p.progress;
+
+                    ctx.fillStyle = p.type === 'HDD_TO_RAM' ? '#38bdf8' : '#a855f7';
+                    ctx.shadowColor = ctx.fillStyle; ctx.shadowBlur = 12;
+                    ctx.beginPath(); ctx.arc(currentX, yPos, 7, 0, Math.PI * 2); ctx.fill();
+                    ctx.shadowBlur = 0;
+                }
+            });
+
+            if (animState === 'LOADING_TO_RAM') {
+                animProgress += 0.008;
+                packets.forEach(p => p.progress += p.speed);
+
+                if (animProgress >= 1.2) {
+                    animState = 'FETCHING_TO_CPU'; animProgress = 0; packets = [];
+                    for (let i = 0; i < 8; i++) {
+                        packets.push({ type: 'RAM_TO_CPU', progress: -i * 0.12, speed: 0.02 });
+                    }
+                    updateStatusText();
+                }
+            } else if (animState === 'FETCHING_TO_CPU') {
+                animProgress += 0.01;
+                packets.forEach(p => p.progress += p.speed);
+
+                if (animProgress >= 1.2) {
+                    animState = 'RUNNING'; updateStatusText();
+                }
+            } else if (animState === 'RUNNING') {
+                if (Math.random() < 0.1) {
+                    packets.push({ type: 'RAM_TO_CPU', progress: 0, speed: 0.025 });
+                }
+                packets.forEach(p => p.progress += p.speed);
+                packets = packets.filter(p => p.progress <= 1);
+            }
+
+            animationFrameId = requestAnimationFrame(drawCanvas);
+        }
+
+        function drawArrow(ctx, fromX, fromY, toX, toY, colorHex) {
+            ctx.strokeStyle = colorHex; ctx.lineWidth = 4;
+            ctx.beginPath(); ctx.moveTo(fromX, fromY); ctx.lineTo(toX, toY); ctx.stroke();
+
+            ctx.fillStyle = colorHex;
+            ctx.beginPath(); ctx.moveTo(fromX + 10, fromY - 6); ctx.lineTo(fromX, fromY); ctx.lineTo(fromX + 10, fromY + 6); ctx.fill();
+            ctx.beginPath(); ctx.moveTo(toX - 10, toY - 6); ctx.lineTo(toX, toY); ctx.lineTo(toX - 10, toY + 6); ctx.fill();
+        }
+
+        // ==========================================
+        // 3. TAB 2: POWER VOLATILITY SIMULATOR LOGIC
+        // ==========================================
+        let isPowerOn = true;
+
+        function togglePower() {
+            isPowerOn = !isPowerOn;
+
+            const btn = document.getElementById('power-toggle-btn');
+            const btnText = document.getElementById('power-btn-text');
+            const sramBox = document.getElementById('sram-data-box');
+            const sramIcon = document.getElementById('sram-icon');
+            const sramText = document.getElementById('sram-text');
+            const dramBox = document.getElementById('dram-data-box');
+            const dramIcon = document.getElementById('dram-icon');
+            const dramText = document.getElementById('dram-text');
+            const simBanner = document.getElementById('sim-status-banner');
+            const bannerText = document.getElementById('sim-banner-text');
+
+            if (isPowerOn) {
+                // Power ON state
+                btn.className = "px-5 py-2 rounded-xl font-bold text-xs transition-all flex items-center gap-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 glow-emerald";
+                btnText.innerText = "通電中 (POWER ON)";
+
+                sramBox.className = "h-28 bg-slate-900 rounded-xl p-3 flex flex-col justify-center items-center text-center relative overflow-hidden transition-all duration-500";
+                sramIcon.innerText = "⚡";
+                sramText.innerHTML = "[運算中快取資料]<br>Registers & L1/L2 Cache";
+
+                dramBox.className = "h-28 bg-slate-900 rounded-xl p-3 flex flex-col justify-center items-center text-center relative overflow-hidden transition-all duration-500";
+                dramIcon.innerText = "🎮";
+                dramText.innerHTML = "[執行中軟體資料]<br>Game.exe & OS Memory";
+
+                simBanner.className = "bg-slate-950 p-4 rounded-xl border border-emerald-500/40 flex items-center gap-3 text-xs font-mono text-emerald-300";
+                bannerText.innerHTML = "<strong>[通電狀態 ON]</strong> 電腦正常運作中，SRAM 與 DRAM 正在維持運算中的程式資料；硬碟則保存所有軟體檔案。";
+            } else {
+                // Power OFF state
+                btn.className = "px-5 py-2 rounded-xl font-bold text-xs transition-all flex items-center gap-2 bg-rose-600 hover:bg-rose-500 text-white glow-rose";
+                btnText.innerText = "斷電關機 (POWER OFF)";
+
+                sramBox.className = "h-28 bg-slate-950/90 border border-dashed border-rose-500/50 rounded-xl p-3 flex flex-col justify-center items-center text-center opacity-60 transition-all duration-500";
+                sramIcon.innerText = "💨";
+                sramText.innerHTML = "<span class='text-rose-400 font-bold'>⚠️ 資料已完全揮發消失！</span>";
+
+                dramBox.className = "h-28 bg-slate-950/90 border border-dashed border-rose-500/50 rounded-xl p-3 flex flex-col justify-center items-center text-center opacity-60 transition-all duration-500";
+                dramIcon.innerText = "💨";
+                dramText.innerHTML = "<span class='text-rose-400 font-bold'>⚠️ 資料已完全揮發消失！</span>";
+
+                simBanner.className = "bg-slate-950 p-4 rounded-xl border border-rose-500/40 flex items-center gap-3 text-xs font-mono text-rose-300";
+                bannerText.innerHTML = "<strong>[斷電狀態 OFF]</strong> 斷電發生！屬於主記憶體類的 <strong>SRAM 與 DRAM 內部資料瞬時揮發消失</strong>；但屬於輔助記憶體的<strong>硬碟/隨身碟資料完好存留</strong>！";
+            }
+        }
+
+        // ==========================================
+        // QUIZ HANDLERS
+        // ==========================================
+        // TAB 2: ANIMATED TEXT PERSPECTIVE ENGINE
+        // ==========================================
+        const TAB2_DATA = {
+            category: {
+                title: "1. 依功能與架構分類 (主記憶體 vs 輔助記憶體)",
+                cpu: {
+                    badge: "主記憶體類 (SRAM)",
+                    badgeClass: "bg-rose-950 text-rose-300 border-rose-800",
+                    tags: ["⚡ 極速快取", "屬於主記憶體類"],
+                    desc: "<strong>Cache (快取)</strong> 緊鄰 CPU，直接暫存最熱門的指令與數據，避免 CPU 空等 RAM。"
+                },
+                ram: {
+                    badge: "主記憶體類 (DRAM)",
+                    badgeClass: "bg-cyan-950 text-cyan-300 border-cyan-800",
+                    tags: ["💻 執行軟體專用", "CPU 可直接定址"],
+                    desc: "<strong>主記憶體 (RAM)</strong> 存放目前正在執行的軟體與作業系統資料，軟體關閉後釋放空間。"
+                },
+                storage: {
+                    badge: "輔助記憶體類",
+                    badgeClass: "bg-indigo-950 text-indigo-300 border-indigo-800",
+                    tags: ["💾 長久儲存檔案", "無法由 CPU 直接計算"],
+                    desc: "<strong>硬碟 (HDD/SSD)</strong> 屬於輔助記憶體，負責大量且長久地儲存照片、遊戲安裝檔與文件。"
+                }
+            },
+            volatility: {
+                title: "2. 依電性特質分類 (揮發性 Volatile vs 非揮發性)",
+                cpu: {
+                    badge: "揮發性 (Volatile)",
+                    badgeClass: "bg-rose-900 text-rose-200 border-rose-600",
+                    tags: ["⚠️ 斷電資料立刻消失", "需電流持續維持"],
+                    desc: "Cache (SRAM) 採用觸發器電路，<strong>斷電後內部暫存數據瞬間揮發抹除</strong>。"
+                },
+                ram: {
+                    badge: "揮發性 (Volatile)",
+                    badgeClass: "bg-rose-900 text-rose-200 border-rose-600",
+                    tags: ["⚠️ 斷電資料立刻消失", "需定期刷新電容"],
+                    desc: "RAM (DRAM) 利用電容充電儲存資料，<strong>電源關閉時，內部所有軟體資料全部流失</strong>。"
+                },
+                storage: {
+                    badge: "非揮發性 (Non-Volatile)",
+                    badgeClass: "bg-emerald-950 text-emerald-300 border-emerald-700",
+                    tags: ["🛡️ 斷電檔案完好保存", "永久性記錄"],
+                    desc: "硬碟 (SSD/HDD) 採用快閃記憶體或磁性媒介，<strong>關機斷電後所有檔案資料依然穩固留存</strong>。"
+                }
+            },
+            hardware: {
+                title: "3. 依材質與速度成本 (SRAM vs DRAM vs Flash)",
+                cpu: {
+                    badge: "材質：SRAM",
+                    badgeClass: "bg-amber-950 text-amber-300 border-amber-800",
+                    tags: ["🚀 速度：極快 (ns)", "💰 成本：極高 / 容量小"],
+                    desc: "靜態隨機存取記憶體，晶體管結構複雜、價格昂貴，因此容量通常僅有數 MB ~ 數十 MB。"
+                },
+                ram: {
+                    badge: "材質：DRAM",
+                    badgeClass: "bg-blue-950 text-blue-300 border-blue-800",
+                    tags: ["⚡ 速度：中快", "⚖️ 成本適中 / 容量 GB 級"],
+                    desc: "動態隨機存取記憶體，結構簡單密度高、成本合理，是電腦常見的 8GB/16GB/32GB 記憶體條。"
+                },
+                storage: {
+                    badge: "材質：NAND Flash / 磁碟",
+                    badgeClass: "bg-purple-950 text-purple-300 border-purple-800",
+                    tags: ["🐢 速度：相對較慢", "📦 成本廉價 / 容量 TB 級"],
+                    desc: "固態硬碟 (SSD) 或機械硬碟 (HDD)，單位儲存成本極低，提供 512GB 至數 TB 的浩瀚容量。"
+                }
+            }
+        };
+
+        let currentPerspective = 'category';
+        let tab2AutoplayTimer = null;
+
+        function setTab2Perspective(key) {
+            currentPerspective = key;
+
+            // Update active button styles
+            ['category', 'volatility', 'hardware'].forEach(k => {
+                const btn = document.getElementById(`persp-btn-${k}`);
+                if (k === key) {
+                    btn.className = "persp-btn active-persp px-3 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 bg-sky-950 text-sky-300 border border-sky-700 shadow-md";
+                } else {
+                    btn.className = "persp-btn px-3 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 bg-slate-900 text-slate-400 border border-slate-800 hover:text-slate-200";
+                }
+            });
+
+            const data = TAB2_DATA[key];
+            document.getElementById('current-view-title').innerText = data.title;
+
+            // Smoothly animate text transition
+            animatePanelContent('cpu', data.cpu);
+            animatePanelContent('ram', data.ram);
+            animatePanelContent('storage', data.storage);
+        }
+
+        function animatePanelContent(panelKey, itemData) {
+            const textBox = document.getElementById(`text-box-${panelKey}`);
+            const badge = document.getElementById(`badge-${panelKey}`);
+
+            if (!textBox) return;
+
+            // Step 1: Fade out & slight slide
+            textBox.style.opacity = '0';
+            textBox.style.transform = 'translateY(8px)';
+
+            setTimeout(() => {
+                // Step 2: Update content
+                badge.className = `px-2 py-0.5 rounded text-[10px] font-mono border ${itemData.badgeClass}`;
+                badge.innerText = itemData.badge;
+
+                const tagsHtml = itemData.tags.map(t => `<span class="px-2 py-0.5 rounded bg-slate-900 border border-slate-800 text-[10px] font-mono text-slate-300">${t}</span>`).join(' ');
+
+                textBox.innerHTML = `
+                    <div class="flex flex-wrap gap-1 mb-2">${tagsHtml}</div>
+                    <p class="text-xs text-slate-300 leading-relaxed font-sans">${itemData.desc}</p>
+                `;
+
+                // Step 3: Fade back in smoothly
+                textBox.style.opacity = '1';
+                textBox.style.transform = 'translateY(0)';
+            }, 180);
+        }
+
+        function selectArchComponent(compKey) {
+            // Highlight selected diagram component card
+            ['cpu', 'ram', 'storage'].forEach(k => {
+                const card = document.getElementById(`arch-card-${k}`);
+                if (k === compKey) {
+                    card.classList.add('ring-2', 'ring-cyan-400', 'scale-[1.03]');
+                } else {
+                    card.classList.remove('ring-2', 'ring-cyan-400', 'scale-[1.03]');
+                }
+            });
+
+            // Pulse corresponding text panel underneath
+            const panel = document.getElementById(`panel-${compKey}`);
+            if (panel) {
+                panel.classList.add('ring-2', 'ring-sky-400', 'scale-[1.02]');
+                setTimeout(() => {
+                    panel.classList.remove('ring-2', 'ring-sky-400', 'scale-[1.02]');
+                }, 800);
+            }
+        }
+
+        function toggleTab2Autoplay() {
+            const btnText = document.getElementById('text-tab2-play');
+            const icon = document.getElementById('icon-tab2-play');
+
+            if (tab2AutoplayTimer) {
+                clearInterval(tab2AutoplayTimer);
+                tab2AutoplayTimer = null;
+                btnText.innerText = "自動輪播切換";
+                icon.className = "fa-solid fa-play";
+            } else {
+                btnText.innerText = "停止輪播";
+                icon.className = "fa-solid fa-pause";
+                
+                const keys = ['category', 'volatility', 'hardware'];
+                let idx = keys.indexOf(currentPerspective);
+
+                tab2AutoplayTimer = setInterval(() => {
+                    idx = (idx + 1) % keys.length;
+                    setTab2Perspective(keys[idx]);
+                }, 3200);
+            }
+        }
+
+        let isTab2PowerOn = true;
+        function togglePowerTab2() {
+            isTab2PowerOn = !isTab2PowerOn;
+
+            const btn = document.getElementById('tab2-power-btn');
+            const btnText = document.getElementById('tab2-power-text');
+            const banner = document.getElementById('tab2-power-status-banner');
+            const statusText = document.getElementById('tab2-power-status-text');
+
+            if (isTab2PowerOn) {
+                btn.className = "px-5 py-2.5 rounded-xl font-bold text-xs transition-all flex items-center gap-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 glow-emerald shrink-0";
+                btnText.innerText = "電源狀態：通電中 (ON)";
+
+                banner.className = "bg-slate-950 p-4 rounded-xl border border-emerald-500/40 text-xs font-mono text-emerald-300 leading-relaxed flex items-center gap-3";
+                statusText.innerHTML = "<strong>[電源正常 ON]</strong> Cache (SRAM) 與 主記憶體 (DRAM) 正持續通電維護資料；硬碟 (SSD/HDD) 穩固儲存系統檔案。";
+            } else {
+                btn.className = "px-5 py-2.5 rounded-xl font-bold text-xs transition-all flex items-center gap-2 bg-rose-600 hover:bg-rose-500 text-white glow-rose shrink-0";
+                btnText.innerText = "電源狀態：已斷電 (OFF)";
+
+                banner.className = "bg-slate-950 p-4 rounded-xl border border-rose-500/40 text-xs font-mono text-rose-300 leading-relaxed flex items-center gap-3";
+                statusText.innerHTML = "<strong>[警告：斷電中 OFF]</strong> Cache 與 主記憶體屬<strong>揮發性</strong>，內部資料已完全消失！硬碟屬<strong>非揮發性</strong>，資料完整無缺。";
+            }
+        }
+
+        // ==========================================
+        // 4. TAB 3: HDD VS SSD ANIMATION ENGINE
+        // ==========================================
+        let hddSsdState = 'IDLE'; // 'IDLE', 'RUNNING'
+        let hddSsdMode = 'sequential'; // 'sequential' or 'random'
+
+        let hddProgress = 0;
+        let ssdProgress = 0;
+        let hddPlatterAngle = 0;
+        let hddArmTargetAngle = 0.2;
+        let hddArmCurrentAngle = 0.2;
+        let hddSeekTimer = 0;
+
+        let ssdPackets = [];
+        let hddSsdReqId = null;
+
+        let hddStartTime = 0;
+        let ssdStartTime = 0;
+        let hddEndTime = 0;
+        let ssdEndTime = 0;
+
+        function startHddSsdTest(mode) {
+            hddSsdMode = mode;
+            hddSsdState = 'RUNNING';
+
+            hddProgress = 0;
+            ssdProgress = 0;
+            hddStartTime = Date.now();
+            ssdStartTime = Date.now();
+            hddEndTime = 0;
+            ssdEndTime = 0;
+
+            document.getElementById('btn-test-seq').disabled = true;
+            document.getElementById('btn-test-rand').disabled = true;
+            document.getElementById('btn-test-seq').classList.add('opacity-50');
+            document.getElementById('btn-test-rand').classList.add('opacity-50');
+
+            document.getElementById('hdd-status-badge').innerText = mode === 'sequential' ? '大檔連續寫入中' : '尋道讀取碎檔中';
+            document.getElementById('hdd-status-badge').className = "px-2 py-0.5 rounded bg-amber-900 text-amber-200 text-[10px] border border-amber-600 animate-pulse";
+
+            document.getElementById('ssd-status-badge').innerText = '電子晶片極速傳輸';
+            document.getElementById('ssd-status-badge').className = "px-2 py-0.5 rounded bg-cyan-900 text-cyan-200 text-[10px] border border-cyan-600 animate-pulse";
+
+            const statusText = document.getElementById('hddssd-status-text');
+            if (mode === 'sequential') {
+                statusText.innerHTML = `<strong class="text-amber-400">[單一大檔測試 5GB]</strong> 觀察 SSD 以約 3,500 MB/s 高速衝刺；HDD 則受限於磁片旋轉物理極限 (約 120 MB/s)。`;
+            } else {
+                statusText.innerHTML = `<strong class="text-rose-400">[4K 隨機碎檔測試]</strong> 觀察 HDD 讀寫臂必須一直改變角度實體擺動（機械尋道延遲 12ms）；而 SSD 0 機械移動，晶片秒讀完成！`;
+            }
+
+            ssdPackets = [];
+            for (let i = 0; i < 15; i++) {
+                ssdPackets.push({
+                    chipIdx: Math.floor(Math.random() * 6),
+                    progress: Math.random(),
+                    speed: 0.03 + Math.random() * 0.02
+                });
+            }
+
+            drawHddSsdCanvas();
+        }
+
+        function resetHddSsdTest() {
+            hddSsdState = 'IDLE';
+            hddProgress = 0;
+            ssdProgress = 0;
+
+            document.getElementById('btn-test-seq').disabled = false;
+            document.getElementById('btn-test-rand').disabled = false;
+            document.getElementById('btn-test-seq').classList.remove('opacity-50');
+            document.getElementById('btn-test-rand').classList.remove('opacity-50');
+
+            document.getElementById('hdd-status-badge').innerText = '待命 IDLE';
+            document.getElementById('hdd-status-badge').className = "px-2 py-0.5 rounded bg-amber-950 text-amber-300 text-[10px] border border-amber-800";
+
+            document.getElementById('ssd-status-badge').innerText = '待命 IDLE';
+            document.getElementById('ssd-status-badge').className = "px-2 py-0.5 rounded bg-cyan-950 text-cyan-300 text-[10px] border border-cyan-800";
+
+            document.getElementById('hdd-speed-text').innerText = '0 MB/s';
+            document.getElementById('ssd-speed-text').innerText = '0 MB/s';
+            document.getElementById('hdd-time-text').innerText = '0.0 秒';
+            document.getElementById('ssd-time-text').innerText = '0.0 秒';
+
+            document.getElementById('hdd-progress-pct').innerText = '0%';
+            document.getElementById('ssd-progress-pct').innerText = '0%';
+            document.getElementById('hdd-progress-bar').style.width = '0%';
+            document.getElementById('ssd-progress-bar').style.width = '0%';
+
+            document.getElementById('hddssd-status-text').innerHTML = `<strong class="text-amber-400">[就緒狀態]</strong> 選擇上方「單一大檔傳輸」或「海量碎檔讀取」，觀察 HDD 機械結構與 SSD 晶片的即時速度與回應時間競技！`;
+
+            drawHddSsdCanvas();
+        }
+
+        function drawHddSsdCanvas() {
+            const canvas = document.getElementById('hddSsdCanvas');
+            if (!canvas || canvas.offsetParent === null) return;
+            const ctx = canvas.getContext('2d');
+
+            canvas.width = canvas.parentElement.clientWidth;
+            canvas.height = canvas.parentElement.clientHeight || 400;
+
+            const W = canvas.width;
+            const H = canvas.height;
+
+            ctx.clearRect(0, 0, W, H);
+
+            const halfH = H / 2;
+
+            // --- SEPARATOR LINE ---
+            ctx.strokeStyle = '#334155'; ctx.lineWidth = 2;
+            ctx.beginPath(); ctx.moveTo(20, halfH); ctx.lineTo(W - 20, halfH); ctx.stroke();
+
+            // =========================================================
+            // TOP HALF: HDD Simulation
+            // =========================================================
+            ctx.fillStyle = '#f59e0b'; ctx.font = 'bold 14px Noto Sans TC'; ctx.textAlign = 'left';
+            ctx.fillText('💿 HDD 傳統機械硬碟 (7200 RPM 磁片 + 機械擺頭)', 25, 28);
+
+            const hddCenterX = 120;
+            const hddCenterY = halfH / 2 + 10;
+            const platterRadius = Math.min(65, halfH * 0.35);
+
+            // Spinning Magnetic Platter
+            ctx.save();
+            ctx.translate(hddCenterX, hddCenterY);
+            ctx.rotate(hddPlatterAngle);
+
+            // Platter Disk Shadow & Outer
+            ctx.fillStyle = '#1e293b'; ctx.strokeStyle = '#fbbf24'; ctx.lineWidth = 3;
+            ctx.beginPath(); ctx.arc(0, 0, platterRadius, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+
+            // Concentric Data Tracks
+            ctx.strokeStyle = '#475569'; ctx.lineWidth = 1;
+            ctx.beginPath(); ctx.arc(0, 0, platterRadius * 0.75, 0, Math.PI * 2); ctx.stroke();
+            ctx.beginPath(); ctx.arc(0, 0, platterRadius * 0.5, 0, Math.PI * 2); ctx.stroke();
+
+            // Platter Spindle Motor Center
+            ctx.fillStyle = '#f59e0b';
+            ctx.beginPath(); ctx.arc(0, 0, 12, 0, Math.PI * 2); ctx.fill();
+            ctx.restore();
+
+            // Mechanical Read/Write Head Arm
+            const pivotX = hddCenterX + platterRadius + 45;
+            const pivotY = hddCenterY + 25;
+
+            // Arm Base Pivot
+            ctx.fillStyle = '#64748b'; ctx.strokeStyle = '#94a3b8'; ctx.lineWidth = 2;
+            ctx.beginPath(); ctx.arc(pivotX, pivotY, 14, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+
+            // Calculate Arm Angle
+            ctx.save();
+            ctx.translate(pivotX, pivotY);
+            ctx.rotate(-hddArmCurrentAngle);
+
+            // Arm Metal Body
+            ctx.fillStyle = '#cbd5e1';
+            ctx.beginPath();
+            ctx.moveTo(0, -4);
+            ctx.lineTo(-platterRadius - 25, -1);
+            ctx.lineTo(-platterRadius - 25, 1);
+            ctx.lineTo(0, 4);
+            ctx.closePath();
+            ctx.fill();
+
+            // Read Head Tip Glow
+            ctx.fillStyle = hddSsdState === 'RUNNING' ? '#ef4444' : '#94a3b8';
+            if (hddSsdState === 'RUNNING') {
+                ctx.shadowColor = '#ef4444'; ctx.shadowBlur = 10;
+            }
+            ctx.beginPath(); ctx.arc(-platterRadius - 25, 0, 4, 0, Math.PI * 2); ctx.fill();
+            ctx.shadowBlur = 0;
+            ctx.restore();
+
+            // Data Track Visual representation on Right side of HDD Track
+            const hddBarX = hddCenterX + platterRadius + 80;
+            const hddBarW = W - hddBarX - 40;
+            const hddBarY = hddCenterY - 12;
+
+            ctx.fillStyle = '#0f172a'; ctx.strokeStyle = '#334155'; ctx.lineWidth = 1.5;
+            ctx.beginPath(); ctx.roundRect(hddBarX, hddBarY, hddBarW, 24, 6); ctx.fill(); ctx.stroke();
+
+            if (hddProgress > 0) {
+                ctx.fillStyle = '#f59e0b'; ctx.shadowColor = '#f59e0b'; ctx.shadowBlur = 8;
+                ctx.beginPath(); ctx.roundRect(hddBarX, hddBarY, hddBarW * hddProgress, 24, 6); ctx.fill();
+                ctx.shadowBlur = 0;
+            }
+
+            ctx.fillStyle = '#f8fafc'; ctx.font = 'bold 11px Fira Code'; ctx.textAlign = 'center';
+            ctx.fillText(`HDD 進度: ${(hddProgress * 100).toFixed(1)}%`, hddBarX + hddBarW / 2, hddBarY + 16);
+
+
+            // =========================================================
+            // BOTTOM HALF: SSD Simulation
+            // =========================================================
+            ctx.fillStyle = '#38bdf8'; ctx.font = 'bold 14px Noto Sans TC'; ctx.textAlign = 'left';
+            ctx.fillText('⚡ SSD 固態硬碟 (NVMe M.2 主控 + 3D NAND Flash 快閃記憶體)', 25, halfH + 28);
+
+            const ssdStartY = halfH + 45;
+            const controllerX = 50;
+            const controllerY = ssdStartY + 15;
+            const controllerW = 75;
+            const controllerH = 65;
+
+            // SSD Controller Microchip
+            ctx.fillStyle = '#0f172a'; ctx.strokeStyle = '#38bdf8'; ctx.lineWidth = 2.5;
+            ctx.shadowColor = 'rgba(56, 189, 248, 0.4)'; ctx.shadowBlur = 10;
+            ctx.beginPath(); ctx.roundRect(controllerX, controllerY, controllerW, controllerH, 10); ctx.fill(); ctx.stroke();
+            ctx.shadowBlur = 0;
+
+            ctx.fillStyle = '#38bdf8'; ctx.font = 'bold 11px Orbitron'; ctx.textAlign = 'center';
+            ctx.fillText('NVMe', controllerX + controllerW / 2, controllerY + 28);
+            ctx.fillText('CTRL', controllerX + controllerW / 2, controllerY + 45);
+
+            // NAND Flash Memory Chips (Grid of 4 Chips)
+            const chipW = 55; const chipH = 30;
+            const chips = [
+                { x: 155, y: controllerY },
+                { x: 155, y: controllerY + 35 },
+                { x: 220, y: controllerY },
+                { x: 220, y: controllerY + 35 }
+            ];
+
+            chips.forEach((c, idx) => {
+                ctx.fillStyle = '#1e293b'; ctx.strokeStyle = '#0284c7'; ctx.lineWidth = 1.5;
+                ctx.beginPath(); ctx.roundRect(c.x, c.y, chipW, chipH, 6); ctx.fill(); ctx.stroke();
+
+                ctx.fillStyle = '#94a3b8'; ctx.font = '9px Fira Code'; ctx.textAlign = 'center';
+                ctx.fillText(`NAND #${idx + 1}`, c.x + chipW / 2, c.y + 18);
+            });
+
+            // Bus Lines Connecting Controller to NAND and Bar
+            ctx.strokeStyle = '#0284c7'; ctx.lineWidth = 2;
+            ctx.beginPath(); ctx.moveTo(controllerX + controllerW, controllerY + controllerH / 2);
+            ctx.lineTo(155, controllerY + controllerH / 2); ctx.stroke();
+
+            // SSD Data Track Progress Bar
+            const ssdBarX = 300;
+            const ssdBarW = W - ssdBarX - 40;
+            const ssdBarY = controllerY + 20;
+
+            ctx.fillStyle = '#0f172a'; ctx.strokeStyle = '#334155'; ctx.lineWidth = 1.5;
+            ctx.beginPath(); ctx.roundRect(ssdBarX, ssdBarY, ssdBarW, 24, 6); ctx.fill(); ctx.stroke();
+
+            if (ssdProgress > 0) {
+                ctx.fillStyle = '#06b6d4'; ctx.shadowColor = '#06b6d4'; ctx.shadowBlur = 8;
+                ctx.beginPath(); ctx.roundRect(ssdBarX, ssdBarY, ssdBarW * ssdProgress, 24, 6); ctx.fill();
+                ctx.shadowBlur = 0;
+            }
+
+            ctx.fillStyle = '#f8fafc'; ctx.font = 'bold 11px Fira Code'; ctx.textAlign = 'center';
+            ctx.fillText(`SSD 進度: ${(ssdProgress * 100).toFixed(1)}%`, ssdBarX + ssdBarW / 2, ssdBarY + 16);
+
+            // Flying Electron Data Packets in SSD Buses
+            if (hddSsdState === 'RUNNING') {
+                ssdPackets.forEach(p => {
+                    const pktX = controllerX + controllerW + (ssdBarX - controllerX - controllerW) * p.progress;
+                    const pktY = controllerY + controllerH / 2;
+
+                    ctx.fillStyle = '#38bdf8'; ctx.shadowColor = '#38bdf8'; ctx.shadowBlur = 8;
+                    ctx.beginPath(); ctx.arc(pktX, pktY, 4, 0, Math.PI * 2); ctx.fill();
+                    ctx.shadowBlur = 0;
+                });
+            }
+
+
+            // =========================================================
+            // SIMULATION UPDATE ENGINE LOGIC
+            // =========================================================
+            if (hddSsdState === 'RUNNING') {
+                // Spin HDD Platter
+                hddPlatterAngle += 0.15;
+
+                // Handle SSD Speed
+                if (ssdProgress < 1) {
+                    const ssdSpeedStep = hddSsdMode === 'sequential' ? 0.015 : 0.025; // Extremely fast
+                    ssdProgress = Math.min(1, ssdProgress + ssdSpeedStep);
+                    const now = Date.now();
+                    const ssdSec = ((now - ssdStartTime) / 1000).toFixed(1);
+                    document.getElementById('ssd-time-text').innerText = `${ssdSec} 秒`;
+                    document.getElementById('ssd-speed-text').innerText = hddSsdMode === 'sequential' ? '3,450 MB/s' : '85,000 IOPS';
+                    document.getElementById('ssd-progress-pct').innerText = `${(ssdProgress * 100).toFixed(0)}%`;
+                    document.getElementById('ssd-progress-bar').style.width = `${ssdProgress * 100}%`;
+
+                    if (ssdProgress >= 1 && ssdEndTime === 0) {
+                        ssdEndTime = now;
+                        document.getElementById('ssd-status-badge').innerText = '🎉 傳輸完成！';
+                        document.getElementById('ssd-status-badge').className = "px-2 py-0.5 rounded bg-emerald-950 text-emerald-300 text-[10px] border border-emerald-800 font-bold";
+                    }
+                }
+
+                // Handle SSD Flying electron packets
+                ssdPackets.forEach(p => {
+                    p.progress += p.speed;
+                    if (p.progress > 1) p.progress = 0;
+                });
+
+                // Handle HDD Speed & Arm Seek Latency
+                if (hddProgress < 1) {
+                    if (hddSsdMode === 'random') {
+                        // Mechanical Arm Seeking animation
+                        hddSeekTimer += 1;
+                        if (hddSeekTimer % 20 === 0) {
+                            hddArmTargetAngle = 0.05 + Math.random() * 0.35; // Random track target
+                        }
+                        // Move Arm towards target angle gradually
+                        hddArmCurrentAngle += (hddArmTargetAngle - hddArmCurrentAngle) * 0.15;
+
+                        // Very slow progress due to seek time delay
+                        hddProgress = Math.min(1, hddProgress + 0.0018);
+                        document.getElementById('hdd-speed-text').innerText = '120 IOPS (慢)';
+                        document.getElementById('hdd-delay-text').innerText = '14.2 ms';
+                    } else {
+                        // Sequential Read
+                        hddArmCurrentAngle += (0.2 - hddArmCurrentAngle) * 0.05;
+                        hddProgress = Math.min(1, hddProgress + 0.0035);
+                        document.getElementById('hdd-speed-text').innerText = '125 MB/s';
+                        document.getElementById('hdd-delay-text').innerText = '11.0 ms';
+                    }
+
+                    const now = Date.now();
+                    const hddSec = ((now - hddStartTime) / 1000).toFixed(1);
+                    document.getElementById('hdd-time-text').innerText = `${hddSec} 秒`;
+                    document.getElementById('hdd-progress-pct').innerText = `${(hddProgress * 100).toFixed(0)}%`;
+                    document.getElementById('hdd-progress-bar').style.width = `${hddProgress * 100}%`;
+
+                    if (hddProgress >= 1 && hddEndTime === 0) {
+                        hddEndTime = now;
+                        document.getElementById('hdd-status-badge').innerText = '完成傳輸';
+                        document.getElementById('hdd-status-badge').className = "px-2 py-0.5 rounded bg-slate-800 text-slate-300 text-[10px]";
+                    }
+                }
+
+                // Finish Check
+                if (hddProgress >= 1 && ssdProgress >= 1) {
+                    hddSsdState = 'IDLE';
+                    document.getElementById('btn-test-seq').disabled = false;
+                    document.getElementById('btn-test-rand').disabled = false;
+                    document.getElementById('btn-test-seq').classList.remove('opacity-50');
+                    document.getElementById('btn-test-rand').classList.remove('opacity-50');
+                }
+            }
+
+            hddSsdReqId = requestAnimationFrame(drawHddSsdCanvas);
+        }
+
+        function checkAnswerTab3(optionIndex) {
+            const resultBox = document.getElementById('quiz3-result');
+            resultBox.classList.remove('hidden', 'bg-emerald-950/80', 'bg-rose-950/80', 'border-emerald-600', 'border-rose-600', 'text-emerald-200', 'text-rose-200');
+
+            if (optionIndex === 2) {
+                resultBox.classList.add('bg-emerald-950/80', 'border', 'border-emerald-600', 'text-emerald-200');
+                resultBox.innerHTML = `<strong>🎉 完全正確！</strong><br>HDD 機械硬碟讀取碎檔時，讀寫頭必須在磁碟片上頻繁改變角度移動（尋道時間 delay 高達 10~15 ms）；而 SSD 為全電子快閃記憶體，讀取微秒即達！`;
+            } else {
+                resultBox.classList.add('bg-rose-950/80', 'border', 'border-rose-600', 'text-rose-200');
+                resultBox.innerHTML = `<strong>❌ 再試一次！</strong><br>提示：思考 HDD 的「實體機械擺頭 (Seek time)」與 SSD「電子訊號」的構造差異！`;
+            }
+        }
+
+        window.onload = function() {
+            drawAnalogyCanvas();
+            drawCanvas();
+            drawHddSsdCanvas();
+            updateAnalogyStatusText();
+            updateStatusText();
+            setTab2Perspective('category');
+        };
+
+        window.onresize = function() {
+            drawAnalogyCanvas();
+            drawCanvas();
+            drawHddSsdCanvas();
+        };
+    </script>
+</body>
+</html>

@@ -1,0 +1,1053 @@
+<!DOCTYPE html>
+<html lang="zh-TW" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CPU 核心原理與效能指標互動教學網頁</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome CDN -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600;700&family=Noto+Sans+TC:wght@400;500;700;900&family=Orbitron:wght@600;800;900&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            background-color: #0b0f19;
+            color: #e2e8f0;
+        }
+        .tech-font { font-family: 'Orbitron', sans-serif; }
+        .code-font { font-family: 'Fira Code', monospace; }
+        
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #0f172a; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #475569; }
+
+        /* Glow Effects */
+        .glow-cyan { box-shadow: 0 0 20px rgba(6, 182, 212, 0.35); }
+        .glow-amber { box-shadow: 0 0 20px rgba(245, 158, 11, 0.35); }
+        .glow-emerald { box-shadow: 0 0 20px rgba(16, 185, 129, 0.35); }
+        .glow-purple { box-shadow: 0 0 20px rgba(168, 85, 247, 0.35); }
+
+        .active-tab {
+            border-bottom: 3px solid #06b6d4;
+            color: #38bdf8 !important;
+            background-color: rgba(15, 23, 42, 0.6);
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col bg-slate-950 text-slate-100">
+
+    <!-- Top Header Bar -->
+    <header class="bg-slate-900/90 border-b border-slate-800 sticky top-0 z-50 backdrop-blur-md">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <a href="index.html" class="text-xs text-sky-400 hover:text-sky-300 transition flex items-center gap-1">
+                    <i class="fa-solid fa-arrow-left"></i> 回到首頁
+                </a>
+                <div class="w-10 h-10 rounded-xl bg-cyan-500/20 border border-cyan-500/40 flex items-center justify-center text-cyan-400 text-xl glow-cyan">
+                    <i class="fa-solid fa-microchip"></i>
+                </div>
+                <div>
+                    <h1 class="text-base sm:text-lg font-black tracking-wider tech-font bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 via-sky-300 to-indigo-400">
+                        CPU CORE ARCHITECTURE
+                    </h1>
+                    <p class="text-[11px] text-slate-400 font-mono">CPU 時脈、MIPS 與指令執行週期互動教學網頁</p>
+                </div>
+            </div>
+
+            <nav class="hidden md:flex items-center gap-1 text-xs font-bold font-mono">
+                <button onclick="switchTab('tab-clock')" id="nav-tab-clock" class="active-tab px-4 py-2 rounded-t-lg text-slate-300 hover:text-cyan-400 transition flex items-center gap-2">
+                    <i class="fa-solid fa-wave-square text-cyan-400"></i> 時脈頻率與週期
+                </button>
+                <button onclick="switchTab('tab-mips')" id="nav-tab-mips" class="px-4 py-2 rounded-t-lg text-slate-300 hover:text-purple-400 transition flex items-center gap-2">
+                    <i class="fa-solid fa-gauge-high text-purple-400"></i> MIPS 效能指標
+                </button>
+                <button onclick="switchTab('tab-calc')" id="nav-tab-calc" class="px-4 py-2 rounded-t-lg text-slate-300 hover:text-amber-400 transition flex items-center gap-2">
+                    <i class="fa-solid fa-calculator text-amber-400"></i> 試算與練習題
+                </button>
+                <button onclick="switchTab('tab-cycle')" id="nav-tab-cycle" class="px-4 py-2 rounded-t-lg text-slate-300 hover:text-emerald-400 transition flex items-center gap-2">
+                    <i class="fa-solid fa-arrows-spin text-emerald-400"></i> 機械週期動畫
+                </button>
+            </nav>
+        </div>
+
+        <!-- Mobile Navigation Row -->
+        <div class="md:hidden flex border-t border-slate-800 bg-slate-950 overflow-x-auto text-xs font-mono">
+            <button onclick="switchTab('tab-clock')" id="mob-tab-clock" class="flex-1 min-w-[90px] py-2 text-center text-cyan-400 font-bold border-b-2 border-cyan-400">時脈</button>
+            <button onclick="switchTab('tab-mips')" id="mob-tab-mips" class="flex-1 min-w-[90px] py-2 text-center text-slate-400">MIPS</button>
+            <button onclick="switchTab('tab-calc')" id="mob-tab-calc" class="flex-1 min-w-[90px] py-2 text-center text-slate-400">算式練習</button>
+            <button onclick="switchTab('tab-cycle')" id="mob-tab-cycle" class="flex-1 min-w-[90px] py-2 text-center text-slate-400">機械週期</button>
+        </div>
+    </header>
+
+    <!-- Main Content Container -->
+    <main class="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 space-y-8">
+
+        <!-- ================= SECTION 1: 時脈頻率與時脈週期 ================= -->
+        <section id="tab-clock" class="tab-content space-y-6">
+            
+            <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-6 shadow-xl relative overflow-hidden">
+                <div class="absolute -right-10 -top-10 w-40 h-40 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none"></div>
+                <h2 class="text-xl sm:text-2xl font-black text-cyan-400 flex items-center gap-3 tech-font">
+                    <i class="fa-solid fa-wave-square"></i> 時脈頻率 (Clock Frequency) 與 時脈週期 (Clock Period)
+                </h2>
+                <p class="text-sm text-slate-300 mt-2 leading-relaxed">
+                    CPU 內部有一個像心臟一樣脈動的「石英晶體振盪器」，發出持續高低電位交替的<strong>脈衝訊號（Clock Signal）</strong>。
+                    CPU 內部的所有微指令（如寫入暫存器、邏輯運算）都必須配合時脈的上升緣（Rising Edge）或下降緣進行同步。
+                </p>
+
+                <!-- 數學公式展示方塊 -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 my-6">
+                    <div class="bg-slate-950 p-4 rounded-xl border border-cyan-500/30 flex flex-col justify-center items-center text-center">
+                        <span class="text-xs text-cyan-400 font-mono">時脈週期 (Clock Cycle Time, T)</span>
+                        <div class="text-xl sm:text-2xl font-bold code-font text-white my-1">T = 1 / f</div>
+                        <p class="text-[11px] text-slate-400">完成一個方波脈衝所需要的時間（常用單位：ns 微秒, ps 奈秒）</p>
+                    </div>
+                    <div class="bg-slate-950 p-4 rounded-xl border border-sky-500/30 flex flex-col justify-center items-center text-center">
+                        <span class="text-xs text-sky-400 font-mono">時脈頻率 (Clock Rate / Frequency, f)</span>
+                        <div class="text-xl sm:text-2xl font-bold code-font text-white my-1">f = 1 / T</div>
+                        <p class="text-[11px] text-slate-400">一秒鐘內震盪發出的時脈週期次數（常用單位：MHz, GHz）</p>
+                    </div>
+                </div>
+
+                <!-- 為什麼頻率越高CPU執行速度越快？ -->
+                <div class="bg-cyan-950/30 border border-cyan-800/50 p-4 rounded-xl text-xs sm:text-sm text-cyan-200 leading-relaxed space-y-2">
+                    <h3 class="font-bold text-cyan-300 flex items-center gap-2 text-base">
+                        <i class="fa-solid fa-bolt"></i> 核心知識：為什麼頻率越高，CPU 執行速度越快？
+                    </h3>
+                    <p>
+                        假設執行一個指令固定需要 <strong>4 個時脈週期（Clock Cycles）</strong>：
+                    </p>
+                    <ul class="list-disc list-inside space-y-1 font-mono text-xs pl-2 text-cyan-100">
+                        <li>在 <strong class="text-amber-400">1.0 GHz</strong> 時脈下：1 個週期為 <span class="underline">1.0 ns</span>，執行該指令耗時 <strong>4.0 ns</strong>。</li>
+                        <li>在 <strong class="text-emerald-400">2.0 GHz</strong> 時脈下：1 個週期縮短為 <span class="underline">0.5 ns</span>，執行該指令僅需 <strong>2.0 ns</strong>！</li>
+                    </ul>
+                    <p class="text-slate-300">
+                        👉 <strong>總結：</strong> 頻率越高，代表<strong>單位時間內（每秒）能完成的週期次數越多</strong>，單個週期的持續時間越短，CPU 就能在更少的時間內處理完相同數量的指令！
+                    </p>
+                </div>
+            </div>
+
+            <!-- 動畫對比區塊：不同頻率波形與指令資料傳輸速度 -->
+            <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-4">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800 pb-4">
+                    <div>
+                        <h3 class="font-bold text-lg text-slate-100 flex items-center gap-2">
+                            <i class="fa-solid fa-film text-cyan-400"></i> 動畫對比：時脈頻率 vs CPU 資料處理速度
+                        </h3>
+                        <p class="text-xs text-slate-400 mt-1">觀察脈衝上升緣觸發時，資料包（Data Packet）在流水線中的推進速度</p>
+                    </div>
+
+                    <!-- 互動調速滑桿 -->
+                    <div class="flex items-center gap-3 bg-slate-950 p-2.5 rounded-xl border border-slate-800">
+                        <span class="text-xs font-mono text-slate-400">CPU A 頻率:</span>
+                        <input id="freq-slider-a" type="range" min="1" max="4" step="0.5" value="1" class="w-24 accent-cyan-400" oninput="updateClockAnim()">
+                        <span id="freq-val-a" class="text-xs font-bold text-cyan-400 font-mono w-12">1.0 GHz</span>
+                    </div>
+                </div>
+
+                <!-- 動畫 Canvas 容器 -->
+                <div class="grid grid-cols-1 gap-6">
+                    <!-- CPU A Waveform & Execution Canvas -->
+                    <div class="bg-slate-950 rounded-xl p-4 border border-slate-800 space-y-2">
+                        <div class="flex justify-between items-center text-xs font-mono">
+                            <span class="text-cyan-400 font-bold flex items-center gap-2">
+                                <span class="w-2 h-2 rounded-full bg-cyan-400 animate-ping"></span> CPU A (可自訂頻率: <span id="display-freq-a">1.0</span> GHz)
+                            </span>
+                            <span class="text-slate-400">週期時間 T = <span id="display-period-a" class="text-amber-400 font-bold">1.00</span> ns | 已完成指令數: <span id="counter-a" class="text-emerald-400 font-bold">0</span></span>
+                        </div>
+                        <canvas id="clockCanvasA" class="w-full h-36 bg-slate-900/90 rounded-lg border border-slate-800/80"></canvas>
+                    </div>
+
+                    <!-- CPU B Waveform & Execution Canvas (Fixed 3.0 GHz) -->
+                    <div class="bg-slate-950 rounded-xl p-4 border border-slate-800 space-y-2">
+                        <div class="flex justify-between items-center text-xs font-mono">
+                            <span class="text-purple-400 font-bold flex items-center gap-2">
+                                <span class="w-2 h-2 rounded-full bg-purple-400 animate-ping"></span> CPU B (高速頻率: 3.0 GHz)
+                            </span>
+                            <span class="text-slate-400">週期時間 T = <span class="text-amber-400 font-bold">0.33</span> ns | 已完成指令數: <span id="counter-b" class="text-emerald-400 font-bold">0</span></span>
+                        </div>
+                        <canvas id="clockCanvasB" class="w-full h-36 bg-slate-900/90 rounded-lg border border-slate-800/80"></canvas>
+                    </div>
+                </div>
+
+                <div class="flex justify-end gap-3 pt-2">
+                    <button onclick="toggleClockAnimation()" id="btn-toggle-clock" class="px-5 py-2 bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold rounded-xl text-xs transition shadow-lg flex items-center gap-2">
+                        <i class="fa-solid fa-pause" id="icon-toggle-clock"></i> <span id="text-toggle-clock">暫停動畫</span>
+                    </button>
+                    <button onclick="resetClockCounters()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold rounded-xl text-xs transition border border-slate-700 flex items-center gap-2">
+                        <i class="fa-solid fa-rotate-left"></i> 重置計數
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= SECTION 2: MIPS 介紹與公式 ================= -->
+        <section id="tab-mips" class="tab-content hidden space-y-6">
+            <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-6">
+                <div>
+                    <h2 class="text-xl sm:text-2xl font-black text-purple-400 flex items-center gap-3 tech-font">
+                        <i class="fa-solid fa-gauge-high"></i> MIPS (Million Instructions Per Second) 指標介紹
+                    </h2>
+                    <p class="text-sm text-slate-300 mt-2 leading-relaxed">
+                        <strong>MIPS</strong> 代表<strong>每秒機能執行多少「百萬個指令」</strong>。它是早期衡量電腦 CPU 執行速度最直觀的效能指標之一。
+                    </p>
+                </div>
+
+                <!-- 核心觀念三要素卡片 -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="bg-slate-950 p-4 rounded-xl border border-purple-500/30 space-y-2">
+                        <div class="text-purple-400 font-bold text-sm flex items-center gap-2">
+                            <i class="fa-solid fa-list-check"></i> 指令數 (Instruction Count, IC)
+                        </div>
+                        <p class="text-xs text-slate-400">程式編譯後所包含的總機械指令數量，取決於 ISA 指令集架構與編譯器優化。</p>
+                    </div>
+
+                    <div class="bg-slate-950 p-4 rounded-xl border border-indigo-500/30 space-y-2">
+                        <div class="text-indigo-400 font-bold text-sm flex items-center gap-2">
+                            <i class="fa-solid fa-stopwatch"></i> CPI (Cycles Per Instruction)
+                        </div>
+                        <p class="text-xs text-slate-400">平均每個指令需要消耗多少個時脈週期。不同指令（如 ADD vs. DIV）所需 CPI 不同。</p>
+                    </div>
+
+                    <div class="bg-slate-950 p-4 rounded-xl border border-sky-500/30 space-y-2">
+                        <div class="text-sky-400 font-bold text-sm flex items-center gap-2">
+                            <i class="fa-solid fa-clock"></i> 執行時間 (Execution Time, CPU Time)
+                        </div>
+                        <p class="text-xs text-slate-400">執行該程式總共花費的秒數：<br><span class="text-amber-400 font-mono">Time = (IC × CPI) / Frequency</span></p>
+                    </div>
+                </div>
+
+                <!-- MIPS 數學公式推導展演 -->
+                <div class="bg-slate-950 p-5 rounded-xl border border-slate-800 space-y-4">
+                    <h3 class="text-sm font-bold text-slate-200 font-mono border-b border-slate-800 pb-2">
+                        📐 MIPS 換算公式完整推導 (Mathematical Formulas)
+                    </h3>
+                    
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 text-xs sm:text-sm">
+                        <div class="space-y-3">
+                            <div class="text-slate-300 font-semibold">公式 1：基於總指令數與執行時間</div>
+                            <div class="bg-slate-900 p-3 rounded-lg code-font text-purple-300 border border-purple-900/50">
+                                MIPS = 指令總數 (IC) / (執行時間 (s) × 10⁶)
+                            </div>
+                        </div>
+
+                        <div class="space-y-3">
+                            <div class="text-slate-300 font-semibold">公式 2：基於時脈頻率與平均 CPI (極常考！)</div>
+                            <div class="bg-slate-900 p-3 rounded-lg code-font text-amber-300 border border-amber-900/50">
+                                MIPS = 時脈頻率 (MHz) / CPI <br>
+                                <span class="text-xs text-slate-400">= (時脈頻率 (GHz) × 1000) / CPI</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- MIPS 的局限性說明 -->
+                <div class="bg-rose-950/20 border border-rose-800/40 p-4 rounded-xl text-xs sm:text-sm text-rose-200 space-y-2">
+                    <h4 class="font-bold text-rose-300 flex items-center gap-2">
+                        <i class="fa-solid fa-triangle-exclamation"></i> 為什麼不能只看 MIPS 判定 CPU 效能好壞？(MIPS 的局限)
+                    </h4>
+                    <p class="text-slate-300 leading-relaxed">
+                        1. <strong>忽略了指令能力的差異：</strong> CISC（如 x86）的一條複雜指令可能完成 RISC（如 ARM/MIPS）三條指令的工作。RISC 的 MIPS 值可能很髙，但實際完成相同任務時間並不一定比較快！<br>
+                        2. <strong>CPI 非常數：</strong> 不同的程式（如浮點運算 vs. 整數邏輯）CPI 差異極大，因此 MIPS 無法反映 CPU 跨應用的真實表現。
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= SECTION 3: 計算機工具與練習題 ================= -->
+        <section id="tab-calc" class="tab-content hidden space-y-6">
+            
+            <!-- 即時計算機工具 -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- 計算機 1：時脈週期 <-> 頻率 -->
+                <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-5 shadow-xl space-y-4">
+                    <h3 class="font-bold text-cyan-400 text-base flex items-center gap-2 tech-font">
+                        <i class="fa-solid fa-calculator"></i> 工具 A：時脈頻率 ⇄ 週期轉換器
+                    </h3>
+                    
+                    <div class="space-y-3 text-xs">
+                        <div>
+                            <label class="text-slate-300 block mb-1">輸入 CPU 時脈頻率 (GHz)：</label>
+                            <input id="calc-freq-input" type="number" step="0.1" value="4.0" class="w-full bg-slate-950 border border-slate-700 rounded-xl p-2.5 text-slate-100 code-font focus:border-cyan-400 outline-none" oninput="calculatePeriod()">
+                        </div>
+                        <div class="bg-slate-950 p-3 rounded-xl border border-cyan-900/50 space-y-1">
+                            <span class="text-slate-400 block">對應時脈週期 (Clock Period T)：</span>
+                            <span id="calc-period-result" class="text-lg font-bold text-cyan-300 code-font">0.2500 ns (奈秒)</span>
+                            <div class="text-[11px] text-slate-500 font-mono">算式: 1 / 4.0 GHz = 0.25 × 10⁻⁹ 秒</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 計算機 2：MIPS 計算機 -->
+                <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-5 shadow-xl space-y-4">
+                    <h3 class="font-bold text-purple-400 text-base flex items-center gap-2 tech-font">
+                        <i class="fa-solid fa-microchip"></i> 工具 B：MIPS 與執行時間計算器
+                    </h3>
+                    
+                    <div class="grid grid-cols-2 gap-3 text-xs">
+                        <div>
+                            <label class="text-slate-300 block mb-1">時脈頻率 (GHz)：</label>
+                            <input id="calc-mips-freq" type="number" step="0.1" value="3.2" class="w-full bg-slate-950 border border-slate-700 rounded-xl p-2 text-slate-100 code-font outline-none" oninput="calculateMips()">
+                        </div>
+                        <div>
+                            <label class="text-slate-300 block mb-1">平均 CPI：</label>
+                            <input id="calc-mips-cpi" type="number" step="0.1" value="1.6" class="w-full bg-slate-950 border border-slate-700 rounded-xl p-2 text-slate-100 code-font outline-none" oninput="calculateMips()">
+                        </div>
+                    </div>
+
+                    <div class="bg-slate-950 p-3 rounded-xl border border-purple-900/50 space-y-1 text-xs">
+                        <span class="text-slate-400 block">計算出效能 MIPS：</span>
+                        <span id="calc-mips-result" class="text-lg font-bold text-purple-300 code-font">2000 MIPS</span>
+                        <div class="text-[11px] text-slate-500 font-mono">算式: (3.2 × 1000 MHz) / 1.6 CPI = 2000</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 計算題互動練習測驗區 -->
+            <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-6">
+                <div class="flex items-center justify-between border-b border-slate-800 pb-4">
+                    <div>
+                        <h3 class="font-bold text-lg text-amber-400 flex items-center gap-2 tech-font">
+                            <i class="fa-solid fa-pen-to-square"></i> 計算題隨機挑戰 (Interactive Quiz)
+                        </h3>
+                        <p class="text-xs text-slate-400 mt-1">即時檢測您的理解程度！系統將自動產生題目並提供詳細解題步驟。</p>
+                    </div>
+                    <button onclick="generateNewQuiz()" class="px-4 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-xl text-xs transition shadow-lg flex items-center gap-2">
+                        <i class="fa-solid fa-arrows-rotate"></i> 產生新題目
+                    </button>
+                </div>
+
+                <div id="quiz-container" class="bg-slate-950 p-5 rounded-xl border border-slate-800 space-y-4">
+                    <!-- Quiz question dynamically generated by JS -->
+                </div>
+            </div>
+
+        </section>
+
+        <!-- ================= SECTION 4: 機械週期與指令執行動畫 ================= -->
+        <section id="tab-cycle" class="tab-content hidden space-y-6">
+            
+            <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-4">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800 pb-3">
+                    <div>
+                        <h2 class="text-xl sm:text-2xl font-black text-emerald-400 flex items-center gap-3 tech-font">
+                            <i class="fa-solid fa-arrows-spin"></i> CPU 機械週期 (Machine Cycle) 32-Bit 微觀模擬
+                        </h2>
+                        <p class="text-xs text-slate-300 mt-1 leading-relaxed">
+                            直觀展示 CPU 處理 32 位元二進位指令的四大歷程：<strong>1. 擷取 (Fetch) 32-bit 二進位碼</strong> ➔ <strong>2. 解碼 (Decode) 匡選欄位並辨識算式</strong> ➔ <strong>3. 執行 (Execute) ALU 運算</strong> ➔ <strong>4. 儲存 (Store/Writeback) 寫回記憶單元</strong>。
+                        </p>
+                    </div>
+
+                    <!-- 選擇測試指令 -->
+                    <div class="flex items-center gap-2 bg-slate-950 p-2 rounded-xl border border-slate-800">
+                        <span class="text-xs font-mono text-slate-400">示範指令:</span>
+                        <select id="select-instruction" onchange="changeInstruction()" class="bg-slate-900 border border-slate-700 text-cyan-300 text-xs font-bold font-mono rounded-lg p-1.5 outline-none focus:border-cyan-400">
+                            <option value="ADD">ADD R3, R1, R2 (5 + 12)</option>
+                            <option value="SUB">SUB R3, R1, R2 (20 - 8)</option>
+                            <option value="MUL">MUL R3, R1, R2 (4 × 6)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- 四步驟流程圖卡片 -->
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
+                    <div id="step-card-fetch" class="bg-slate-950 p-3 rounded-xl border border-cyan-500/30 transition-all">
+                        <span class="text-cyan-400 font-bold block mb-1">1. 擷取 (FETCH)</span>
+                        <p class="text-slate-400 text-[11px]">從 RAM 載入 32 位元二進位指令碼到指令暫存器 (IR)。</p>
+                    </div>
+                    <div id="step-card-decode" class="bg-slate-950 p-3 rounded-xl border border-indigo-500/30 transition-all">
+                        <span class="text-indigo-400 font-bold block mb-1">2. 解碼 (DECODE)</span>
+                        <p class="text-slate-400 text-[11px]">控制單元 (CU) 匡選二進位位元，辨識指令類型與操作數。</p>
+                    </div>
+                    <div id="step-card-execute" class="bg-slate-950 p-3 rounded-xl border border-amber-500/30 transition-all">
+                        <span class="text-amber-400 font-bold block mb-1">3. 執行 (EXECUTE)</span>
+                        <p class="text-slate-400 text-[11px]">ALU 算術邏輯單元接收數值並執行算術/邏輯計算。</p>
+                    </div>
+                    <div id="step-card-writeback" class="bg-slate-950 p-3 rounded-xl border border-emerald-500/30 transition-all">
+                        <span class="text-emerald-400 font-bold block mb-1">4. 儲存 (STORE)</span>
+                        <p class="text-slate-400 text-[11px]">將計算出的結果寫回暫存器 R3 或記憶體單元中。</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 互動式 CPU 32-Bit 機械週期視覺化 Canvas 展演區 -->
+            <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-4">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800 pb-4">
+                    <div>
+                        <h3 class="font-bold text-lg text-slate-100 flex items-center gap-2">
+                            <i class="fa-solid fa-microchip text-emerald-400"></i> 32-Bit 指令動態視覺化解碼運算台
+                        </h3>
+                        <p class="text-xs text-slate-400 mt-1">觀察控制單元如何匡選 32 位元二進位數，以及 ALU 如何進行計算與儲存</p>
+                    </div>
+
+                    <div class="flex items-center gap-2">
+                        <button onclick="prevStepMachineCycle()" class="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold rounded-xl text-xs transition border border-slate-700 flex items-center gap-1.5">
+                            <i class="fa-solid fa-backward-step"></i> 上一步
+                        </button>
+                        <button onclick="stepMachineCycle()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-cyan-300 font-bold rounded-xl text-xs transition border border-cyan-500/40 flex items-center gap-1.5">
+                            <i class="fa-solid fa-forward-step"></i> 下一步 (Next)
+                        </button>
+                        <button onclick="toggleAutoMachineCycle()" id="btn-auto-cycle" class="px-4 py-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold rounded-xl text-xs transition shadow-lg flex items-center gap-1.5">
+                            <i class="fa-solid fa-play" id="icon-auto-cycle"></i> <span id="text-auto-cycle">自動播放</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Canvas Component Rendering Area -->
+                <div class="bg-slate-950 rounded-xl p-4 border border-slate-800 space-y-3">
+                    <div class="flex flex-wrap justify-between items-center text-xs font-mono gap-2">
+                        <span class="text-slate-300">階段 (<span id="cycle-step-num" class="text-amber-400 font-bold">1</span>/4)：<strong id="cycle-phase-title" class="text-cyan-400 text-sm font-bold">FETCH (擷取)</strong></span>
+                        <span class="text-slate-400">指令暫存器 IR: <strong id="val-ir-hex" class="code-font text-cyan-300">0x00221820</strong></span>
+                        <span class="text-amber-400">程式計數器 PC: <strong id="val-pc" class="code-font">0x0004</strong></span>
+                    </div>
+
+                    <canvas id="cpuArchCanvas" class="w-full h-96 bg-slate-900/90 rounded-lg border border-slate-800"></canvas>
+
+                    <!-- 動態文字對話紀錄框 -->
+                    <div class="bg-slate-900 p-3.5 rounded-lg border border-slate-800 text-xs font-mono text-slate-200 flex items-start gap-3" id="cycle-log-text">
+                        <span class="w-3 h-3 rounded-full bg-cyan-400 animate-ping shrink-0 mt-0.5"></span>
+                        <div id="cycle-log-detail">
+                            <span class="text-cyan-300 font-bold">[1/4 擷取階段]</span> 從記憶體讀取 32 位元二進位碼 <span class="code-font text-amber-300">000000 00001 00010 00011 00000 100000</span> 並載入至指令暫存器 IR。
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-slate-950 border-t border-slate-800/80 py-4 text-center text-xs text-slate-500 font-mono">
+        <p>CPU Core Architecture Interactive Educational Simulator © 2026</p>
+    </footer>
+
+    <!-- JavaScript Application Logic -->
+    <script>
+        // Global Tab Switching Logic
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.getElementById(tabId).classList.remove('hidden');
+
+            // Reset navigation tab styles
+            const tabs = ['clock', 'mips', 'calc', 'cycle'];
+            tabs.forEach(t => {
+                const navBtn = document.getElementById(`nav-tab-${t}`);
+                const mobBtn = document.getElementById(`mob-tab-${t}`);
+                if (navBtn) navBtn.classList.remove('active-tab');
+                if (mobBtn) mobBtn.className = 'flex-1 min-w-[90px] py-2 text-center text-slate-400';
+            });
+
+            const activeNav = document.getElementById(`nav-tab-${tabId.replace('tab-', '')}`);
+            const activeMob = document.getElementById(`mob-tab-${tabId.replace('tab-', '')}`);
+            if (activeNav) activeNav.classList.add('active-tab');
+            if (activeMob) activeMob.className = 'flex-1 min-w-[90px] py-2 text-center text-cyan-400 font-bold border-b-2 border-cyan-400';
+            
+            // Resize Canvas upon tab switch
+            if (tabId === 'tab-clock') initClockCanvases();
+            if (tabId === 'tab-cycle') drawCpuArchCanvas();
+        }
+
+        // SECTION 1: Clock Animation Logic
+        let isClockAnimRunning = true;
+        let clockAnimFrameId = null;
+        let clockFreqA = 1.0;
+        const clockFreqB = 3.0; // Fixed 3 GHz
+        let phaseA = 0, phaseB = 0;
+        let counterA = 0, counterB = 0;
+
+        function updateClockAnim() {
+            clockFreqA = parseFloat(document.getElementById('freq-slider-a').value);
+            document.getElementById('freq-val-a').textContent = clockFreqA.toFixed(1) + ' GHz';
+            document.getElementById('display-freq-a').textContent = clockFreqA.toFixed(1);
+            document.getElementById('display-period-a').textContent = (1 / clockFreqA).toFixed(2);
+        }
+
+        function toggleClockAnimation() {
+            isClockAnimRunning = !isClockAnimRunning;
+            const btnText = document.getElementById('text-toggle-clock');
+            const icon = document.getElementById('icon-toggle-clock');
+            if (isClockAnimRunning) {
+                btnText.textContent = '暫停動畫';
+                icon.className = 'fa-solid fa-pause';
+                animateClocks();
+            } else {
+                btnText.textContent = '播放動畫';
+                icon.className = 'fa-solid fa-play';
+                cancelAnimationFrame(clockAnimFrameId);
+            }
+        }
+
+        function resetClockCounters() {
+            counterA = 0;
+            counterB = 0;
+            document.getElementById('counter-a').textContent = '0';
+            document.getElementById('counter-b').textContent = '0';
+        }
+
+        function drawClockWaveform(canvasId, freq, phase, colorHex, counterVal) {
+            const canvas = document.getElementById(canvasId);
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            
+            canvas.width = canvas.parentElement.clientWidth;
+            canvas.height = 144;
+            const W = canvas.width;
+            const H = canvas.height;
+
+            ctx.clearRect(0, 0, W, H);
+
+            // Grid lines
+            ctx.strokeStyle = '#1e293b';
+            ctx.lineWidth = 1;
+            for(let x = 0; x < W; x += 40) {
+                ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke();
+            }
+
+            // Draw Square Clock Wave
+            ctx.strokeStyle = colorHex;
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+
+            const wavelength = 120 / freq;
+            const amplitude = 35;
+            const midY = H / 2 - 10;
+
+            for (let x = 0; x < W; x++) {
+                const wavePos = (x + phase) % wavelength;
+                const isHigh = wavePos < (wavelength / 2);
+                const y = isHigh ? (midY - amplitude) : (midY + amplitude);
+
+                if (x === 0) {
+                    ctx.moveTo(x, y);
+                } else {
+                    const prevWavePos = (x - 1 + phase) % wavelength;
+                    const prevIsHigh = prevWavePos < (wavelength / 2);
+                    if (isHigh !== prevIsHigh) {
+                        ctx.lineTo(x, isHigh ? (midY - amplitude) : (midY + amplitude));
+                    }
+                    ctx.lineTo(x, y);
+                }
+            }
+            ctx.stroke();
+
+            // Draw Instruction Data Packet moving along pipeline
+            const packetX = (phase * 2 * freq) % W;
+            ctx.fillStyle = colorHex;
+            ctx.shadowColor = colorHex;
+            ctx.shadowBlur = 10;
+            ctx.beginPath();
+            ctx.arc(packetX, H - 20, 8, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.shadowBlur = 0;
+
+            ctx.fillStyle = '#0f172a';
+            ctx.font = 'bold 9px Orbitron';
+            ctx.textAlign = 'center';
+            ctx.fillText('DATA', packetX, H - 17);
+        }
+
+        function animateClocks() {
+            if (!isClockAnimRunning) return;
+
+            phaseA += clockFreqA * 2;
+            phaseB += clockFreqB * 2;
+
+            if (Math.floor(phaseA / (120 / clockFreqA)) > counterA) {
+                counterA++;
+                document.getElementById('counter-a').textContent = counterA;
+            }
+            if (Math.floor(phaseB / (120 / clockFreqB)) > counterB) {
+                counterB++;
+                document.getElementById('counter-b').textContent = counterB;
+            }
+
+            drawClockWaveform('clockCanvasA', clockFreqA, phaseA, '#06b6d4', counterA);
+            drawClockWaveform('clockCanvasB', clockFreqB, phaseB, '#c084fc', counterB);
+
+            clockAnimFrameId = requestAnimationFrame(animateClocks);
+        }
+
+        function initClockCanvases() {
+            cancelAnimationFrame(clockAnimFrameId);
+            animateClocks();
+        }
+
+        // SECTION 3: Calculators & Practice Quiz Logic
+        function calculatePeriod() {
+            const f = parseFloat(document.getElementById('calc-freq-input').value);
+            if (isNaN(f) || f <= 0) return;
+            const periodNs = 1 / f;
+            document.getElementById('calc-period-result').textContent = `${periodNs.toFixed(4)} ns (奈秒)`;
+        }
+
+        function calculateMips() {
+            const f = parseFloat(document.getElementById('calc-mips-freq').value);
+            const cpi = parseFloat(document.getElementById('calc-mips-cpi').value);
+            if (isNaN(f) || isNaN(cpi) || cpi <= 0) return;
+
+            const mips = (f * 1000) / cpi;
+            document.getElementById('calc-mips-result').textContent = `${mips.toFixed(1)} MIPS`;
+        }
+
+        // Quiz Generator
+        let currentQuizAnswer = 0;
+        let currentQuizExplanation = '';
+
+        function generateNewQuiz() {
+            const quizTypes = ['period', 'mips', 'time'];
+            const selectedType = quizTypes[Math.floor(Math.random() * quizTypes.length)];
+            const quizContainer = document.getElementById('quiz-container');
+
+            if (selectedType === 'period') {
+                const freqs = [2.0, 2.5, 3.2, 4.0, 5.0];
+                const f = freqs[Math.floor(Math.random() * freqs.length)];
+                const ans = (1 / f).toFixed(3);
+                currentQuizAnswer = parseFloat(ans);
+                currentQuizExplanation = `解題步驟：\n1. 時脈週期 T = 1 / 時脈頻率 f\n2. T = 1 / ${f} GHz = ${ans} ns。`;
+
+                quizContainer.innerHTML = `
+                    <div class="space-y-3">
+                        <span class="px-2.5 py-1 rounded bg-cyan-950 text-cyan-400 border border-cyan-800 text-xs font-mono font-bold">題目類型：時脈週期計算</span>
+                        <p class="text-sm text-slate-200 font-bold">某 CPU 的時脈頻率為 <span class="text-cyan-400">${f} GHz</span>，請問其單個時脈週期（Clock Cycle Period）為多少 <strong>ns (奈秒)</strong>？</p>
+                        <div class="flex gap-2">
+                            <input id="quiz-user-input" type="number" step="0.001" placeholder="請輸入答案 (如 0.25)" class="bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-xs text-slate-100 code-font outline-none flex-1">
+                            <button onclick="checkQuizAnswer()" class="px-4 py-2 bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold rounded-xl text-xs transition">提交答案</button>
+                        </div>
+                        <div id="quiz-feedback" class="hidden text-xs p-3 rounded-xl"></div>
+                    </div>`;
+            } else if (selectedType === 'mips') {
+                const f = (Math.floor(Math.random() * 20) + 20) / 10;
+                const cpi = (Math.floor(Math.random() * 10) + 10) / 10;
+                const mips = Math.round((f * 1000) / cpi);
+                currentQuizAnswer = mips;
+                currentQuizExplanation = `解題步驟：\n1. 將時脈頻率換算為 MHz：${f} GHz = ${f * 1000} MHz\n2. MIPS = 時脈頻率 (MHz) / CPI = ${f * 1000} / ${cpi} = ${mips} MIPS。`;
+
+                quizContainer.innerHTML = `
+                    <div class="space-y-3">
+                        <span class="px-2.5 py-1 rounded bg-purple-950 text-purple-400 border border-purple-800 text-xs font-mono font-bold">題目類型：MIPS 效能換算</span>
+                        <p class="text-sm text-slate-200 font-bold">某處理器時脈為 <span class="text-purple-400">${f} GHz</span>，執行某一程式的平均 CPI 為 <span class="text-amber-400">${cpi}</span>，請問該 CPU 的運算效能約為多少 <strong>MIPS</strong>？（四捨五入取整數）</p>
+                        <div class="flex gap-2">
+                            <input id="quiz-user-input" type="number" placeholder="請輸入 MIPS 整數" class="bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-xs text-slate-100 code-font outline-none flex-1">
+                            <button onclick="checkQuizAnswer()" class="px-4 py-2 bg-purple-500 hover:bg-purple-400 text-slate-950 font-bold rounded-xl text-xs transition">提交答案</button>
+                        </div>
+                        <div id="quiz-feedback" class="hidden text-xs p-3 rounded-xl"></div>
+                    </div>`;
+            } else {
+                const ic = 100;
+                const cpi = 2.0;
+                const f = 4.0;
+                const time = (ic * cpi) / (f * 1000);
+                currentQuizAnswer = parseFloat(time.toFixed(3));
+                currentQuizExplanation = `解題步驟：\n1. 總時脈週期數 = 指令數 (100×10⁶) × CPI (2.0) = 200×10⁶ cycles\n2. 執行時間 = 總週期數 / 時脈頻率 (4.0×10⁹ Hz) = ${time} 秒。`;
+
+                quizContainer.innerHTML = `
+                    <div class="space-y-3">
+                        <span class="px-2.5 py-1 rounded bg-amber-950 text-amber-400 border border-amber-800 text-xs font-mono font-bold">題目類型：CPU 執行時間計算</span>
+                        <p class="text-sm text-slate-200 font-bold">某程式包含 <span class="text-emerald-400">100 百萬個指令 (100M)</span>，在 <span class="text-cyan-400">4.0 GHz</span> 的 CPU 上執行，平均 CPI 為 <span class="text-amber-400">2.0</span>，請問執行該程式總共花費多少 <strong>秒 (s)</strong>？</p>
+                        <div class="flex gap-2">
+                            <input id="quiz-user-input" type="number" step="0.001" placeholder="請輸入秒數 (例如 0.05)" class="bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-xs text-slate-100 code-font outline-none flex-1">
+                            <button onclick="checkQuizAnswer()" class="px-4 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-xl text-xs transition">提交答案</button>
+                        </div>
+                        <div id="quiz-feedback" class="hidden text-xs p-3 rounded-xl"></div>
+                    </div>`;
+            }
+        }
+
+        function checkQuizAnswer() {
+            const inputVal = parseFloat(document.getElementById('quiz-user-input').value);
+            const feedback = document.getElementById('quiz-feedback');
+            feedback.classList.remove('hidden', 'bg-emerald-950/80', 'bg-rose-950/80', 'border-emerald-600', 'border-rose-600');
+
+            if (isNaN(inputVal)) return;
+
+            const isCorrect = Math.abs(inputVal - currentQuizAnswer) < 0.05;
+            if (isCorrect) {
+                feedback.classList.add('bg-emerald-950/80', 'border', 'border-emerald-600', 'text-emerald-200');
+                feedback.innerHTML = `<strong>🎉 回答正確！</strong><br><pre class="font-mono mt-1 text-[11px]">${currentQuizExplanation}</pre>`;
+            } else {
+                feedback.classList.add('bg-rose-950/80', 'border', 'border-rose-600', 'text-rose-200');
+                feedback.innerHTML = `<strong>❌ 答案不正確！</strong> (正確答案為: ${currentQuizAnswer})<br><pre class="font-mono mt-1 text-[11px]">${currentQuizExplanation}</pre>`;
+            }
+        }
+
+        // SECTION 4: Enhanced 32-Bit Machine Cycle Simulation
+        let currentCyclePhase = 0; // 0: Fetch, 1: Decode, 2: Execute, 3: Writeback
+        let isAutoCycleRunning = false;
+        let autoCycleTimer = null;
+        let pcAddress = 0x0004;
+
+        // Supported instructions data dictionary
+        const INSTRUCTION_MAP = {
+            ADD: {
+                opcodeBits: "000000",
+                rsBits: "00001", // R1
+                rtBits: "00010", // R2
+                rdBits: "00011", // R3
+                shamtBits: "00000",
+                functBits: "100000",
+                hex: "0x00221820",
+                name: "ADD (加法)",
+                operand1Name: "R1",
+                operand1Val: 5,
+                operand2Name: "R2",
+                operand2Val: 12,
+                destReg: "R3",
+                operatorSymbol: "+",
+                calcResult: 17,
+                resultBin: "00000000000000000000000000010001"
+            },
+            SUB: {
+                opcodeBits: "000000",
+                rsBits: "00001", // R1
+                rtBits: "00010", // R2
+                rdBits: "00011", // R3
+                shamtBits: "00000",
+                functBits: "100010",
+                hex: "0x00221822",
+                name: "SUB (減法)",
+                operand1Name: "R1",
+                operand1Val: 20,
+                operand2Name: "R2",
+                operand2Val: 8,
+                destReg: "R3",
+                operatorSymbol: "-",
+                calcResult: 12,
+                resultBin: "00000000000000000000000000001100"
+            },
+            MUL: {
+                opcodeBits: "011100",
+                rsBits: "00001", // R1
+                rtBits: "00010", // R2
+                rdBits: "00011", // R3
+                shamtBits: "00000",
+                functBits: "000010",
+                hex: "0x70221802",
+                name: "MUL (乘法)",
+                operand1Name: "R1",
+                operand1Val: 4,
+                operand2Name: "R2",
+                operand2Val: 6,
+                destReg: "R3",
+                operatorSymbol: "×",
+                calcResult: 24,
+                resultBin: "00000000000000000000000000011000"
+            }
+        };
+
+        let currentInstKey = 'ADD';
+
+        function changeInstruction() {
+            currentInstKey = document.getElementById('select-instruction').value;
+            currentCyclePhase = 0;
+            updateMachineCycleUI();
+        }
+
+        function stepMachineCycle() {
+            currentCyclePhase = (currentCyclePhase + 1) % 4;
+            if (currentCyclePhase === 0) {
+                pcAddress += 4;
+                document.getElementById('val-pc').textContent = '0x' + pcAddress.toString(16).padStart(4, '0');
+            }
+            updateMachineCycleUI();
+        }
+
+        function prevStepMachineCycle() {
+            currentCyclePhase = (currentCyclePhase + 3) % 4;
+            updateMachineCycleUI();
+        }
+
+        function toggleAutoMachineCycle() {
+            isAutoCycleRunning = !isAutoCycleRunning;
+            const btnText = document.getElementById('text-auto-cycle');
+            const icon = document.getElementById('icon-auto-cycle');
+
+            if (isAutoCycleRunning) {
+                btnText.textContent = '暫停';
+                icon.className = 'fa-solid fa-pause';
+                autoCycleTimer = setInterval(stepMachineCycle, 2500);
+            } else {
+                btnText.textContent = '自動播放';
+                icon.className = 'fa-solid fa-play';
+                clearInterval(autoCycleTimer);
+            }
+        }
+
+        function updateMachineCycleUI() {
+            const inst = INSTRUCTION_MAP[currentInstKey];
+            document.getElementById('val-ir-hex').textContent = inst.hex;
+            document.getElementById('cycle-step-num').textContent = currentCyclePhase + 1;
+
+            const stepNames = [
+                { name: "1. 擷取 (FETCH)", color: "#38bdf8", cardId: "step-card-fetch" },
+                { name: "2. 解碼 (DECODE)", color: "#818cf8", cardId: "step-card-decode" },
+                { name: "3. 執行 (EXECUTE)", color: "#fbbf24", cardId: "step-card-execute" },
+                { name: "4. 儲存 (STORE)", color: "#34d399", cardId: "step-card-writeback" }
+            ];
+
+            const curStep = stepNames[currentCyclePhase];
+            document.getElementById('cycle-phase-title').textContent = curStep.name;
+            document.getElementById('cycle-phase-title').style.color = curStep.color;
+
+            // Highlight Step Cards
+            stepNames.forEach((s, idx) => {
+                const card = document.getElementById(s.cardId);
+                if (idx === currentCyclePhase) {
+                    card.classList.add('ring-2', 'ring-cyan-400', 'bg-slate-900');
+                } else {
+                    card.classList.remove('ring-2', 'ring-cyan-400', 'bg-slate-900');
+                }
+            });
+
+            // Detailed Logs for Each Step
+            const logBox = document.getElementById('cycle-log-detail');
+            const fullBin = `${inst.opcodeBits} ${inst.rsBits} ${inst.rtBits} ${inst.rdBits} ${inst.shamtBits} ${inst.functBits}`;
+
+            if (currentCyclePhase === 0) {
+                logBox.innerHTML = `<span class="text-cyan-400 font-bold">[1. 擷取 Fetch]</span> 從主記憶體位址 <span class="code-font text-amber-300">0x${pcAddress.toString(16).padStart(4, '0')}</span> 讀取 32 位元二進位指令碼 <span class="code-font text-cyan-300">${fullBin}</span> 並存入指令暫存器 (IR)。`;
+            } else if (currentCyclePhase === 1) {
+                logBox.innerHTML = `<span class="text-indigo-400 font-bold">[2. 解碼 Decode]</span> 控制單元 (CU) 匡選二進位位元：Opcode <span class="code-font text-rose-400">[${inst.opcodeBits}]</span> 與 Funct <span class="code-font text-rose-400">[${inst.functBits}]</span> 辨識為 <strong class="text-purple-300">${inst.name}</strong> 指令！解讀暫存器 <span class="code-font text-amber-300">Rs (${inst.operand1Name}=${inst.operand1Val})</span>、<span class="code-font text-amber-300">Rt (${inst.operand2Name}=${inst.operand2Val})</span> 與目標 <span class="code-font text-emerald-300">Rd (${inst.destReg})</span>。`;
+            } else if (currentCyclePhase === 2) {
+                logBox.innerHTML = `<span class="text-amber-400 font-bold">[3. 執行 Execute]</span> 算術邏輯單元 (ALU) 接收解碼數據，進行算術運算：<span class="code-font text-amber-300 font-bold">${inst.operand1Val} ${inst.operatorSymbol} ${inst.operand2Val} = ${inst.calcResult}</span> (二進位: <span class="code-font text-cyan-300">${inst.resultBin.slice(-8)}</span>)。`;
+            } else {
+                logBox.innerHTML = `<span class="text-emerald-400 font-bold">[4. 儲存 Store]</span> 將 ALU 計算出之結果 <span class="code-font text-emerald-300 font-bold">${inst.calcResult}</span> 寫回暫存器 <span class="code-font text-amber-300">${inst.destReg}</span>（或寫回主記憶體中），完成本指令機械週期！`;
+            }
+
+            drawCpuArchCanvas();
+        }
+
+        function drawCpuArchCanvas() {
+            const canvas = document.getElementById('cpuArchCanvas');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+
+            canvas.width = canvas.parentElement.clientWidth;
+            canvas.height = 380;
+            const W = canvas.width;
+            const H = canvas.height;
+
+            const inst = INSTRUCTION_MAP[currentInstKey];
+
+            ctx.clearRect(0, 0, W, H);
+
+            // Background Grid Lines
+            ctx.strokeStyle = '#1e293b';
+            ctx.lineWidth = 1;
+            for(let x = 0; x < W; x += 40) {
+                ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke();
+            }
+
+            // Top Banner: 32-Bit Binary Stream Display (Instruction Register IR)
+            const irX = 20, irY = 15, irW = W - 40, irH = 75;
+            ctx.fillStyle = '#090d16';
+            ctx.strokeStyle = '#334155';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.roundRect(irX, irY, irW, irH, 10);
+            ctx.fill(); ctx.stroke();
+
+            // Label for IR
+            ctx.fillStyle = '#94a3b8';
+            ctx.font = 'bold 11px Orbitron';
+            ctx.textAlign = 'left';
+            ctx.fillText('32-BIT INSTRUCTION REGISTER (IR) - BINARY DECODER', irX + 15, irY + 22);
+
+            // Draw 32 Bits Binary Strings in 6 groups: [Opcode 6b] [Rs 5b] [Rt 5b] [Rd 5b] [Shamt 5b] [Funct 6b]
+            const groups = [
+                { bits: inst.opcodeBits, label: "Opcode", color: "#f43f5e" },
+                { bits: inst.rsBits, label: `Rs (${inst.operand1Name})`, color: "#f59e0b" },
+                { bits: inst.rtBits, label: `Rt (${inst.operand2Name})`, color: "#38bdf8" },
+                { bits: inst.rdBits, label: `Rd (${inst.destReg})`, color: "#10b981" },
+                { bits: inst.shamtBits, label: "Shamt", color: "#64748b" },
+                { bits: inst.functBits, label: "Funct", color: "#a855f7" }
+            ];
+
+            let groupStartX = irX + 20;
+            const bitBoxW = Math.min(18, (irW - 120) / 32);
+
+            groups.forEach((g, gIdx) => {
+                const groupWidth = g.bits.length * bitBoxW;
+
+                // Step 2 (Decode) Highlight Box around specific binary fields
+                if (currentCyclePhase === 1) {
+                    if (g.label.includes("Opcode") || g.label.includes("Funct")) {
+                        ctx.fillStyle = "rgba(244, 63, 94, 0.25)";
+                        ctx.strokeStyle = "#f43f5e";
+                        ctx.lineWidth = 2;
+                        ctx.beginPath();
+                        ctx.roundRect(groupStartX - 3, irY + 32, groupWidth + 6, 32, 6);
+                        ctx.fill(); ctx.stroke();
+                    } else if (g.label.includes("Rs") || g.label.includes("Rt") || g.label.includes("Rd")) {
+                        ctx.fillStyle = "rgba(245, 158, 11, 0.2)";
+                        ctx.strokeStyle = "#f59e0b";
+                        ctx.lineWidth = 1.5;
+                        ctx.beginPath();
+                        ctx.roundRect(groupStartX - 3, irY + 32, groupWidth + 6, 32, 6);
+                        ctx.fill(); ctx.stroke();
+                    }
+                }
+
+                // Render Binary Text Bits
+                for (let b = 0; b < g.bits.length; b++) {
+                    const x = groupStartX + b * bitBoxW;
+                    ctx.fillStyle = '#0f172a';
+                    ctx.strokeStyle = g.color;
+                    ctx.lineWidth = 1;
+                    ctx.beginPath();
+                    ctx.roundRect(x, irY + 36, bitBoxW - 2, 24, 4);
+                    ctx.fill(); ctx.stroke();
+
+                    ctx.fillStyle = '#f8fafc';
+                    ctx.font = 'bold 11px Fira Code';
+                    ctx.textAlign = 'center';
+                    ctx.fillText(g.bits[b], x + (bitBoxW - 2) / 2, irY + 52);
+                }
+
+                // Subtitle Label below bit group
+                ctx.fillStyle = g.color;
+                ctx.font = '9px Fira Code';
+                ctx.textAlign = 'center';
+                ctx.fillText(g.label, groupStartX + groupWidth / 2, irY + 70);
+
+                groupStartX += groupWidth + 12; // Gap between field groups
+            });
+
+            // Main Core Hardware Modules (Below Instruction Bar)
+            const mainY = 110;
+            const modules = {
+                ram: { x: 20, y: mainY, w: 110, h: 250, label: "主記憶體 (RAM)", color: "#38bdf8" },
+                cu: { x: 160, y: mainY, w: 160, h: 115, label: "控制單元 (CU)", color: "#818cf8" },
+                alu: { x: 360, y: mainY, w: 180, h: 115, label: "ALU 算術邏輯單元", color: "#f59e0b" },
+                reg: { x: 160, y: mainY + 135, w: 380, h: 115, label: "暫存器檔案 (Register File)", color: "#10b981" }
+            };
+
+            // Draw Modules
+            Object.keys(modules).forEach(key => {
+                const m = modules[key];
+                ctx.fillStyle = '#0f172a';
+                ctx.strokeStyle = m.color;
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.roundRect(m.x, m.y, m.w, m.h, 10);
+                ctx.fill(); ctx.stroke();
+
+                ctx.fillStyle = m.color;
+                ctx.font = 'bold 12px Orbitron';
+                ctx.textAlign = 'center';
+                ctx.fillText(m.label, m.x + m.w / 2, m.y + 22);
+            });
+
+            // Render Inner Module Contents
+            // 1. RAM Contents
+            ctx.fillStyle = '#64748b'; ctx.font = '10px Fira Code'; ctx.textAlign = 'left';
+            ctx.fillText(`[0x0004]: ${inst.hex}`, modules.ram.x + 8, modules.ram.y + 50);
+            ctx.fillText(`[0x0008]: 0x8C120000`, modules.ram.x + 8, modules.ram.y + 75);
+            ctx.fillText(`[0x000C]: 0xAC120004`, modules.ram.x + 8, modules.ram.y + 100);
+
+            // 2. Control Unit CU Status
+            ctx.fillStyle = '#e2e8f0'; ctx.font = '11px Noto Sans TC'; ctx.textAlign = 'center';
+            if (currentCyclePhase === 1) {
+                ctx.fillStyle = '#a855f7';
+                ctx.fillText(`解碼結果: ${inst.name}`, modules.cu.x + modules.cu.w / 2, modules.cu.y + 55);
+                ctx.fillStyle = '#cbd5e1';
+                ctx.fillText(`控制訊號: ALUSrc=0, RegWrite=1`, modules.cu.x + modules.cu.w / 2, modules.cu.y + 80);
+            } else {
+                ctx.fillStyle = '#64748b';
+                ctx.fillText(`待命指令控制訊號...`, modules.cu.x + modules.cu.w / 2, modules.cu.y + 65);
+            }
+
+            // 3. ALU Calculation Visualization
+            if (currentCyclePhase === 2) {
+                ctx.fillStyle = '#fbbf24'; ctx.font = 'bold 16px Fira Code'; ctx.textAlign = 'center';
+                ctx.fillText(`${inst.operand1Val} ${inst.operatorSymbol} ${inst.operand2Val} = ${inst.calcResult}`, modules.alu.x + modules.alu.w / 2, modules.alu.y + 55);
+                ctx.fillStyle = '#38bdf8'; ctx.font = '10px Fira Code';
+                ctx.fillText(`ALUOut: ${inst.calcResult}`, modules.alu.x + modules.alu.w / 2, modules.alu.y + 82);
+            } else {
+                ctx.fillStyle = '#64748b'; ctx.font = '11px Noto Sans TC'; ctx.textAlign = 'center';
+                ctx.fillText(`ALU 算術邏輯電路閒置中`, modules.alu.x + modules.alu.w / 2, modules.alu.y + 65);
+            }
+
+            // 4. Register File Contents
+            ctx.font = '11px Fira Code'; ctx.textAlign = 'left';
+            ctx.fillStyle = '#e2e8f0';
+            ctx.fillText(`R1 (${inst.operand1Name}): ${inst.operand1Val}`, modules.reg.x + 20, modules.reg.y + 50);
+            ctx.fillText(`R2 (${inst.operand2Name}): ${inst.operand2Val}`, modules.reg.x + 140, modules.reg.y + 50);
+
+            // Highlight Destination Register R3 in Step 4 (Store)
+            if (currentCyclePhase === 3) {
+                ctx.fillStyle = '#34d399';
+                ctx.font = 'bold 12px Fira Code';
+                ctx.fillText(`R3 (${inst.destReg}): ${inst.calcResult}  [已更新!]`, modules.reg.x + 240, modules.reg.y + 50);
+
+                ctx.strokeStyle = '#34d399'; ctx.lineWidth = 2;
+                ctx.strokeRect(modules.reg.x + 235, modules.reg.y + 35, 135, 22);
+            } else {
+                ctx.fillStyle = '#94a3b8';
+                ctx.fillText(`R3 (${inst.destReg}): 0`, modules.reg.x + 240, modules.reg.y + 50);
+            }
+
+            // Animated Data Transfer Lines / Arrows depending on Phase
+            ctx.lineWidth = 3;
+            ctx.setLineDash([6, 4]);
+
+            if (currentCyclePhase === 0) { // Step 1: FETCH
+                // Memory -> IR / Instruction Stream
+                ctx.strokeStyle = '#38bdf8';
+                ctx.beginPath();
+                ctx.moveTo(modules.ram.x + modules.ram.w, mainY + 40);
+                ctx.lineTo(irX + 50, mainY + 40);
+                ctx.lineTo(irX + 50, irY + irH);
+                ctx.stroke();
+            } else if (currentCyclePhase === 1) { // Step 2: DECODE
+                // IR -> CU
+                ctx.strokeStyle = '#818cf8';
+                ctx.beginPath();
+                ctx.moveTo(irX + 150, irY + irH);
+                ctx.lineTo(modules.cu.x + 80, modules.cu.y);
+                ctx.stroke();
+
+                // CU -> Register File (Read R1, R2)
+                ctx.strokeStyle = '#f59e0b';
+                ctx.beginPath();
+                ctx.moveTo(modules.cu.x + 80, modules.cu.y + modules.cu.h);
+                ctx.lineTo(modules.reg.x + 80, modules.reg.y);
+                ctx.stroke();
+            } else if (currentCyclePhase === 2) { // Step 3: EXECUTE
+                // Registers -> ALU
+                ctx.strokeStyle = '#fbbf24';
+                ctx.beginPath();
+                ctx.moveTo(modules.reg.x + 220, modules.reg.y);
+                ctx.lineTo(modules.alu.x + 90, modules.alu.y + modules.alu.h);
+                ctx.stroke();
+            } else if (currentCyclePhase === 3) { // Step 4: STORE / WRITEBACK
+                // ALU -> Registers (R3) or Memory
+                ctx.strokeStyle = '#34d399';
+                ctx.beginPath();
+                ctx.moveTo(modules.alu.x + 90, modules.alu.y + modules.alu.h);
+                ctx.lineTo(modules.reg.x + 300, modules.reg.y);
+                ctx.stroke();
+            }
+
+            ctx.setLineDash([]); // Reset line dash
+        }
+
+        window.onload = function() {
+            initClockCanvases();
+            generateNewQuiz();
+            updateMachineCycleUI();
+        };
+
+        window.onresize = function() {
+            if (document.getElementById('clockCanvasA')) {
+                drawClockWaveform('clockCanvasA', clockFreqA, phaseA, '#06b6d4', counterA);
+                drawClockWaveform('clockCanvasB', clockFreqB, phaseB, '#c084fc', counterB);
+            }
+            drawCpuArchCanvas();
+        };
+    </script>
+</body>
+</html>
