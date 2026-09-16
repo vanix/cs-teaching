@@ -887,87 +887,108 @@
         function powerOnMotherboard() {
             const installedCount = PARTS.filter(p => p.installedIn !== null).length;
 
-            // Q-LED Diagnostic Sequence
+            // Q-LED Diagnostic Sequence Elements
             const ledCpu = document.getElementById('led-cpu');
             const ledDram = document.getElementById('led-dram');
             const ledVga = document.getElementById('led-vga');
             const ledBoot = document.getElementById('led-boot');
             const powerStatus = document.getElementById('header-power-status');
 
-            // Reset LEDs
-            ledCpu.className = 'w-2.5 h-2.5 rounded-full bg-slate-800 transition-colors';
-            ledDram.className = 'w-2.5 h-2.5 rounded-full bg-slate-800 transition-colors';
-            ledVga.className = 'w-2.5 h-2.5 rounded-full bg-slate-800 transition-colors';
-            ledBoot.className = 'w-2.5 h-2.5 rounded-full bg-slate-800 transition-colors';
-
-            powerStatus.innerHTML = `<span class="w-2 h-2 rounded-full bg-amber-400 animate-ping"></span> 自檢中 (POST...)`;
+            // Reset LED states
+            ledCpu.className = 'w-2.5 h-2.5 rounded-full bg-slate-800';
+            ledDram.className = 'w-2.5 h-2.5 rounded-full bg-slate-800';
+            ledVga.className = 'w-2.5 h-2.5 rounded-full bg-slate-800';
+            ledBoot.className = 'w-2.5 h-2.5 rounded-full bg-slate-800';
 
             // Step 1: Check CPU
+            const hasCpu = PARTS.find(p => p.type === 'cpu').installedIn !== null;
+            if (!hasCpu) {
+                ledCpu.className = 'w-2.5 h-2.5 rounded-full bg-amber-500 shadow-[0_0_10px_#f59e0b]';
+                powerStatus.innerHTML = `<span class="w-2 h-2 rounded-full bg-amber-500"></span> 錯誤 (CPU 缺失)`;
+                playSound('error');
+                showToast('❌ 開機失敗：未檢測到 CPU 處理器！', 'error');
+                return;
+            }
+            ledCpu.className = 'w-2.5 h-2.5 rounded-full bg-emerald-500';
+
+            // Step 2: Check DRAM
             setTimeout(() => {
-                const hasCpu = PARTS.find(p => p.type === 'cpu').installedIn !== null;
-                if (!hasCpu) {
-                    ledCpu.className = 'w-2.5 h-2.5 rounded-full bg-rose-500 shadow-[0_0_10px_#f43f5e]';
-                    powerStatus.innerHTML = `<span class="w-2 h-2 rounded-full bg-rose-500"></span> 錯誤 (CPU 缺失)`;
+                const hasDram = PARTS.filter(p => p.type === 'ram' && p.installedIn !== null).length > 0;
+                if (!hasDram) {
+                    ledDram.className = 'w-2.5 h-2.5 rounded-full bg-amber-500 shadow-[0_0_10px_#f59e0b]';
+                    powerStatus.innerHTML = `<span class="w-2 h-2 rounded-full bg-amber-500"></span> 錯誤 (DRAM 缺失)`;
                     playSound('error');
-                    showToast('❌ 開機失敗：尚未安裝 CPU 處理器！', 'error');
+                    showToast('❌ 開機失敗：未檢測到 RAM 記憶體！', 'error');
                     return;
                 }
-                ledCpu.className = 'w-2.5 h-2.5 rounded-full bg-emerald-500';
+                ledDram.className = 'w-2.5 h-2.5 rounded-full bg-emerald-500';
 
-                // Step 2: Check DRAM
+                // Step 3: Check VGA (Intel i9-14900K 有內建顯示晶片 iGPU，因此無獨立顯卡亦可開機)
                 setTimeout(() => {
-                    const hasDram = PARTS.filter(p => p.type === 'ram' && p.installedIn !== null).length > 0;
-                    if (!hasDram) {
-                        ledDram.className = 'w-2.5 h-2.5 rounded-full bg-amber-500 shadow-[0_0_10px_#f59e0b]';
-                        powerStatus.innerHTML = `<span class="w-2 h-2 rounded-full bg-amber-500"></span> 錯誤 (DRAM 缺失)`;
-                        playSound('error');
-                        showToast('❌ 開機失敗：未檢測到 RAM 記憶體！', 'error');
-                        return;
-                    }
-                    ledDram.className = 'w-2.5 h-2.5 rounded-full bg-emerald-500';
+                    const hasGpu = PARTS.find(p => p.type === 'gpu').installedIn !== null;
+                    ledVga.className = 'w-2.5 h-2.5 rounded-full bg-emerald-500';
 
-                    // Step 3: Check VGA
+                    // Step 4: Check Power Supply & Storage
                     setTimeout(() => {
-                        const hasGpu = PARTS.find(p => p.type === 'gpu').installedIn !== null;
-                        if (!hasGpu) {
-                            ledVga.className = 'w-2.5 h-2.5 rounded-full bg-white shadow-[0_0_10px_#ffffff]';
-                            powerStatus.innerHTML = `<span class="w-2 h-2 rounded-full bg-white"></span> 錯誤 (VGA 缺失)`;
+                        const hasPsu = PARTS.find(p => p.type === 'psu').installedIn !== null;
+                        if (!hasPsu) {
+                            ledBoot.className = 'w-2.5 h-2.5 rounded-full bg-amber-500';
+                            powerStatus.innerHTML = `<span class="w-2 h-2 rounded-full bg-amber-500"></span> 錯誤 (未供電)`;
                             playSound('error');
-                            showToast('❌ 開機失敗：未安裝 獨立顯示卡！', 'error');
+                            showToast('❌ 開機失敗：請接上 24-Pin ATX 主電源線！', 'error');
                             return;
                         }
-                        ledVga.className = 'w-2.5 h-2.5 rounded-full bg-emerald-500';
 
-                        // Step 4: Check Power Supply & Boot
-                        setTimeout(() => {
-                            const hasPsu = PARTS.find(p => p.type === 'psu').installedIn !== null;
-                            if (!hasPsu) {
-                                ledBoot.className = 'w-2.5 h-2.5 rounded-full bg-amber-500';
-                                powerStatus.innerHTML = `<span class="w-2 h-2 rounded-full bg-amber-500"></span> 錯誤 (未供電)`;
-                                playSound('error');
-                                showToast('❌ 開機失敗：請接上 24-Pin ATX 主電源線！', 'error');
-                                return;
-                            }
+                        // 檢查是否有安裝開機儲存裝置 (M.2 NVMe SSD 或 SATA SSD)
+                        const hasM2 = PARTS.find(p => p.type === 'm2').installedIn !== null;
+                        const hasSataSsd = PARTS.find(p => p.id === 'part-sata').installedIn !== null;
+                        const hasStorage = hasM2 || hasSataSsd;
+
+                        if (!hasStorage) {
+                            // 未安裝硬碟時仍可進入 BIOS，但亮起 BOOT 警告燈
+                            ledBoot.className = 'w-2.5 h-2.5 rounded-full bg-amber-500 shadow-[0_0_10px_#f59e0b]';
+                            powerStatus.innerHTML = `<span class="w-2 h-2 rounded-full bg-amber-500"></span> 警告：未安裝硬碟 (進 BIOS)`;
+                            showToast('⚠️ 未偵測到儲存硬碟：將進入 BIOS 設定畫面', 'warning');
+                        } else {
                             ledBoot.className = 'w-2.5 h-2.5 rounded-full bg-emerald-500';
-
-                            // All Passed! Boot BIOS Modal
                             powerStatus.innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-400"></span> 開機成功 (System Ready)`;
-                            playSound('beep');
-                            openBiosModal(installedCount);
+                        }
 
-                        }, 400);
+                        playSound('beep');
+                        openBiosModal(installedCount, hasGpu, hasStorage, hasM2, hasSataSsd);
+
                     }, 400);
                 }, 400);
             }, 400);
         }
 
         // 開啟 BIOS 模擬彈窗
-        function openBiosModal(installedCount) {
+        function openBiosModal(installedCount, hasGpu, hasStorage, hasM2, hasSataSsd) {
             const biosModal = document.getElementById('bios-modal');
             const logContainer = document.getElementById('bios-log-container');
             biosModal.classList.remove('hidden');
 
             logContainer.innerHTML = '';
+
+            // 顯示晶片資訊判定
+            const gpuInfo = hasGpu 
+                ? 'Graphics Card: NVIDIA GeForce RTX 4090 (24576 MB GDDR6X)' 
+                : 'Graphics Output: Intel(R) UHD Graphics 770 (Integrated iGPU)';
+
+            // 儲存硬碟判定
+            let storageInfo = 'Detected Storage: NONE';
+            if (hasM2 && hasSataSsd) {
+                storageInfo = 'Detected Storage: M.2 NVMe SSD 2TB (PCIe 5.0) + 2.5" SATA SSD';
+            } else if (hasM2) {
+                storageInfo = 'Detected Storage: M.2 NVMe SSD 2TB (PCIe 5.0 x4)';
+            } else if (hasSataSsd) {
+                storageInfo = 'Detected Storage: 2.5" SATA SSD (SATA 6Gb/s)';
+            }
+
+            // 開機引導結果判定
+            const bootResult = hasStorage
+                ? 'SUCCESS: Booting into Windows 11 Pro Operating System...'
+                : 'WARNING: No bootable media found! System halted at UEFI BIOS Setup Utility.';
 
             const logs = [
                 'ASUSTeK COMPUTER INC. ROG STRIX Z790-E GAMING WIFI BIOS Rev 1801',
@@ -975,20 +996,22 @@
                 'Speed: 5800MHz  Count: 24 Cores (8P + 16E)',
                 'DRAM Physical Memory: 64 GB DDR5 7200MHz Dual Channel OK',
                 'USB Devices Total: 1 Keyboard, 1 Mouse, 0 Hub',
-                'Detected Storage: M.2 NVMe SSD 2TB (PCIe 5.0 x4) - HEALTH 100%',
-                'SATA Devices: 1x SATA SSD, 1x Optical Disc Drive (BD-RE)',
-                'Graphics Card: NVIDIA GeForce RTX 4090 (24576 MB GDDR6X)',
+                gpuInfo,
+                storageInfo,
                 'Audio Output: High Definition Audio Codec OK',
                 'Network: Wi-Fi 7 Wireless Network Controller OK',
                 `Components Verification: [ ${installedCount} / 10 Installed ]`,
-                'POST Check Complete. No errors found.',
-                'SUCCESS: Booting into Windows 11 Pro Operating System...'
+                'POST Check Complete.',
+                bootResult
             ];
 
             logs.forEach((line, index) => {
                 setTimeout(() => {
                     const p = document.createElement('p');
                     p.textContent = `> ${line}`;
+                    if (line.includes('WARNING: No bootable media found!')) {
+                        p.className = 'text-rose-500 font-bold animate-pulse';
+                    }
                     logContainer.appendChild(p);
                     logContainer.scrollTop = logContainer.scrollHeight;
                 }, index * 120);

@@ -1,0 +1,1237 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>字體設計與向量/點陣圖互動學習工坊</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;900&family=Noto+Serif+TC:wght@400;700&family=Space+Mono:wght@400;700&family=Dela+Gothic+One&family=M+PLUS+Rounded+1c:wght@800;900&display=swap" rel="stylesheet">
+    
+    <style>
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            scroll-behavior: smooth;
+        }
+        .font-serif-tc { font-family: 'Noto Serif TC', serif; }
+        .font-mono-code { font-family: 'Space Mono', monospace; }
+        
+        /* 粗線體視覺重擊模擬樣式 */
+        .tsuhsianti-font {
+            font-family: 'TsuhsiantiCustom', 'Dela Gothic One', 'M PLUS Rounded 1c', 'Noto Sans TC', sans-serif;
+            font-weight: 900;
+            -webkit-text-stroke: 1.5px #78350f;
+            text-shadow: 2px 2px 0px #000, 3px 3px 8px rgba(245, 158, 11, 0.4);
+            letter-spacing: 0.04em;
+        }
+
+        /* Grid background for preview boxes */
+        .bg-grid-pattern {
+            background-image: radial-gradient(#cbd5e1 1px, transparent 1px);
+            background-size: 16px 16px;
+        }
+        .bg-dark-grid {
+            background-image: radial-gradient(#334155 1px, transparent 1px);
+            background-size: 16px 16px;
+        }
+
+        /* Custom scrollbars */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #94a3b8;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #64748b;
+        }
+
+        /* Pixelated rendering for bitmap canvas zoom */
+        .pixelated {
+            image-rendering: pixelated;
+            image-rendering: -moz-crisp-edges;
+            image-rendering: crisp-edges;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col">
+
+    <!-- 頂部導覽列 -->
+    <header class="sticky top-0 z-50 bg-slate-900/95 backdrop-blur text-white shadow-lg border-b border-slate-800">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <a href="index.html" class="text-xs text-indigo-300 hover:text-indigo-200 transition flex items-center gap-1">
+                    ← 回到首頁
+                </a>
+                <div class="w-9 h-9 bg-indigo-600 rounded-lg flex items-center justify-center font-bold text-xl text-white shadow-md">
+                    字
+                </div>
+                <div>
+                    <h1 class="font-bold text-lg leading-tight">字體設計與圖像原理學習網</h1>
+                    <p class="text-xs text-indigo-300">Typography & Vector vs Bitmap Workshop</p>
+                </div>
+            </div>
+            
+            <nav class="hidden md:flex space-x-1 lg:space-x-2 text-sm font-medium">
+                <a href="#anatomy" class="px-3 py-2 rounded-md hover:bg-slate-800 hover:text-indigo-400 transition">字體解剖學</a>
+                <a href="#bitmap-vs-vector" class="px-3 py-2 rounded-md hover:bg-slate-800 hover:text-indigo-400 transition">點陣 vs 向量</a>
+                <a href="#workshop" class="px-3 py-2 rounded-md bg-indigo-600/30 text-indigo-300 border border-indigo-500/30 hover:bg-indigo-600 hover:text-white transition">字體設計工坊</a>
+                <a href="#type-lab" class="px-3 py-2 rounded-md hover:bg-slate-800 hover:text-indigo-400 transition">排版實驗室</a>
+                <a href="#quiz" class="px-3 py-2 rounded-md hover:bg-slate-800 hover:text-indigo-400 transition">觀念小測驗</a>
+                <a href="#tsuhsianti" class="px-3 py-2 rounded-md bg-amber-500/20 text-amber-300 border border-amber-500/30 hover:bg-amber-600 hover:text-white transition">🔥 粗線體</a>
+            </nav>
+        </div>
+    </header>
+
+    <!-- 主內容區 -->
+    <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-16">
+
+        <!-- Hero Section -->
+        <section class="bg-gradient-to-r from-indigo-900 via-slate-900 to-indigo-950 text-white rounded-3xl p-8 md:p-12 shadow-2xl relative overflow-hidden border border-indigo-500/20">
+            <div class="absolute -right-10 -bottom-10 opacity-10 text-[18rem] font-black font-serif-tc select-none pointer-events-none">
+                永
+            </div>
+            <div class="max-w-3xl relative z-10 space-y-4">
+                <span class="inline-block px-3 py-1 bg-indigo-500/20 border border-indigo-400/30 text-indigo-300 text-xs font-semibold rounded-full">
+                    資訊科技與視覺設計跨領域課程
+                </span>
+                <h2 class="text-3xl sm:text-5xl font-black tracking-tight leading-tight">
+                    透過字體，<br><span class="text-indigo-400">認識點陣圖跟向量圖</span>
+                </h2>
+                <p class="text-slate-300 text-base md:text-lg leading-relaxed">
+                    字體不只是傳達文字的工具，更是藝術與資訊科技的結晶。透過這個互動網頁，你可以親手操作點陣像素與向量控制點，了解圖像放大不失真的秘密！
+                </p>
+                <div class="pt-2 flex flex-wrap gap-4">
+                    <a href="#workshop" class="px-6 py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl shadow-lg hover:shadow-indigo-500/30 transition transform hover:-translate-y-0.5">
+                        🎨 開始設計我的字體
+                    </a>
+                    <a href="#bitmap-vs-vector" class="px-6 py-3 bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold rounded-xl border border-slate-700 transition">
+                        🔍 點陣與向量放大實驗
+                    </a>
+                </div>
+            </div>
+        </section>
+
+        <!-- 單元一：字體解剖學 -->
+        <section id="anatomy" class="scroll-mt-20 space-y-6">
+            <div class="border-l-4 border-indigo-600 pl-4">
+                <h2 class="text-2xl font-bold text-slate-900">Module 01: 字體解剖學 (Typography Anatomy)</h2>
+                <p class="text-slate-600 text-sm">認識構成英文字體與中文字體結構的核心結構線條與組件名稱。</p>
+            </div>
+
+            <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 grid grid-cols-1 lg:grid-cols-3 gap-8 items-center">
+                <div class="lg:col-span-2 bg-slate-900 rounded-xl p-6 relative overflow-hidden text-white flex flex-col items-center justify-center min-h-[280px]">
+                    <div class="text-xs text-slate-400 absolute top-3 left-4">點擊下方圖中的高亮點以閱讀術語說明</div>
+                    
+                    <!-- SVG Interactive Font Anatomy Diagram -->
+                    <svg viewBox="0 0 600 220" class="w-full max-w-xl h-auto select-none">
+                        <!-- Reference Lines -->
+                        <line x1="20" y1="30" x2="580" y2="30" stroke="#f43f5e" stroke-dasharray="4" stroke-width="1.5"/>
+                        <text x="25" y="25" fill="#f43f5e" font-size="11" font-weight="bold">Cap Height / Ascender Line (大寫高/升部線)</text>
+
+                        <line x1="20" y1="80" x2="580" y2="80" stroke="#3b82f6" stroke-dasharray="4" stroke-width="1.5"/>
+                        <text x="25" y="75" fill="#3b82f6" font-size="11" font-weight="bold">Mean Line / x-Height (主體字高線)</text>
+
+                        <line x1="20" y1="150" x2="580" y2="150" stroke="#10b981" stroke-width="2"/>
+                        <text x="25" y="145" fill="#10b981" font-size="11" font-weight="bold">Baseline (基線)</text>
+
+                        <line x1="20" y1="195" x2="580" y2="195" stroke="#a855f7" stroke-dasharray="4" stroke-width="1.5"/>
+                        <text x="25" y="190" fill="#a855f7" font-size="11" font-weight="bold">Descender Line (降部線)</text>
+
+                        <text x="70" y="150" font-family="'Noto Serif TC', serif" font-size="130" fill="#f8fafc">K</text>
+                        <text x="220" y="150" font-family="'Noto Serif TC', serif" font-size="130" fill="#f8fafc">p</text>
+                        <text x="360" y="150" font-family="'Noto Serif TC', serif" font-size="130" fill="#f8fafc">g</text>
+
+                        <!-- Hotspots -->
+                        <g class="cursor-pointer group" onclick="showAnatomyInfo('serif')">
+                            <circle cx="75" cy="148" r="14" fill="#ef4444" fill-opacity="0.8" class="animate-pulse group-hover:scale-125 transition" style="transform-box: fill-box; transform-origin: center;"/>
+                            <text x="75" y="152" fill="white" font-size="12" font-weight="bold" text-anchor="middle">1</text>
+                        </g>
+                        <g class="cursor-pointer group" onclick="showAnatomyInfo('descender')">
+                            <circle cx="245" cy="175" r="14" fill="#ef4444" fill-opacity="0.8" class="animate-pulse group-hover:scale-125 transition" style="transform-box: fill-box; transform-origin: center;"/>
+                            <text x="245" y="179" fill="white" font-size="12" font-weight="bold" text-anchor="middle">2</text>
+                        </g>
+                        <g class="cursor-pointer group" onclick="showAnatomyInfo('counter')">
+                            <circle cx="410" cy="115" r="14" fill="#ef4444" fill-opacity="0.8" class="animate-pulse group-hover:scale-125 transition" style="transform-box: fill-box; transform-origin: center;"/>
+                            <text x="410" y="119" fill="white" font-size="12" font-weight="bold" text-anchor="middle">3</text>
+                        </g>
+                        <g class="cursor-pointer group" onclick="showAnatomyInfo('stem')">
+                            <circle cx="110" cy="85" r="14" fill="#ef4444" fill-opacity="0.8" class="animate-pulse group-hover:scale-125 transition" style="transform-box: fill-box; transform-origin: center;"/>
+                            <text x="110" y="89" fill="white" font-size="12" font-weight="bold" text-anchor="middle">4</text>
+                        </g>
+                    </svg>
+                </div>
+
+                <!-- Anatomy Detail Card -->
+                <div id="anatomy-card" class="bg-indigo-50 border border-indigo-100 rounded-xl p-6 space-y-3">
+                    <div class="flex items-center space-x-2">
+                        <span id="anatomy-number" class="w-7 h-7 bg-indigo-600 text-white rounded-full flex items-center justify-center font-bold text-sm">1</span>
+                        <h3 id="anatomy-title" class="font-bold text-lg text-indigo-900">襯線 (Serif)</h3>
+                    </div>
+                    <p id="anatomy-desc" class="text-slate-700 text-sm leading-relaxed">
+                        筆劃末端的裝飾性突起。襯線體（Serif）源於古羅馬石碑刻字，有助於閱讀時視覺引導線條，常見於書籍與報紙印刷。
+                    </p>
+                    <div class="text-xs text-indigo-600 font-semibold pt-2">💡 提示：點擊圖中其他數字標籤切換說明。</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 單元二：點陣圖 vs 向量圖 原理與放大實驗 -->
+        <section id="bitmap-vs-vector" class="scroll-mt-20 space-y-6">
+            <div class="border-l-4 border-indigo-600 pl-4">
+                <h2 class="text-2xl font-bold text-slate-900">Module 02: 點陣圖 vs. 向量圖 (Bitmap vs Vector)</h2>
+                <p class="text-slate-600 text-sm">拖拉放大滑桿，親眼見證點陣圖（像素格子）與向量圖（數學曲線）在放大時的關鍵差異！</p>
+            </div>
+
+            <!-- Interactive Zoom Tool -->
+            <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 space-y-6">
+                <!-- Control Bar -->
+                <div class="flex flex-col sm:flex-row items-center justify-between gap-4 bg-slate-100 p-4 rounded-xl border border-slate-200">
+                    <div class="flex items-center space-x-3 w-full sm:w-auto">
+                        <span class="font-bold text-slate-700 text-sm flex items-center gap-1">
+                            🔍 放大鏡倍率 (Zoom):
+                        </span>
+                        <input id="zoom-slider" type="range" min="100" max="1200" step="50" value="100" 
+                               class="w-full sm:w-64 h-2 bg-slate-300 rounded-lg appearance-none cursor-pointer accent-indigo-600"
+                               oninput="updateZoomExperiment(this.value)">
+                        <span id="zoom-value" class="font-mono-code font-bold text-indigo-600 text-base min-w-[60px]">100%</span>
+                    </div>
+                    <div class="text-xs text-slate-500">
+                        提示：當倍率超過 400% 時，觀察點陣圖的邊緣鋸齒（Pixelation）現象！
+                    </div>
+                </div>
+
+                <!-- Side by Side Preview Boxes -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Left: Bitmap Box -->
+                    <div class="border-2 border-amber-200 bg-amber-50/30 rounded-xl p-5 space-y-3">
+                        <div class="flex items-center justify-between border-b border-amber-200 pb-2">
+                            <span class="font-bold text-amber-900 flex items-center gap-2">
+                                🖼️ 點陣圖 (Bitmap / Raster)：「愛心」
+                            </span>
+                            <span class="text-xs bg-amber-200 text-amber-900 px-2 py-0.5 rounded font-mono-code">PNG / JPG</span>
+                        </div>
+                        <div class="h-64 bg-white rounded-lg border border-slate-300 overflow-hidden relative flex items-center justify-center bg-grid-pattern">
+                            <!-- Canvas for rendering pixelated raster heart -->
+                            <canvas id="bitmap-canvas" width="240" height="240" class="max-w-full max-h-full pixelated transition-transform duration-75 origin-center"></canvas>
+                        </div>
+                        <ul class="text-xs text-slate-600 space-y-1 list-disc list-inside">
+                            <li>由固定數量的<strong class="text-amber-800">彩色像素方格 (Pixels)</strong> 點陣排列組成。</li>
+                            <li>放大時：像素被強制拉大，產生<strong class="text-amber-800">模糊與鋸齒狀 (Pixelation)</strong>。</li>
+                        </ul>
+                    </div>
+
+                    <!-- Right: Vector Box -->
+                    <div class="border-2 border-indigo-200 bg-indigo-50/30 rounded-xl p-5 space-y-3">
+                        <div class="flex items-center justify-between border-b border-indigo-200 pb-2">
+                            <span class="font-bold text-indigo-900 flex items-center gap-2">
+                                📐 向量圖 (Vector Graphic)：「愛心」
+                            </span>
+                            <span class="text-xs bg-indigo-200 text-indigo-900 px-2 py-0.5 rounded font-mono-code">SVG / OTF</span>
+                        </div>
+                        <div class="h-64 bg-white rounded-lg border border-slate-300 overflow-hidden relative flex items-center justify-center bg-grid-pattern">
+                            <!-- SVG container for rendering crisp vector heart -->
+                            <div id="vector-container" class="w-full h-full flex items-center justify-center transition-transform duration-75 origin-center select-none">
+                                <svg id="vector-svg" viewBox="0 0 200 200" class="w-52 h-52">
+                                    <path d="M100,165 C100,165 30,115 30,65 C30,35 55,20 80,30 C92,35 100,48 100,48 C100,48 108,35 120,30 C145,20 170,35 170,65 C170,115 100,165 100,165 Z"
+                                          fill="#4f46e5" stroke="#312e81" stroke-width="3" stroke-linejoin="round"/>
+                                </svg>
+                            </div>
+                        </div>
+                        <ul class="text-xs text-slate-600 space-y-1 list-disc list-inside">
+                            <li>由<strong class="text-indigo-800">錨點 (Nodes) 與數學貝茲曲線 (Curves)</strong> 計算而成。</li>
+                            <li>放大時：電腦重新計算幾何公式，<strong class="text-indigo-800">永遠保持清晰銳利、不失真</strong>。</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 單元三：學生字體設計工坊 -->
+        <section id="workshop" class="scroll-mt-20 space-y-6">
+            <div class="border-l-4 border-indigo-600 pl-4">
+                <h2 class="text-2xl font-bold text-slate-900">Module 03: 學生字體設計工坊 (Interactive Font Workshop)</h2>
+                <p class="text-slate-600 text-sm">親手創作屬於你的字體與圖案！提供「點陣像素模式」與「向量錨點拉桿模式」兩種設計體驗。</p>
+            </div>
+
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                <!-- Mode Switch Tabs -->
+                <div class="flex border-b border-slate-200 bg-slate-50">
+                    <button id="tab-pixel" onclick="switchWorkshopTab('pixel')" 
+                            class="flex-1 py-4 px-6 text-center font-bold text-sm sm:text-base border-b-2 border-indigo-600 text-indigo-600 bg-white transition">
+                        👾 模式 A：16x16 點陣像素圖案設計 (預設：「♥」)
+                    </button>
+                    <button id="tab-vector" onclick="switchWorkshopTab('vector')" 
+                            class="flex-1 py-4 px-6 text-center font-bold text-sm sm:text-base border-b-2 border-transparent text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition">
+                        📐 模式 B：向量錨點與貝茲曲線繪製 (預設：「一」)
+                    </button>
+                </div>
+
+                <!-- TAB 1: PIXEL EDITOR -->
+                <div id="content-pixel" class="p-6 space-y-6">
+                    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+                        <!-- Left Tools & Canvas (7 cols) -->
+                        <div class="lg:col-span-7 space-y-4">
+                            <div class="flex flex-wrap items-center justify-between gap-2">
+                                <div class="flex items-center space-x-2">
+                                    <button onclick="setPixelTool('pen')" id="tool-pen" class="px-3 py-1.5 bg-indigo-600 text-white rounded-lg text-xs font-bold shadow hover:bg-indigo-700">✏️ 畫筆</button>
+                                    <button onclick="setPixelTool('eraser')" id="tool-eraser" class="px-3 py-1.5 bg-slate-200 text-slate-700 rounded-lg text-xs font-bold hover:bg-slate-300">🧹 橡皮擦</button>
+                                    <button onclick="clearPixelGrid()" class="px-3 py-1.5 bg-rose-100 text-rose-700 rounded-lg text-xs font-bold hover:bg-rose-200">🗑️ 全部清空</button>
+                                </div>
+                                
+                                <!-- Presets -->
+                                <div class="flex items-center space-x-1 text-xs">
+                                    <span class="text-slate-500">載入範本:</span>
+                                    <button onclick="loadPixelPreset('heart')" class="px-2 py-1 bg-slate-100 hover:bg-slate-200 rounded text-slate-700 border">♥ 愛心</button>
+                                    <button onclick="loadPixelPreset('A')" class="px-2 py-1 bg-slate-100 hover:bg-slate-200 rounded text-slate-700 border">A</button>
+                                    <button onclick="loadPixelPreset('yong')" class="px-2 py-1 bg-slate-100 hover:bg-slate-200 rounded text-slate-700 border">永</button>
+                                </div>
+                            </div>
+
+                            <!-- 16x16 Pixel Grid Canvas -->
+                            <div class="flex justify-center bg-slate-800 p-4 rounded-xl shadow-inner">
+                                <div id="pixel-grid" class="grid grid-cols-[repeat(16,minmax(0,1fr))] gap-[1px] bg-slate-700 p-[1px] rounded select-none cursor-pointer w-full max-w-[380px] aspect-square touch-none">
+                                    <!-- 256 pixel cells generated via JS -->
+                                </div>
+                            </div>
+                            <p class="text-xs text-slate-500 text-center">💡 技巧：在畫布上按住滑鼠左鍵或手指觸控滑動，可連續繪製或擦除像素點。</p>
+                        </div>
+
+                        <!-- Right Live Preview (5 cols) -->
+                        <div class="lg:col-span-5 bg-slate-50 border border-slate-200 rounded-xl p-5 space-y-4">
+                            <h3 class="font-bold text-slate-800 text-base flex items-center gap-2">
+                                🖼️ 點陣圖案即時預覽展示區
+                            </h3>
+                            <p class="text-xs text-slate-600">
+                                下方為你當前繪製的點陣圖案單一放大預覽：
+                            </p>
+
+                            <!-- Single Canvas Render Box -->
+                            <div class="bg-white border border-slate-300 rounded-lg p-6 flex items-center justify-center min-h-[180px]" id="pixel-preview-container">
+                                <canvas id="single-pixel-preview-canvas" width="144" height="144" class="border border-slate-200 rounded shadow-sm bg-slate-900"></canvas>
+                            </div>
+
+                            <div class="pt-2 flex justify-end">
+                                <button onclick="exportPixelPNG()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg text-xs shadow flex items-center gap-1">
+                                    📥 下載為 PNG 圖片
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TAB 2: VECTOR EDITOR -->
+                <div id="content-vector" class="p-6 space-y-6 hidden">
+                    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+                        <!-- Interactive Canvas -->
+                        <div class="lg:col-span-7 space-y-3">
+                            <div class="flex items-center justify-between">
+                                <span class="text-xs font-bold text-slate-700">拖曳圓形【紅色控制點】與【藍/橘控制桿】以調整漢字「一」的起筆與運筆造型：</span>
+                                <button onclick="resetVectorCanvas()" class="px-3 py-1 bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs rounded-lg font-bold">↺ 重置「一」造型</button>
+                            </div>
+
+                            <div class="bg-slate-900 rounded-xl p-4 flex justify-center shadow-inner relative overflow-hidden bg-dark-grid">
+                                <canvas id="vector-editor-canvas" width="400" height="360" class="cursor-crosshair max-w-full h-auto touch-none"></canvas>
+                            </div>
+                        </div>
+
+                        <!-- Vector Controls & Explanation -->
+                        <div class="lg:col-span-5 bg-indigo-50/50 border border-indigo-100 rounded-xl p-5 space-y-4">
+                            <h3 class="font-bold text-indigo-950 text-base">📐 什麼是貝茲曲線 (Bézier Curve)？</h3>
+                            <p class="text-xs text-slate-700 leading-relaxed">
+                                向量字體（如思源黑體、Times New Roman）並不是由點陣像素組成的，而是透過<strong class="text-indigo-800">錨點 (Anchor Point)</strong> 與<strong class="text-indigo-800">方向控制桿 (Control Handles)</strong> 的數學公式所算出的平滑曲線。
+                            </p>
+
+                            <div class="space-y-2 text-xs">
+                                <div class="flex items-center space-x-2 bg-white p-2.5 rounded-lg border">
+                                    <span class="w-4 h-4 rounded-full bg-rose-500 inline-block"></span>
+                                    <span class="text-slate-800 font-medium">紅色點 (Node)：決定線條經過的關鍵錨點。</span>
+                                </div>
+                                <div class="flex items-center space-x-2 bg-white p-2.5 rounded-lg border">
+                                    <span class="w-4 h-4 rounded-full bg-sky-400 inline-block"></span>
+                                    <span class="text-slate-800 font-medium">藍色/橘色點 (Handle)：控制曲線拉引的角度與弧度。</span>
+                                </div>
+                            </div>
+
+                            <div class="pt-2 border-t border-indigo-200/60">
+                                <label class="flex items-center space-x-2 text-xs font-semibold text-slate-700 cursor-pointer">
+                                    <input id="chk-show-fill" type="checkbox" checked onchange="drawVectorEditor()" class="rounded text-indigo-600 focus:ring-indigo-500">
+                                    <span>開啟字體實心填色 (Fill)</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 單元四：排版實驗室 -->
+        <section id="type-lab" class="scroll-mt-20 space-y-6">
+            <div class="border-l-4 border-indigo-600 pl-4">
+                <h2 class="text-2xl font-bold text-slate-900">Module 04: 排版微調實驗室 (Typography Lab)</h2>
+                <p class="text-slate-600 text-sm">體驗字體排版四大關鍵參數：字號、字重、字距 (Tracking/Kerning) 與行高 (Leading)。</p>
+            </div>
+
+            <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 grid grid-cols-1 lg:grid-cols-12 gap-8">
+                <!-- Controls Side (5 cols) -->
+                <div class="lg:col-span-5 space-y-5 bg-slate-50 p-5 rounded-xl border border-slate-200">
+                    <h3 class="font-bold text-slate-800 text-sm border-b pb-2">⚙️ 控制參數 (Controls)</h3>
+
+                    <div class="space-y-1">
+                        <label class="text-xs font-semibold text-slate-600">字體系列 (Font Family):</label>
+                        <select id="lab-font-family" onchange="updateLabStyles()" class="w-full p-2 text-sm bg-white border rounded-lg focus:ring-2 focus:ring-indigo-500">
+                            <option value="'Noto Sans TC', sans-serif">思源黑體 (Sans-Serif - 現代清晰)</option>
+                            <option value="'Noto Serif TC', serif">思源宋體 (Serif - 典雅人文)</option>
+                            <option value="'Space Mono', monospace">等寬機器體 (Monospace - 科技感)</option>
+                        </select>
+                    </div>
+
+                    <div class="space-y-1">
+                        <div class="flex justify-between text-xs font-semibold text-slate-600">
+                            <span>字號大小 (Font Size):</span>
+                            <span id="val-font-size" class="text-indigo-600">20px</span>
+                        </div>
+                        <input id="slider-font-size" type="range" min="14" max="42" value="20" oninput="updateLabStyles()" class="w-full accent-indigo-600">
+                    </div>
+
+                    <div class="space-y-1">
+                        <div class="flex justify-between text-xs font-semibold text-slate-600">
+                            <span>字重/粗細 (Font Weight):</span>
+                            <span id="val-font-weight" class="text-indigo-600">400</span>
+                        </div>
+                        <input id="slider-font-weight" type="range" min="300" max="900" step="100" value="400" oninput="updateLabStyles()" class="w-full accent-indigo-600">
+                    </div>
+
+                    <div class="space-y-1">
+                        <div class="flex justify-between text-xs font-semibold text-slate-600">
+                            <span>字距 (Letter Spacing):</span>
+                            <span id="val-letter-spacing" class="text-indigo-600">1px</span>
+                        </div>
+                        <input id="slider-letter-spacing" type="range" min="-2" max="16" step="0.5" value="1" oninput="updateLabStyles()" class="w-full accent-indigo-600">
+                    </div>
+
+                    <div class="space-y-1">
+                        <div class="flex justify-between text-xs font-semibold text-slate-600">
+                            <span>行高/行距 (Line Height):</span>
+                            <span id="val-line-height" class="text-indigo-600">1.6</span>
+                        </div>
+                        <input id="slider-line-height" type="range" min="1.0" max="2.5" step="0.1" value="1.6" oninput="updateLabStyles()" class="w-full accent-indigo-600">
+                    </div>
+                </div>
+
+                <!-- Live Preview Side (7 cols) -->
+                <div class="lg:col-span-7 bg-white p-6 rounded-xl border border-slate-200 flex flex-col justify-between space-y-4">
+                    <div>
+                        <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider block mb-3">Live Typography Preview</span>
+                        <div id="lab-preview-text" class="text-slate-800 transition-all duration-150">
+                            文字是思想的載體，設計是視覺的語言。<br>
+                            好的排版能讓讀者無負擔地汲取資訊，適當的字距與行高更是塑造呼吸感與閱讀節奏的關鍵！<br>
+                            Typography is the art and technique of arranging type to make written language legible, readable and appealing.
+                        </div>
+                    </div>
+
+                    <div class="pt-4 border-t border-slate-100 flex flex-wrap gap-2 text-xs">
+                        <span class="text-slate-500 font-medium">快速風格預設:</span>
+                        <button onclick="setLabPreset('magazine')" class="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 rounded text-slate-700">典雅雜誌風</button>
+                        <button onclick="setLabPreset('tech')" class="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 rounded text-slate-700">科技黑夜標題</button>
+                        <button onclick="setLabPreset('compact')" class="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 rounded text-slate-700">緊湊報紙排版</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 單元五：觀念小測驗 -->
+        <section id="quiz" class="scroll-mt-20 space-y-6">
+            <div class="border-l-4 border-indigo-600 pl-4">
+                <h2 class="text-2xl font-bold text-slate-900">Module 05: 觀念隨堂測驗 (Typography Quiz)</h2>
+                <p class="text-slate-600 text-sm">測試你對字體結構、點陣與向量圖特性的理解程度！</p>
+            </div>
+
+            <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 space-y-6">
+                <div id="quiz-container" class="space-y-6">
+                    <!-- Questions generated via JS -->
+                </div>
+
+                <div class="pt-4 border-t flex items-center justify-between">
+                    <div id="quiz-score" class="font-bold text-slate-700 text-sm">得分：- / 3</div>
+                    <button onclick="resetQuiz()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg text-xs shadow">重新測驗</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- 單元六：字體創作特輯 - 粗線體 -->
+        <section id="tsuhsianti" class="scroll-mt-20 space-y-6">
+            <div class="border-l-4 border-amber-500 pl-4">
+                <div class="flex items-center space-x-2">
+                    <span class="px-2.5 py-0.5 bg-amber-500/20 text-amber-800 border border-amber-400 text-xs font-bold rounded-full">justfont × 壹加壹 跨界力作</span>
+                    <h2 class="text-2xl font-bold text-slate-900">Module 06: 字體實務案例 —《粗線體》展示與授權</h2>
+                </div>
+                <p class="text-slate-600 text-sm mt-1">創作者「壹加壹」繼《粒線體》後又一力作！超粗筆跡填滿視野，報告、貼文、簡報換上它立即放大視覺感動力。</p>
+            </div>
+
+            <!-- 官方網站 iframe 嵌入區 -->
+            <div class="bg-slate-900 rounded-2xl p-6 shadow-xl border border-amber-500/30 text-white space-y-4">
+                <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-slate-800 pb-4">
+                    <div>
+                        <h3 class="text-xl font-black text-amber-400 flex items-center gap-2">
+                            <span>💥 粗線體 官方網站實體瀏覽</span>
+                            <span class="text-xs bg-amber-500/30 text-amber-300 font-mono-code px-2 py-0.5 rounded border border-amber-500/40">Official Website Frame</span>
+                        </h3>
+                        <p class="text-xs text-slate-400 mt-0.5">直接於網頁內嵌入 justfont《粗線體》官方專頁，瀏覽完整字體視覺設計與介紹。</p>
+                    </div>
+
+                    <div class="flex items-center gap-2">
+                        <a href="https://justfont.com/tsuhsianti/" target="_blank" rel="noopener noreferrer" 
+                           class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-amber-300 rounded-lg text-xs font-bold transition flex items-center gap-1 border border-amber-500/30 shadow-sm">
+                            ↗️ 新分頁開啟官網
+                        </a>
+                        <label class="px-3 py-1.5 bg-amber-600 hover:bg-amber-500 text-white rounded-lg text-xs font-bold cursor-pointer transition flex items-center gap-1 shadow">
+                            📁 載入字體檔 (.otf)
+                            <input type="file" id="font-file-input" accept=".otf,.ttf,.woff,.woff2" class="hidden" onchange="loadCustomFontFile(event)">
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Font Loading Status Notice -->
+                <div id="font-status-msg" class="hidden text-xs px-3 py-2 bg-amber-500/20 border border-amber-500/40 rounded-lg text-amber-200">
+                    <!-- Dynamic status message -->
+                </div>
+
+                <!-- 嵌入 iframe 呈現官方網站 -->
+                <div class="w-full h-[600px] sm:h-[700px] bg-slate-950 rounded-xl overflow-hidden border border-slate-800 relative shadow-inner">
+                    <iframe src="https://justfont.com/tsuhsianti/" 
+                            title="justfont 粗線體官方網站" 
+                            class="w-full h-full border-0 rounded-xl"
+                            loading="lazy"
+                            allowfullscreen></iframe>
+                </div>
+            </div>
+
+            <!-- Pricing & Licensing Section -->
+            <div class="bg-white rounded-2xl p-6 sm:p-8 shadow-sm border border-slate-200 space-y-6">
+                <div class="text-center max-w-2xl mx-auto space-y-2">
+                    <h3 class="text-2xl font-black text-slate-900">🛒 官方授權方案與價格資訊</h3>
+                    <p class="text-slate-600 text-xs sm:text-sm">
+                        永久授權、跨平台相容，支援商用影片、社群貼文、印刷製品與簡報設計，無次數與流量限制！
+                    </p>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto pt-2">
+                    <!-- Option 1: Single Font -->
+                    <div class="border-2 border-slate-200 hover:border-amber-500 rounded-2xl p-6 transition flex flex-col justify-between bg-slate-50/50 hover:bg-amber-50/20 space-y-6">
+                        <div class="space-y-4">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <span class="text-xs font-bold text-slate-500 uppercase tracking-wider block">Single Font</span>
+                                    <h4 class="text-xl font-bold text-slate-900">粗線體 (Tsuhsianti)</h4>
+                                </div>
+                                <span class="px-2.5 py-1 bg-slate-200 text-slate-700 font-bold text-xs rounded-full">1 種字重</span>
+                            </div>
+                            <p class="text-xs text-slate-600 leading-relaxed">
+                                粗壯渾厚的筆跡線條，帶來飽滿的手寫感與親切力，適合標題焦點、社群封面與包裝設計。
+                            </p>
+                            <ul class="text-xs text-slate-600 space-y-2">
+                                <li class="flex items-center gap-2">✅ <strong class="text-slate-800">商用授權：</strong>社群、YouTube 影片、印刷製品</li>
+                                <li class="flex items-center gap-2">✅ <strong class="text-slate-800">格式格式：</strong>OTF 向量字體，向量放大不失真</li>
+                                <li class="flex items-center gap-2">✅ <strong class="text-slate-800">字集齊全：</strong>常用中文字體＋全半角標點符號</li>
+                            </ul>
+                        </div>
+
+                        <div class="pt-4 border-t border-slate-200 space-y-3">
+                            <div class="flex items-baseline space-x-2">
+                                <span class="text-3xl font-black text-amber-600">$3,360</span>
+                                <span class="text-sm text-slate-400 line-through">$4,800</span>
+                                <span class="text-xs bg-amber-100 text-amber-800 px-2 py-0.5 rounded font-bold">約 7 折特惠</span>
+                            </div>
+                            <a href="https://store.justfont.com/font/tsuhsianti" target="_blank" rel="noopener" 
+                               class="block w-full py-3 bg-slate-900 hover:bg-amber-600 text-white font-bold text-center text-xs sm:text-sm rounded-xl shadow transition">
+                                🛍️ 前往 justfont 商店購買單套
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- Option 2: Bundle -->
+                    <div class="border-2 border-amber-500 bg-amber-50/40 rounded-2xl p-6 transition flex flex-col justify-between space-y-6 relative overflow-hidden shadow-md">
+                        <div class="absolute -right-10 top-5 bg-amber-500 text-white text-[10px] font-bold px-10 py-1 rotate-45 shadow">
+                            熱銷超值組合
+                        </div>
+                        <div class="space-y-4">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <span class="text-xs font-bold text-amber-700 uppercase tracking-wider block">Bundle Package</span>
+                                    <h4 class="text-xl font-bold text-slate-900">粗粒兩套組</h4>
+                                </div>
+                                <span class="px-2.5 py-1 bg-amber-500 text-white font-bold text-xs rounded-full">粗線體 ＋ 粒線體</span>
+                            </div>
+                            <p class="text-xs text-slate-600 leading-relaxed">
+                                一次打包壹加壹與 justfont 合作的兩款經典手寫字體！粗線體的重擊效果搭配粒線體的俏皮語氣。
+                            </p>
+                            <ul class="text-xs text-slate-600 space-y-2">
+                                <li class="flex items-center gap-2">✅ <strong class="text-slate-800">包含字體：</strong>粗線體＋粒線體完整永久授權</li>
+                                <li class="flex items-center gap-2">✅ <strong class="text-slate-800">雙倍創作力：</strong>一次滿足重擊標題與靈動內文</li>
+                                <li class="flex items-center gap-2">✅ <strong class="text-slate-800">終身商用：</strong>一次購買，終身跨專案無限使用</li>
+                            </ul>
+                        </div>
+
+                        <div class="pt-4 border-t border-amber-200 space-y-3">
+                            <div class="flex items-baseline space-x-2">
+                                <span class="text-3xl font-black text-amber-600">$5,980</span>
+                                <span class="text-sm text-slate-400 line-through">$8,300</span>
+                                <span class="text-xs bg-rose-500 text-white px-2 py-0.5 rounded font-bold">立省 $2,320</span>
+                            </div>
+                            <a href="https://store.justfont.com/font/tsuhsianti" target="_blank" rel="noopener" 
+                               class="block w-full py-3 bg-amber-600 hover:bg-amber-700 text-white font-bold text-center text-xs sm:text-sm rounded-xl shadow-lg transition">
+                                🔥 前往商店搶購「粗粒兩套組」
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- 頁尾Footer -->
+    <footer class="bg-slate-900 text-slate-400 py-8 border-t border-slate-800 text-center text-xs space-y-2">
+        <p>字體設計與向量/點陣圖互動學習網 &copy; 2026 Interactive Educational Tool</p>
+        <p class="text-slate-500">專為資訊科技、數位美術與視覺傳播設計教學打造</p>
+    </footer>
+
+    <script>
+        // Module 01 Data
+        const anatomyData = {
+            serif: {
+                num: 1,
+                title: "襯線 (Serif)",
+                desc: "筆劃末端的裝飾性突起。襯線體（Serif）源於古羅馬石碑刻字，有助於閱讀時視覺引導線條，常見於書籍與報紙印刷。"
+            },
+            descender: {
+                num: 2,
+                title: "降部 (Descender)",
+                desc: "字母低於基線 (Baseline) 向下延伸的部分，例如小寫字母 p、g、y、q 的下半段筆劃。"
+            },
+            counter: {
+                num: 3,
+                title: "字心 / 字孔 (Counter)",
+                desc: "字母內部被筆劃全封閉或半封閉的空白區域，例如 o、p、g、A 中間空出的白區，影響字體的透光感與閱讀舒適度。"
+            },
+            stem: {
+                num: 4,
+                title: "主幹 (Stem)",
+                desc: "字母中主要的垂直或傾斜骨幹筆劃（例如 K、T、L 的主要豎筆），是字體結構與字重的視覺核心。"
+            }
+        };
+
+        function showAnatomyInfo(part) {
+            const data = anatomyData[part];
+            if (!data) return;
+            document.getElementById('anatomy-number').innerText = data.num;
+            document.getElementById('anatomy-title').innerText = data.title;
+            document.getElementById('anatomy-desc').innerText = data.desc;
+        }
+
+        // 精密設計的 16x16 像素「愛心」圖案陣列
+        const HEART_PIXEL_MAP = [
+            35, 36, 43, 44,
+            50, 51, 52, 53, 58, 59, 60, 61,
+            65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78,
+            81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94,
+            98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109,
+            115, 116, 117, 118, 119, 120, 121, 122, 123, 124,
+            132, 133, 134, 135, 136, 137, 138, 139,
+            149, 150, 151, 152, 153, 154,
+            166, 167, 168, 169,
+            183, 184
+        ];
+
+        // 16x16 像素「永」字陣列
+        const YONG_PIXEL_MAP = [
+            23, 24, 39, 40, 55, 56,
+            66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77,
+            87, 88, 93,
+            103, 104, 108,
+            115, 116, 117, 119, 120, 122, 123,
+            130, 131, 135, 136, 139, 140,
+            145, 146, 151, 152, 156, 157,
+            163, 164, 167, 168, 173, 174,
+            180, 181, 183, 184, 190, 191,
+            199, 200,
+            213, 215, 216,
+            228, 229, 230, 231, 232
+        ];
+
+        // Module 02 Bitmap Canvas Initialization
+        function initBitmapCanvas() {
+            const canvas = document.getElementById('bitmap-canvas');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Draw grid lines (16x16 grid)
+            ctx.strokeStyle = '#e2e8f0';
+            ctx.lineWidth = 1;
+            const step = 15; // 240 / 16
+            for (let x = 0; x <= canvas.width; x += step) {
+                ctx.beginPath();
+                ctx.moveTo(x, 0);
+                ctx.lineTo(x, canvas.height);
+                ctx.stroke();
+            }
+            for (let y = 0; y <= canvas.height; y += step) {
+                ctx.beginPath();
+                ctx.moveTo(0, y);
+                ctx.lineTo(canvas.width, y);
+                ctx.stroke();
+            }
+
+            // Draw low-res pixel heart icon
+            ctx.fillStyle = '#d97706'; // Amber pixel color
+            const cellSize = 15;
+            HEART_PIXEL_MAP.forEach(idx => {
+                const row = Math.floor(idx / 16);
+                const col = idx % 16;
+                ctx.fillRect(col * cellSize, row * cellSize, cellSize, cellSize);
+            });
+        }
+
+        function updateZoomExperiment(val) {
+            const zoomText = document.getElementById('zoom-value');
+            if (zoomText) zoomText.innerText = val + '%';
+            
+            const scaleFactor = val / 100;
+            const bitmapCanvas = document.getElementById('bitmap-canvas');
+            const vectorContainer = document.getElementById('vector-container');
+
+            if (bitmapCanvas) {
+                bitmapCanvas.style.transform = `scale(${scaleFactor})`;
+            }
+            if (vectorContainer) {
+                vectorContainer.style.transform = `scale(${scaleFactor})`;
+            }
+        }
+
+        // Module 03 Pixel Grid & Vector Functions
+        const PIXEL_GRID_SIZE = 16;
+        let pixelState = Array(PIXEL_GRID_SIZE * PIXEL_GRID_SIZE).fill(0);
+        let currentTool = 'pen';
+        let isMouseDown = false;
+
+        function initPixelGrid() {
+            const gridContainer = document.getElementById('pixel-grid');
+            if (!gridContainer) return;
+            gridContainer.innerHTML = '';
+            
+            for (let i = 0; i < PIXEL_GRID_SIZE * PIXEL_GRID_SIZE; i++) {
+                const cell = document.createElement('div');
+                cell.className = 'bg-slate-900 aspect-square hover:bg-indigo-500/40 transition-colors cursor-pointer';
+                cell.dataset.index = i;
+                
+                cell.addEventListener('mousedown', (e) => {
+                    e.preventDefault();
+                    isMouseDown = true;
+                    applyPixelTool(i);
+                });
+                cell.addEventListener('mouseenter', () => {
+                    if (isMouseDown) applyPixelTool(i);
+                });
+                gridContainer.appendChild(cell);
+            }
+
+            // Touch support for mobile devices
+            gridContainer.addEventListener('touchmove', (e) => {
+                e.preventDefault();
+                if (e.touches.length > 0) {
+                    const touch = e.touches[0];
+                    const target = document.elementFromPoint(touch.clientX, touch.clientY);
+                    if (target && target.dataset && target.dataset.index !== undefined) {
+                        applyPixelTool(parseInt(target.dataset.index, 10));
+                    }
+                }
+            }, { passive: false });
+
+            gridContainer.addEventListener('touchstart', (e) => {
+                if (e.touches.length > 0) {
+                    const touch = e.touches[0];
+                    const target = document.elementFromPoint(touch.clientX, touch.clientY);
+                    if (target && target.dataset && target.dataset.index !== undefined) {
+                        isMouseDown = true;
+                        applyPixelTool(parseInt(target.dataset.index, 10));
+                    }
+                }
+            }, { passive: false });
+
+            document.addEventListener('mouseup', () => { isMouseDown = false; });
+            document.addEventListener('touchend', () => { isMouseDown = false; });
+            
+            // Default load "heart" preset
+            loadPixelPreset('heart');
+        }
+
+        function setPixelTool(tool) {
+            currentTool = tool;
+            document.getElementById('tool-pen').className = tool === 'pen' ? 'px-3 py-1.5 bg-indigo-600 text-white rounded-lg text-xs font-bold shadow hover:bg-indigo-700' : 'px-3 py-1.5 bg-slate-200 text-slate-700 rounded-lg text-xs font-bold hover:bg-slate-300';
+            document.getElementById('tool-eraser').className = tool === 'eraser' ? 'px-3 py-1.5 bg-indigo-600 text-white rounded-lg text-xs font-bold shadow hover:bg-indigo-700' : 'px-3 py-1.5 bg-slate-200 text-slate-700 rounded-lg text-xs font-bold hover:bg-slate-300';
+        }
+
+        function applyPixelTool(index) {
+            pixelState[index] = currentTool === 'pen' ? 1 : 0;
+            updatePixelGridUI();
+            renderPixelWordPreview();
+        }
+
+        function updatePixelGridUI() {
+            const gridContainer = document.getElementById('pixel-grid');
+            if (!gridContainer) return;
+            const cells = gridContainer.children;
+            for (let i = 0; i < pixelState.length; i++) {
+                if (pixelState[i] === 1) {
+                    cells[i].className = 'bg-indigo-400 aspect-square border-[0.5px] border-indigo-300';
+                } else {
+                    cells[i].className = 'bg-slate-900 aspect-square hover:bg-indigo-500/30';
+                }
+            }
+        }
+
+        function clearPixelGrid() {
+            pixelState.fill(0);
+            updatePixelGridUI();
+            renderPixelWordPreview();
+        }
+
+        function loadPixelPreset(type) {
+            clearPixelGrid();
+            if (type === 'heart') {
+                HEART_PIXEL_MAP.forEach(idx => { 
+                    if (idx >= 0 && idx < 256) pixelState[idx] = 1; 
+                });
+            } else if (type === 'yong') {
+                YONG_PIXEL_MAP.forEach(idx => { 
+                    if (idx >= 0 && idx < 256) pixelState[idx] = 1; 
+                });
+            } else if (type === 'A') {
+                const aIndices = [
+                    23, 24, 38, 41, 53, 58, 68, 75,
+                    83, 84, 85, 86, 87, 88, 89, 90, 91, 92,
+                    99, 108, 114, 125, 130, 141, 145, 158
+                ];
+                aIndices.forEach(idx => { if (idx >= 0 && idx < 256) pixelState[idx] = 1; });
+            }
+            updatePixelGridUI();
+            renderPixelWordPreview();
+        }
+
+        function renderPixelWordPreview() {
+            const previewCanvas = document.getElementById('single-pixel-preview-canvas');
+            if (!previewCanvas) return;
+            const ctx = previewCanvas.getContext('2d');
+            
+            ctx.clearRect(0, 0, previewCanvas.width, previewCanvas.height);
+            ctx.fillStyle = '#0f172a';
+            ctx.fillRect(0, 0, previewCanvas.width, previewCanvas.height);
+
+            const cellSize = previewCanvas.width / PIXEL_GRID_SIZE;
+            ctx.fillStyle = '#818cf8';
+
+            for (let i = 0; i < pixelState.length; i++) {
+                if (pixelState[i] === 1) {
+                    const row = Math.floor(i / PIXEL_GRID_SIZE);
+                    const col = i % PIXEL_GRID_SIZE;
+                    ctx.fillRect(col * cellSize, row * cellSize, cellSize, cellSize);
+                }
+            }
+        }
+
+        function exportPixelPNG() {
+            const exportCanvas = document.createElement('canvas');
+            exportCanvas.width = 256;
+            exportCanvas.height = 256;
+            const ctx = exportCanvas.getContext('2d');
+            const cellSize = 16;
+
+            ctx.fillStyle = '#0f172a';
+            ctx.fillRect(0, 0, 256, 256);
+            ctx.fillStyle = '#818cf8';
+
+            for (let i = 0; i < pixelState.length; i++) {
+                if (pixelState[i] === 1) {
+                    const row = Math.floor(i / PIXEL_GRID_SIZE);
+                    const col = i % PIXEL_GRID_SIZE;
+                    ctx.fillRect(col * cellSize, row * cellSize, cellSize, cellSize);
+                }
+            }
+
+            const link = document.createElement('a');
+            link.download = 'my-pixel-font-glyph.png';
+            link.href = exportCanvas.toDataURL('image/png');
+            link.click();
+        }
+
+        // Workshop Tab Switching
+        function switchWorkshopTab(tab) {
+            const btnPixel = document.getElementById('tab-pixel');
+            const btnVector = document.getElementById('tab-vector');
+            const contentPixel = document.getElementById('content-pixel');
+            const contentVector = document.getElementById('content-vector');
+
+            if (tab === 'pixel') {
+                btnPixel.className = 'flex-1 py-4 px-6 text-center font-bold text-sm sm:text-base border-b-2 border-indigo-600 text-indigo-600 bg-white transition';
+                btnVector.className = 'flex-1 py-4 px-6 text-center font-bold text-sm sm:text-base border-b-2 border-transparent text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition';
+                contentPixel.classList.remove('hidden');
+                contentVector.classList.add('hidden');
+            } else {
+                btnVector.className = 'flex-1 py-4 px-6 text-center font-bold text-sm sm:text-base border-b-2 border-indigo-600 text-indigo-600 bg-white transition';
+                btnPixel.className = 'flex-1 py-4 px-6 text-center font-bold text-sm sm:text-base border-b-2 border-transparent text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition';
+                contentVector.classList.remove('hidden');
+                contentPixel.classList.add('hidden');
+                drawVectorEditor();
+            }
+        }
+
+        let vectorNodes = [
+            { x: 80,  y: 175, cp1x: 60,  cp1y: 145, cp2x: 130, cp2y: 165 },
+            { x: 320, y: 160, cp1x: 350, cp1y: 140, cp2x: 340, cp2y: 195 },
+            { x: 300, y: 205, cp1x: 270, cp1y: 215, cp2x: 150, cp2y: 210 },
+            { x: 90,  y: 200, cp1x: 70,  cp1y: 200, cp2x: 70,  cp2y: 190 }
+        ];
+        let draggingTarget = null;
+
+        function initVectorCanvas() {
+            const canvas = document.getElementById('vector-editor-canvas');
+            if (!canvas) return;
+            
+            // Modern Pointer Events for seamless Mouse & Touch dragging
+            canvas.addEventListener('pointerdown', onVectorPointerDown);
+            window.addEventListener('pointermove', onVectorPointerMove);
+            window.addEventListener('pointerup', () => { draggingTarget = null; });
+            window.addEventListener('pointercancel', () => { draggingTarget = null; });
+
+            drawVectorEditor();
+        }
+
+        function resetVectorCanvas() {
+            vectorNodes = [
+                { x: 80,  y: 175, cp1x: 60,  cp1y: 145, cp2x: 130, cp2y: 165 },
+                { x: 320, y: 160, cp1x: 350, cp1y: 140, cp2x: 340, cp2y: 195 },
+                { x: 300, y: 205, cp1x: 270, cp1y: 215, cp2x: 150, cp2y: 210 },
+                { x: 90,  y: 200, cp1x: 70,  cp1y: 200, cp2x: 70,  cp2y: 190 }
+            ];
+            drawVectorEditor();
+        }
+
+        function drawVectorEditor() {
+            const canvas = document.getElementById('vector-editor-canvas');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            const showFill = document.getElementById('chk-show-fill') ? document.getElementById('chk-show-fill').checked : true;
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // 1. Draw Bézier Curve Path
+            ctx.beginPath();
+            ctx.moveTo(vectorNodes[0].x, vectorNodes[0].y);
+            
+            for (let i = 0; i < vectorNodes.length; i++) {
+                const nextIdx = (i + 1) % vectorNodes.length;
+                const curr = vectorNodes[i];
+                const next = vectorNodes[nextIdx];
+                ctx.bezierCurveTo(curr.cp1x, curr.cp1y, next.cp2x, next.cp2y, next.x, next.y);
+            }
+            ctx.closePath();
+
+            if (showFill) {
+                ctx.fillStyle = 'rgba(99, 102, 241, 0.75)';
+                ctx.fill();
+            }
+            ctx.strokeStyle = '#818cf8';
+            ctx.lineWidth = 3;
+            ctx.stroke();
+
+            // 2. Draw Control Handles & Nodes
+            for (let i = 0; i < vectorNodes.length; i++) {
+                const n = vectorNodes[i];
+
+                // CP1 handle (cyan)
+                ctx.beginPath();
+                ctx.moveTo(n.x, n.y);
+                ctx.lineTo(n.cp1x, n.cp1y);
+                ctx.strokeStyle = '#38bdf8';
+                ctx.lineWidth = 1.5;
+                ctx.stroke();
+
+                ctx.beginPath();
+                ctx.arc(n.cp1x, n.cp1y, 6, 0, Math.PI * 2);
+                ctx.fillStyle = '#38bdf8';
+                ctx.fill();
+
+                // CP2 handle (amber)
+                ctx.beginPath();
+                ctx.moveTo(n.x, n.y);
+                ctx.lineTo(n.cp2x, n.cp2y);
+                ctx.strokeStyle = '#f59e0b';
+                ctx.lineWidth = 1.5;
+                ctx.stroke();
+
+                ctx.beginPath();
+                ctx.arc(n.cp2x, n.cp2y, 6, 0, Math.PI * 2);
+                ctx.fillStyle = '#f59e0b';
+                ctx.fill();
+
+                // Anchor Node (Red)
+                ctx.beginPath();
+                ctx.arc(n.x, n.y, 8, 0, Math.PI * 2);
+                ctx.fillStyle = '#f43f5e';
+                ctx.fill();
+                ctx.strokeStyle = '#ffffff';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+            }
+        }
+
+        function onVectorPointerDown(e) {
+            const canvas = document.getElementById('vector-editor-canvas');
+            if (!canvas) return;
+            const rect = canvas.getBoundingClientRect();
+            const mouseX = (e.clientX - rect.left) * (canvas.width / rect.width);
+            const mouseY = (e.clientY - rect.top) * (canvas.height / rect.height);
+
+            for (let i = 0; i < vectorNodes.length; i++) {
+                const n = vectorNodes[i];
+                if (Math.hypot(n.x - mouseX, n.y - mouseY) < 16) {
+                    draggingTarget = { type: 'node', index: i };
+                    return;
+                }
+                if (Math.hypot(n.cp1x - mouseX, n.cp1y - mouseY) < 14) {
+                    draggingTarget = { type: 'cp1', index: i };
+                    return;
+                }
+                if (Math.hypot(n.cp2x - mouseX, n.cp2y - mouseY) < 14) {
+                    draggingTarget = { type: 'cp2', index: i };
+                    return;
+                }
+            }
+        }
+
+        function onVectorPointerMove(e) {
+            if (!draggingTarget) return;
+            const canvas = document.getElementById('vector-editor-canvas');
+            if (!canvas) return;
+            const rect = canvas.getBoundingClientRect();
+            const mouseX = (e.clientX - rect.left) * (canvas.width / rect.width);
+            const mouseY = (e.clientY - rect.top) * (canvas.height / rect.height);
+
+            const n = vectorNodes[draggingTarget.index];
+            if (draggingTarget.type === 'node') {
+                const dx = mouseX - n.x;
+                const dy = mouseY - n.y;
+                n.x = mouseX;
+                n.y = mouseY;
+                n.cp1x += dx;
+                n.cp1y += dy;
+                n.cp2x += dx;
+                n.cp2y += dy;
+            } else if (draggingTarget.type === 'cp1') {
+                n.cp1x = mouseX;
+                n.cp1y = mouseY;
+            } else if (draggingTarget.type === 'cp2') {
+                n.cp2x = mouseX;
+                n.cp2y = mouseY;
+            }
+            drawVectorEditor();
+        }
+
+        // Module 04 Lab Styles
+        function updateLabStyles() {
+            const fontFamily = document.getElementById('lab-font-family').value;
+            const fontSize = document.getElementById('slider-font-size').value;
+            const fontWeight = document.getElementById('slider-font-weight').value;
+            const letterSpacing = document.getElementById('slider-letter-spacing').value;
+            const lineHeight = document.getElementById('slider-line-height').value;
+
+            document.getElementById('val-font-size').innerText = fontSize + 'px';
+            document.getElementById('val-font-weight').innerText = fontWeight;
+            document.getElementById('val-letter-spacing').innerText = letterSpacing + 'px';
+            document.getElementById('val-line-height').innerText = lineHeight;
+
+            const target = document.getElementById('lab-preview-text');
+            if (target) {
+                target.style.fontFamily = fontFamily;
+                target.style.fontSize = fontSize + 'px';
+                target.style.fontWeight = fontWeight;
+                target.style.letterSpacing = letterSpacing + 'px';
+                target.style.lineHeight = lineHeight;
+            }
+        }
+
+        function setLabPreset(preset) {
+            if (preset === 'magazine') {
+                document.getElementById('lab-font-family').value = "'Noto Serif TC', serif";
+                document.getElementById('slider-font-size').value = 18;
+                document.getElementById('slider-font-weight').value = 400;
+                document.getElementById('slider-letter-spacing').value = 2;
+                document.getElementById('slider-line-height').value = 1.8;
+            } else if (preset === 'tech') {
+                document.getElementById('lab-font-family').value = "'Space Mono', monospace";
+                document.getElementById('slider-font-size').value = 22;
+                document.getElementById('slider-font-weight').value = 700;
+                document.getElementById('slider-letter-spacing').value = 0;
+                document.getElementById('slider-line-height').value = 1.4;
+            } else if (preset === 'compact') {
+                document.getElementById('lab-font-family').value = "'Noto Sans TC', sans-serif";
+                document.getElementById('slider-font-size').value = 15;
+                document.getElementById('slider-font-weight').value = 500;
+                document.getElementById('slider-letter-spacing').value = -0.5;
+                document.getElementById('slider-line-height').value = 1.2;
+            }
+            updateLabStyles();
+        }
+
+        // Module 05 Quiz Logic
+        const quizQuestions = [
+            {
+                q: "1. 向量圖 (Vector) 與點陣圖 (Bitmap) 最核心的差異為何？",
+                options: [
+                    "A. 向量圖檔案容量一定比點陣圖大",
+                    "B. 向量圖由數學公式計算，放大不會產生模糊鋸齒",
+                    "C. 點陣圖無法在電腦螢幕上顯示",
+                    "D. 向量圖只能顯示黑白兩種顏色"
+                ],
+                answer: 1,
+                explanation: "向量圖是由錨點與數學貝茲曲線組成，因此不管放大多少倍，電腦都能即時運算出平滑的幾何圖形！"
+            },
+            {
+                q: "2. 在字體解剖學中，文字下方齊平的基準橫線稱為什麼？",
+                options: [
+                    "A. x-Height",
+                    "B. Baseline (基線)",
+                    "C. Descender Line (降部線)",
+                    "D. Serif (襯線)"
+                ],
+                answer: 1,
+                explanation: "Baseline（基線）是所有字體視覺排版的基底橫線，如同譜面上的五線譜。"
+            },
+            {
+                q: "3. 下列哪一種檔案格式是現代電腦中最常見的「向量字體」格式？",
+                options: [
+                    "A. .PNG",
+                    "B. .JPG",
+                    "C. .OTF / .TTF",
+                    "D. .GIF"
+                ],
+                answer: 2,
+                explanation: "OTF (OpenType) 與 TTF (TrueType) 是業界標準的向量字體規格。"
+            }
+        ];
+
+        let quizUserAnswers = {};
+
+        function initQuiz() {
+            const container = document.getElementById('quiz-container');
+            if (!container) return;
+            container.innerHTML = '';
+
+            quizQuestions.forEach((q, qIdx) => {
+                const qBox = document.createElement('div');
+                qBox.className = 'p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-3';
+                
+                let optionsHTML = q.options.map((opt, oIdx) => `
+                    <button onclick="selectQuizOption(${qIdx}, ${oIdx})" 
+                            id="quiz-btn-${qIdx}-${oIdx}"
+                            class="w-full text-left p-3 rounded-lg border bg-white hover:bg-indigo-50/50 text-xs sm:text-sm transition flex items-center justify-between">
+                        <span>${opt}</span>
+                        <span id="quiz-icon-${qIdx}-${oIdx}"></span>
+                    </button>
+                `).join('');
+
+                qBox.innerHTML = `
+                    <div class="font-bold text-slate-800 text-sm sm:text-base">${q.q}</div>
+                    <div class="space-y-2">${optionsHTML}</div>
+                    <div id="quiz-exp-${qIdx}" class="hidden p-3 bg-indigo-50 border border-indigo-100 rounded-lg text-xs text-indigo-900"></div>
+                `;
+                container.appendChild(qBox);
+            });
+        }
+
+        function selectQuizOption(qIdx, oIdx) {
+            quizUserAnswers[qIdx] = oIdx;
+            const correct = quizQuestions[qIdx].answer;
+
+            quizQuestions[qIdx].options.forEach((_, idx) => {
+                const btn = document.getElementById(`quiz-btn-${qIdx}-${idx}`);
+                if (idx === correct) {
+                    btn.className = 'w-full text-left p-3 rounded-lg border-2 border-emerald-500 bg-emerald-50 text-emerald-900 font-semibold text-xs sm:text-sm';
+                    document.getElementById(`quiz-icon-${qIdx}-${idx}`).innerText = '✅ 正確';
+                } else if (idx === oIdx) {
+                    btn.className = 'w-full text-left p-3 rounded-lg border-2 border-rose-500 bg-rose-50 text-rose-900 text-xs sm:text-sm';
+                    document.getElementById(`quiz-icon-${qIdx}-${idx}`).innerText = '❌ 錯誤';
+                } else {
+                    btn.className = 'w-full text-left p-3 rounded-lg border bg-white text-slate-400 text-xs sm:text-sm opacity-60';
+                }
+            });
+
+            const expBox = document.getElementById(`quiz-exp-${qIdx}`);
+            expBox.innerHTML = `💡 <strong>解析：</strong> ${quizQuestions[qIdx].explanation}`;
+        }
+
+        // Load custom user font file (.otf / .ttf / .woff2) dynamically using Web FontFace API
+        function loadCustomFontFile(event) {
+            const file = event.target.files[0];
+            const statusMsg = document.getElementById('font-status-msg');
+            if (!file) return;
+
+            if (statusMsg) {
+                statusMsg.classList.remove('hidden');
+                statusMsg.className = "text-xs px-3 py-2 bg-amber-500/20 border border-amber-500/40 rounded-lg text-amber-200";
+                statusMsg.innerHTML = `⏳ 正在解析並載入字體檔：<strong>${file.name}</strong> ...`;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const font = new FontFace('TsuhsiantiCustom', e.target.result);
+                    font.load().then(function(loadedFont) {
+                        document.fonts.add(loadedFont);
+                        if (statusMsg) {
+                            statusMsg.className = "text-xs px-3 py-2 bg-emerald-500/20 border border-emerald-500/40 rounded-lg text-emerald-200";
+                            statusMsg.innerHTML = `🎉 成功載入字型檔 <strong>${file.name}</strong>！已套用至頁面粗體標題！`;
+                        }
+                        // Update styles
+                        document.querySelectorAll('.tsuhsianti-font').forEach(el => {
+                            el.style.fontFamily = "'TsuhsiantiCustom', sans-serif";
+                        });
+                    }).catch(err => {
+                        console.error(err);
+                        if (statusMsg) {
+                            statusMsg.className = "text-xs px-3 py-2 bg-rose-500/20 border border-rose-500/40 rounded-lg text-rose-200";
+                            statusMsg.innerHTML = `⚠️ 字體檔解析失敗，請確認檔案格式是否為正確的 .otf / .ttf / .woff2。`;
+                        }
+                    });
+                } catch(err) {
+                    console.error(err);
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        // Global Window Load Handler
+        window.onload = function() {
+            initBitmapCanvas();
+            updateZoomExperiment(100);
+            initPixelGrid();
+            initVectorCanvas();
+            updateLabStyles();
+            initQuiz();
+        };
+    </script>
+</body>
+</html>
