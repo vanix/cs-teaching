@@ -673,6 +673,72 @@
                 </div>
             </section>
 
+            <!-- SECTION 5: COMMON FLASH MEMORY DEVICES -->
+            <section class="bg-slate-900/80 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-4">
+                <h3 class="text-base sm:text-lg font-bold text-emerald-400 flex items-center gap-2 tech-font">
+                    <i class="fa-solid fa-sd-card"></i> 常見的快閃記憶體裝置
+                </h3>
+                <p class="text-xs sm:text-sm text-slate-300">
+                    記憶卡、隨身碟、固態硬碟的「共同點」：核心都是 <strong class="text-emerald-300">NAND Flash 快閃記憶體晶片</strong>，以<strong class="text-emerald-300">電荷儲存</strong>記錄資料、斷電不遺失；差別只在「介面規格」與「顆粒數量」決定了它的傳輸速度與容量！
+                </p>
+
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div class="bg-slate-950 rounded-2xl border border-slate-800 p-4 flex flex-col items-center text-center gap-2 hover:border-emerald-500 transition">
+                        <div class="w-14 h-14 rounded-xl bg-emerald-500/10 border border-emerald-500/40 flex items-center justify-center text-emerald-400 text-2xl">
+                            <i class="fa-solid fa-sd-card"></i>
+                        </div>
+                        <div class="font-bold text-emerald-300 text-sm">記憶卡 (SD / microSD)</div>
+                        <p class="text-[11px] text-slate-400">手機、相機、掌機擴充容量。新一代 <strong class="text-emerald-300">SD Express</strong> 改用 PCIe / NVMe 介面，速度瞬間大幅提升。</p>
+                    </div>
+
+                    <div class="bg-slate-950 rounded-2xl border border-slate-800 p-4 flex flex-col items-center text-center gap-2 hover:border-emerald-500 transition">
+                        <div class="w-14 h-14 rounded-xl bg-emerald-500/10 border border-emerald-500/40 flex items-center justify-center text-emerald-400 text-2xl">
+                            <i class="fa-solid fa-usb"></i>
+                        </div>
+                        <div class="font-bold text-emerald-300 text-sm">隨身碟 (USB Flash Drive)</div>
+                        <p class="text-[11px] text-slate-400">像一支小鑰匙插上 USB 就能帶走檔案。速度高低取決於 USB 2.0 / 3.0 / 3.2 等介面世代。</p>
+                    </div>
+
+                    <div class="bg-slate-950 rounded-2xl border border-slate-800 p-4 flex flex-col items-center text-center gap-2 hover:border-emerald-500 transition">
+                        <div class="w-14 h-14 rounded-xl bg-emerald-500/10 border border-emerald-500/40 flex items-center justify-center text-emerald-400 text-2xl">
+                            <i class="fa-solid fa-microchip"></i>
+                        </div>
+                        <div class="font-bold text-emerald-300 text-sm">固態硬碟 (SSD)</div>
+                        <p class="text-[11px] text-slate-400">多顆 NAND Flash 並聯 + NVMe 高速介面，是電腦 / 遊戲主機的系統碟首選，反應快又耐震。</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SECTION 6: TAB 3 BONUS QUIZ (SD EXPRESS) -->
+            <section class="bg-slate-900/80 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-4">
+                <h3 class="text-base sm:text-lg font-bold text-amber-400 flex items-center gap-2 tech-font">
+                    <i class="fa-solid fa-graduation-cap"></i> 進階動腦 (Tab 3)
+                </h3>
+
+                <div id="quiz4-box" class="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-3">
+                    <p class="text-xs sm:text-sm font-bold text-slate-200">
+                        問題：任天堂 Switch 2 為何要求使用「SD Express」規格的記憶卡，而不是傳統 (micro)SD 卡？
+                    </p>
+
+                    <div class="space-y-2 text-xs">
+                        <button onclick="checkAnswerTab4(1)" class="w-full text-left p-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-300 transition flex items-center gap-2">
+                            <span class="w-5 h-5 rounded-full bg-slate-800 flex items-center justify-center font-bold font-mono text-[10px]">A</span>
+                            因為傳統 (micro)SD 卡體積太大，塞不進 Switch 2 的卡槽
+                        </button>
+                        <button onclick="checkAnswerTab4(2)" class="w-full text-left p-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-300 transition flex items-center gap-2">
+                            <span class="w-5 h-5 rounded-full bg-slate-800 flex items-center justify-center font-bold font-mono text-[10px]">B</span>
+                            因為 Switch 2 遊戲檔案更大、需要更快讀取速度；SD Express 改用 PCIe / NVMe 高速介面，傳輸速度是傳統 microSD 的數倍，才能跟上遊戲載入需求
+                        </button>
+                        <button onclick="checkAnswerTab4(3)" class="w-full text-left p-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-300 transition flex items-center gap-2">
+                            <span class="w-5 h-5 rounded-full bg-slate-800 flex items-center justify-center font-bold font-mono text-[10px]">C</span>
+                            因為傳統 SD 卡只能用來裝照片，不能裝遊戲
+                        </button>
+                    </div>
+
+                    <div id="quiz4-result" class="hidden p-3 rounded-xl text-xs font-mono"></div>
+                </div>
+            </section>
+
         </div>
 
     </main>
@@ -1700,6 +1766,19 @@
             } else {
                 resultBox.classList.add('bg-rose-950/80', 'border', 'border-rose-600', 'text-rose-200');
                 resultBox.innerHTML = `<strong>❌ 再試一次！</strong><br>提示：思考 HDD 的「實體機械擺頭 (Seek time)」與 SSD「電子訊號」的構造差異！`;
+            }
+        }
+
+        function checkAnswerTab4(optionIndex) {
+            const resultBox = document.getElementById('quiz4-result');
+            resultBox.classList.remove('hidden', 'bg-emerald-950/80', 'bg-rose-950/80', 'border-emerald-600', 'border-rose-600', 'text-emerald-200', 'text-rose-200');
+
+            if (optionIndex === 2) {
+                resultBox.classList.add('bg-emerald-950/80', 'border', 'border-emerald-600', 'text-emerald-200');
+                resultBox.innerHTML = `<strong>🎉 完全正確！</strong><br>SD Express 透過 PCIe / NVMe 高速介面，讓記憶卡讀取速度衝到傳統 microSD 的好幾倍（甚至突破 700 MB/s 以上），才能應付 Switch 2 更肥大的遊戲檔案與更快載入需求。`;
+            } else {
+                resultBox.classList.add('bg-rose-950/80', 'border', 'border-rose-600', 'text-rose-200');
+                resultBox.innerHTML = `<strong>❌ 再試一次！</strong><br>提示：新一代遊戲機的遊戲檔案更「胖」，傳統 microSD 的讀取速度（約 100 MB/s）已成為載入瓶頸，回想 SD Express 換用了哪種高速介面！`;
             }
         }
 
