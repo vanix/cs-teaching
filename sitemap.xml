@@ -102,4 +102,10 @@
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
+  <url>
+    <loc>https://vanix.github.io/cs-teaching/17_%E4%BD%9C%E6%A5%AD%E7%B3%BB%E7%B5%B1%E7%B0%A1%E4%BB%8B.html</loc>
+    <lastmod>2026-09-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
 </urlset>

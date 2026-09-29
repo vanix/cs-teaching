@@ -1,0 +1,1109 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CS 資訊科學教室 - 作業系統介紹 (Operating System Introduction)</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;700;800&family=Noto+Sans+TC:wght@500;700;900&family=Fira+Code:wght@400;600&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            osPrimary: { 50: '#f0f9ff', 100: '#e0f2fe', 500: '#0ea5e9', 600: '#0284c7', 700: '#0369a1' },
+            osIndigo: { 50: '#eef2ff', 100: '#e0e7ff', 500: '#6366f1', 600: '#4f46e5', 700: '#4338ca' },
+            osEmerald: { 50: '#ecfdf5', 100: '#d1fae5', 500: '#10b981', 600: '#059669', 700: '#047857' },
+            osAmber: { 50: '#fffbe8', 100: '#fef3c7', 500: '#f59e0b', 600: '#d97706', 700: '#b45309' }
+          },
+          fontFamily: {
+            sans: ['Noto Sans TC', 'Plus Jakarta Sans', 'sans-serif'],
+            mono: ['Fira Code', 'monospace']
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    @keyframes subtlePulse {
+      0%, 100% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(1.02); opacity: 0.92; }
+    }
+    .animate-subtle-pulse { animation: subtlePulse 2.5s infinite ease-in-out; }
+
+    @keyframes popIn {
+      0% { transform: scale(0.94); opacity: 0; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+    .animate-pop { animation: popIn 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+
+    .terminal-scroll::-webkit-scrollbar { width: 6px; }
+    .terminal-scroll::-webkit-scrollbar-track { background: #0f172a; }
+    .terminal-scroll::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+  </style>
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8522276249008152" crossorigin="anonymous"></script>
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans min-h-screen flex flex-col selection:bg-sky-500 selection:text-white">
+
+  <header class="bg-white/90 backdrop-blur-md border-b border-slate-200 sticky top-0 z-40 shadow-sm">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
+      <div class="flex items-center space-x-3">
+        <a href="index.html" class="text-xs text-sky-600 hover:text-sky-800 transition flex items-center gap-1">
+          <i class="fa-solid fa-arrow-left"></i> 回到首頁
+        </a>
+        <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-sky-600 via-indigo-600 to-emerald-600 flex items-center justify-center text-white text-2xl shadow-lg shadow-sky-200 animate-subtle-pulse">
+          <i class="fa-solid fa-laptop-code"></i>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="text-xl sm:text-2xl font-black bg-gradient-to-r from-sky-600 via-indigo-600 to-emerald-600 bg-clip-text text-transparent">CS 資訊科學教室</h1>
+            <span class="text-xs font-bold px-2.5 py-0.5 rounded-full bg-sky-100 text-sky-700">作業系統 Core OS</span>
+          </div>
+          <p class="text-xs sm:text-sm text-slate-500 font-medium">主題：作業系統組成 (Kernel/Shell)、工作處理類型與常見 OS</p>
+        </div>
+      </div>
+
+      <!-- Navigation Tabs -->
+      <nav class="flex space-x-1 sm:space-x-2 bg-slate-100 p-1.5 rounded-2xl border border-slate-200/80">
+        <button onclick="switchTab('structure')" id="tab-structure" class="tab-btn px-3.5 sm:px-5 py-2 rounded-xl text-xs sm:text-sm font-extrabold transition-all duration-200 bg-white text-sky-600 shadow-sm">
+          <i class="fa-solid fa-cubes mr-1.5 text-sm sm:text-base"></i>01. OS 的組成 (Kernel & Shell)
+        </button>
+        <button onclick="switchTab('types')" id="tab-types" class="tab-btn px-3.5 sm:px-5 py-2 rounded-xl text-xs sm:text-sm font-extrabold transition-all duration-200 text-slate-600 hover:text-slate-900">
+          <i class="fa-solid fa-diagram-project mr-1.5 text-sm sm:text-base"></i>02. OS 的類型 (工作模式動畫)
+        </button>
+        <button onclick="switchTab('systems')" id="tab-systems" class="tab-btn px-3.5 sm:px-5 py-2 rounded-xl text-xs sm:text-sm font-extrabold transition-all duration-200 text-slate-600 hover:text-slate-900">
+          <i class="fa-brands fa-windows mr-1.5 text-sm sm:text-base"></i>03. 常見的作業系統
+        </button>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Main View -->
+  <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+
+    <section id="view-structure" class="space-y-8">
+      
+      <div class="bg-white p-6 sm:p-8 rounded-3xl border border-slate-200/80 shadow-sm space-y-4">
+        <div class="flex items-center gap-3">
+          <span class="px-3 py-1 bg-sky-100 text-sky-700 text-xs font-black rounded-full">核心觀念 01</span>
+          <h2 class="text-2xl sm:text-3xl font-black text-slate-800">作業系統 (OS) 是如何組成的？</h2>
+        </div>
+        <p class="text-sm sm:text-base text-slate-600 leading-relaxed font-medium">
+          作業系統就像是電腦硬體與使用者之間的橋樑。它的核心架構主要分為兩大層次：負責管理硬體資源的 <strong>核心 (Kernel)</strong>，以及負責與使用者互動的 <strong>外殼 / 介面 (Shell)</strong>。
+        </p>
+
+        <!-- OS Diagram -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-3 pt-4">
+          <div class="bg-amber-50 border-2 border-amber-200 p-4 rounded-2xl text-center space-y-1 hover:border-amber-400 transition">
+            <span class="text-[10px] font-black uppercase text-amber-600 bg-amber-100 px-2 py-0.5 rounded-full">的最外層</span>
+            <div class="text-2xl text-amber-600 font-black"><i class="fa-solid fa-user-gear"></i></div>
+            <h4 class="font-black text-slate-800">使用者 / 應用程式</h4>
+            <p class="text-xs text-slate-500 font-medium">User & Applications</p>
+          </div>
+
+          <div class="bg-sky-50 border-2 border-sky-300 p-4 rounded-2xl text-center space-y-1 hover:border-sky-500 transition shadow-sm">
+            <span class="text-[10px] font-black uppercase text-sky-600 bg-sky-100 px-2 py-0.5 rounded-full">互動橋樑</span>
+            <div class="text-2xl text-sky-600 font-black"><i class="fa-solid fa-terminal"></i></div>
+            <h4 class="font-black text-sky-950">外殼 Shell (介面)</h4>
+            <p class="text-xs text-slate-500 font-medium">解析命令（CUI 或 GUI）</p>
+          </div>
+
+          <div class="bg-indigo-50 border-2 border-indigo-300 p-4 rounded-2xl text-center space-y-1 hover:border-indigo-500 transition shadow-sm">
+            <span class="text-[10px] font-black uppercase text-indigo-600 bg-indigo-100 px-2 py-0.5 rounded-full">OS 靈魂核心</span>
+            <div class="text-2xl text-indigo-600 font-black"><i class="fa-solid fa-brain"></i></div>
+            <h4 class="font-black text-indigo-950">核心 Kernel</h4>
+            <p class="text-xs text-slate-500 font-medium">管理 CPU/記憶體/硬碟</p>
+          </div>
+
+          <div class="bg-slate-100 border-2 border-slate-300 p-4 rounded-2xl text-center space-y-1 hover:border-slate-500 transition">
+            <span class="text-[10px] font-black uppercase text-slate-600 bg-slate-200 px-2 py-0.5 rounded-full">最底層</span>
+            <div class="text-2xl text-slate-600 font-black"><i class="fa-solid fa-microchip"></i></div>
+            <h4 class="font-black text-slate-800">電腦硬體 (Hardware)</h4>
+            <p class="text-xs text-slate-500 font-medium">CPU、RAM、儲存裝置</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- CUI vs GUI Interactive Demos -->
+      <div class="space-y-6">
+        <div>
+          <h3 class="text-xl sm:text-2xl font-black text-slate-800 flex items-center gap-2">
+            <i class="fa-solid fa-wand-magic-sparkles text-sky-600"></i>
+            <span>Shell 外殼介面的兩種型態：CUI vs GUI 動態模擬</span>
+          </h3>
+          <p class="text-xs sm:text-sm text-slate-500 mt-0.5">點擊下方按鈕或操作模擬視窗，體會文字指令與圖形介面的操作差異：</p>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          
+          <!-- CUI Terminal Simulation -->
+          <div class="bg-slate-900 rounded-3xl p-5 border border-slate-800 shadow-xl flex flex-col justify-between space-y-4">
+            <div>
+              <div class="flex justify-between items-center pb-3 border-b border-slate-800">
+                <div class="flex items-center gap-2">
+                  <span class="w-3 h-3 rounded-full bg-red-500"></span>
+                  <span class="w-3 h-3 rounded-full bg-amber-500"></span>
+                  <span class="w-3 h-3 rounded-full bg-emerald-500"></span>
+                  <span class="text-xs font-mono font-bold text-slate-400 ml-2"><i class="fa-solid fa-terminal text-sky-400 mr-1"></i> CUI (命令列使用者介面)</span>
+                </div>
+                <span class="text-[10px] font-bold bg-sky-500/20 text-sky-300 px-2.5 py-0.5 rounded-full border border-sky-400/30">Command-line</span>
+              </div>
+
+              <div class="mt-3 space-y-2">
+                <p class="text-xs text-slate-400 font-medium">
+                  <strong>CUI (Command User Interface)</strong>：全靠純文字指令控制，沒有滑鼠指標，資源佔用極低。
+                </p>
+
+                <div id="cui-terminal-screen" class="bg-black rounded-2xl p-4 h-60 font-mono text-xs text-emerald-400 overflow-y-auto terminal-scroll border border-slate-800 space-y-1.5 shadow-inner">
+                  <div class="text-slate-500">// Welcome to CUI Interactive Terminal v1.0</div>
+                  <div class="text-slate-500">// Type a command or click quick action buttons below.</div>
+                  <div><span class="text-sky-400">user@cs-os:~$</span> <span id="cui-typing-text" class="text-white"></span><span class="animate-pulse">█</span></div>
+                </div>
+              </div>
+            </div>
+
+            <div class="space-y-3 pt-2">
+              <div class="text-xs font-bold text-slate-400 flex items-center justify-between">
+                <span>快速點擊輸入指令動畫：</span>
+                <button onclick="clearCuiTerminal()" class="text-[11px] text-slate-400 hover:text-white underline">清空螢幕</button>
+              </div>
+
+              <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs font-mono">
+                <button onclick="runCuiCommand('ls -la')" class="bg-slate-800 hover:bg-slate-700 text-sky-300 py-2 px-2.5 rounded-xl border border-slate-700 transition flex items-center justify-center gap-1">
+                  <i class="fa-solid fa-list"></i> ls -la
+                </button>
+                <button onclick="runCuiCommand('mkdir project')" class="bg-slate-800 hover:bg-slate-700 text-emerald-300 py-2 px-2.5 rounded-xl border border-slate-700 transition flex items-center justify-center gap-1">
+                  <i class="fa-solid fa-folder-plus"></i> mkdir
+                </button>
+                <button onclick="runCuiCommand('cat system_info.txt')" class="bg-slate-800 hover:bg-slate-700 text-amber-300 py-2 px-2.5 rounded-xl border border-slate-700 transition flex items-center justify-center gap-1">
+                  <i class="fa-solid fa-file-lines"></i> cat info
+                </button>
+                <button onclick="runCuiCommand('run_calc.sh')" class="bg-slate-800 hover:bg-slate-700 text-purple-300 py-2 px-2.5 rounded-xl border border-slate-700 transition flex items-center justify-center gap-1">
+                  <i class="fa-solid fa-play"></i> run_calc
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- GUI Interactive Window -->
+          <div class="bg-slate-100 rounded-3xl p-5 border border-slate-200 shadow-sm flex flex-col justify-between space-y-4">
+            <div>
+              <div class="flex justify-between items-center pb-3 border-b border-slate-200">
+                <div class="flex items-center gap-2">
+                  <span class="w-3 h-3 rounded-full bg-red-400"></span>
+                  <span class="w-3 h-3 rounded-full bg-amber-400"></span>
+                  <span class="w-3 h-3 rounded-full bg-emerald-400"></span>
+                  <span class="text-xs font-bold text-slate-700 ml-2"><i class="fa-solid fa-window-restore text-indigo-600 mr-1"></i> GUI (圖形化使用者介面)</span>
+                </div>
+                <span class="text-[10px] font-bold bg-indigo-100 text-indigo-700 px-2.5 py-0.5 rounded-full">Graphical User Interface</span>
+              </div>
+
+              <div class="mt-3 space-y-2">
+                <p class="text-xs text-slate-600 font-medium">
+                  <strong>GUI (Graphical User Interface)</strong>：直覺的圖形圖示、視窗、按鈕與滑鼠點擊，學習門檻低。
+                </p>
+
+                <div id="gui-desktop" class="bg-gradient-to-br from-indigo-500 via-sky-500 to-emerald-400 rounded-2xl h-60 p-4 relative overflow-hidden border border-slate-300 shadow-inner flex flex-col justify-between">
+                  <div class="grid grid-cols-3 gap-3 w-48">
+                    <button onclick="guiOpenWindow('folder')" class="flex flex-col items-center p-2 rounded-xl hover:bg-white/20 backdrop-blur transition text-white group">
+                      <i class="fa-solid fa-folder-closed text-3xl text-amber-300 drop-shadow group-hover:scale-110 transition"></i>
+                      <span class="text-[11px] font-black mt-1 shadow-sm">專案資料夾</span>
+                    </button>
+
+                    <button onclick="guiOpenWindow('music')" class="flex flex-col items-center p-2 rounded-xl hover:bg-white/20 backdrop-blur transition text-white group">
+                      <i class="fa-solid fa-compact-disc text-3xl text-pink-300 drop-shadow group-hover:rotate-45 transition"></i>
+                      <span class="text-[11px] font-black mt-1 shadow-sm">音樂播放器</span>
+                    </button>
+
+                    <button onclick="guiOpenWindow('trash')" class="flex flex-col items-center p-2 rounded-xl hover:bg-white/20 backdrop-blur transition text-white group">
+                      <i class="fa-solid fa-trash-can text-3xl text-slate-200 drop-shadow group-hover:scale-110 transition"></i>
+                      <span class="text-[11px] font-black mt-1 shadow-sm">垃圾桶</span>
+                    </button>
+                  </div>
+
+                  <div id="gui-modal-window" class="absolute inset-x-8 top-8 bottom-10 bg-white/95 backdrop-blur-md rounded-2xl p-4 shadow-2xl border border-white/60 flex flex-col justify-between animate-pop">
+                    <div class="flex justify-between items-center border-b pb-2">
+                      <span id="gui-window-title" class="text-xs font-black text-slate-800 flex items-center gap-1.5">
+                        <i class="fa-solid fa-folder text-amber-500"></i> 專案資料夾
+                      </span>
+                      <button onclick="guiCloseWindow()" class="text-slate-400 hover:text-slate-700 text-xs px-1.5 font-black">✕</button>
+                    </div>
+
+                    <div id="gui-window-content" class="text-xs text-slate-600 font-medium py-2">
+                      點擊桌面圖示試試看！這裡會展示直覺的圖形與視窗畫面。
+                    </div>
+
+                    <div class="flex justify-end gap-2 pt-2 border-t">
+                      <button onclick="guiActionEffect()" class="px-3 py-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold transition shadow-sm">
+                        確認執行
+                      </button>
+                    </div>
+                  </div>
+
+                  <div class="bg-slate-900/80 backdrop-blur-md rounded-xl px-3 py-1.5 flex justify-between items-center text-white text-xs font-bold border border-white/20">
+                    <div class="flex items-center gap-2">
+                      <i class="fa-brands fa-windows text-sky-400"></i>
+                      <span>開始選單</span>
+                    </div>
+                    <span class="text-[10px] font-mono opacity-80" id="gui-clock">12:00 PM</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="text-xs text-slate-500 bg-white p-3 rounded-2xl border border-slate-200 font-medium">
+              💡 <strong>觀察重點：</strong> CUI 適合高級工程師與伺服器遠端管理；GUI 適合一般大眾娛樂與文書辦公。
+            </div>
+          </div>
+
+        </div>
+
+        <div class="bg-white rounded-3xl p-6 border border-slate-200/80 shadow-sm space-y-4">
+          <h4 class="font-black text-slate-800 text-lg flex items-center gap-2">
+            <i class="fa-solid fa-table text-indigo-600"></i>
+            <span>CUI 與 GUI 特性詳細對照表</span>
+          </h4>
+
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs sm:text-sm">
+              <thead class="bg-slate-100 text-slate-700 font-black border-b border-slate-200">
+                <tr>
+                  <th class="p-3.5">比較項目</th>
+                  <th class="p-3.5 text-sky-700">CUI (命令列介面)</th>
+                  <th class="p-3.5 text-indigo-700">GUI (圖形介面)</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-100 font-medium text-slate-600">
+                <tr>
+                  <td class="p-3.5 font-bold text-slate-800">主要操作方式</td>
+                  <td class="p-3.5">鍵盤輸入純文字指令 (Command)</td>
+                  <td class="p-3.5">滑鼠/觸控點擊圖示、按鈕與視窗</td>
+                </tr>
+                <tr>
+                  <td class="p-3.5 font-bold text-slate-800">學習難易度</td>
+                  <td class="p-3.5 text-amber-600 font-bold">較高 (需死記各種指令語法)</td>
+                  <td class="p-3.5 text-emerald-600 font-bold">極低 (圖形直覺，看圖即會操作)</td>
+                </tr>
+                <tr>
+                  <td class="p-3.5 font-bold text-slate-800">系統資源消耗 (RAM/GPU)</td>
+                  <td class="p-3.5 text-emerald-600 font-bold">極低 (無圖形渲染開銷)</td>
+                  <td class="p-3.5 text-amber-600 font-bold">較高 (需大量記憶體渲染 UI)</td>
+                </tr>
+                <tr>
+                  <td class="p-3.5 font-bold text-slate-800">主要應用場景</td>
+                  <td class="p-3.5">雲端伺服器管理、程式開發、自動化腳本</td>
+                  <td class="p-3.5">個人電腦、智慧型手機、日常娛樂辦公</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+
+    </section>
+
+    <section id="view-types" class="hidden space-y-8">
+      
+      <div class="bg-white p-6 sm:p-8 rounded-3xl border border-slate-200/80 shadow-sm flex flex-col md:flex-row justify-between md:items-center gap-6">
+        <div>
+          <div class="flex items-center gap-2 text-indigo-600 font-extrabold text-sm mb-1">
+            <span>核心觀念 02</span>
+          </div>
+          <h2 class="text-2xl sm:text-3xl font-black text-slate-800">作業系統的三大工作處理模式</h2>
+          <p class="text-xs sm:text-sm text-slate-500 mt-1">根據系統能同時服務的「使用者人數」與「執行工作數量」來劃分：</p>
+        </div>
+
+        <div class="flex items-center gap-3 flex-wrap">
+          <button onclick="toggleModeAnimation()" id="btn-mode-play" class="px-5 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-black text-sm rounded-2xl transition flex items-center gap-2 shadow-md shadow-indigo-100">
+            <i class="fa-solid fa-pause"></i> 暫停所有動畫
+          </button>
+          <button onclick="addNewSimultaneousTasks()" class="px-5 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-black text-sm rounded-2xl transition flex items-center gap-2 shadow-md shadow-emerald-100">
+            <i class="fa-solid fa-plus-circle"></i> 同時新增工作 (Simultaneous Tasks)
+          </button>
+        </div>
+      </div>
+
+      <div class="space-y-8">
+        
+        <!-- MODE 1: Single-User Single-Tasking -->
+        <div class="bg-white p-6 rounded-3xl border-2 border-amber-200 shadow-sm space-y-4">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-amber-100">
+            <div class="flex items-center gap-3">
+              <span class="w-10 h-10 rounded-2xl bg-amber-100 text-amber-700 flex items-center justify-center font-black text-xl">1</span>
+              <div>
+                <h3 class="text-xl font-black text-slate-800">單人單工 (Single-User Single-Tasking)</h3>
+                <p class="text-xs text-slate-500 font-medium">畫面上一位使用者。側邊有好幾件事情要做，但他一次只能拿「一件」事情來做，做完才能做下一件。</p>
+              </div>
+            </div>
+            <span class="text-xs font-black bg-amber-100 text-amber-800 px-3 py-1 rounded-full w-fit">代表系統：MS-DOS</span>
+          </div>
+
+          <div class="bg-slate-900 rounded-2xl p-5 min-h-[180px] flex flex-col md:flex-row items-center justify-between gap-6 border border-slate-800 shadow-inner">
+            
+            <div class="w-full md:w-1/3 bg-slate-950 p-3.5 rounded-xl border border-slate-800">
+              <div class="text-xs font-bold text-amber-400 mb-2 flex justify-between">
+                <span>等待佇列 (一次做一件事)</span>
+                <span id="queue-count-1" class="font-mono">3 個</span>
+              </div>
+              <div id="queue-container-1" class="space-y-2 min-h-[80px]">
+                <!-- Queue items injected -->
+              </div>
+            </div>
+
+            <div class="text-amber-400 text-2xl hidden md:block">
+              <i class="fa-solid fa-arrow-right-long animate-pulse"></i>
+            </div>
+
+            <div class="w-full md:w-1/2 bg-slate-800 p-4 rounded-xl border border-slate-700 flex items-center justify-around">
+              <div class="flex flex-col items-center">
+                <div class="w-16 h-16 rounded-full bg-amber-500/20 text-amber-400 flex items-center justify-center text-3xl border-2 border-amber-400">
+                  <i class="fa-solid fa-user"></i>
+                </div>
+                <span class="text-xs font-black text-amber-300 mt-2">1 位使用者</span>
+              </div>
+
+              <div class="flex flex-col items-center w-40">
+                <span class="text-[11px] font-bold text-slate-400 mb-1">正在進行的工作</span>
+                <div id="active-task-slot-1" class="w-full h-12 bg-amber-500/10 border-2 border-dashed border-amber-400/60 rounded-xl flex items-center justify-center text-xs font-black text-amber-300 p-2 text-center">
+                  載入中...
+                </div>
+                <div class="w-full bg-slate-700 h-1.5 rounded-full mt-2 overflow-hidden">
+                  <div id="progress-bar-1" class="bg-amber-400 h-full w-0 transition-all duration-300"></div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- MODE 2: Single-User Multi-Tasking -->
+        <div class="bg-white p-6 rounded-3xl border-2 border-sky-200 shadow-sm space-y-4">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-sky-100">
+            <div class="flex items-center gap-3">
+              <span class="w-10 h-10 rounded-2xl bg-sky-100 text-sky-700 flex items-center justify-center font-black text-xl">2</span>
+              <div>
+                <h3 class="text-xl font-black text-slate-800">單人多工 (Single-User Multi-Tasking)</h3>
+                <p class="text-xs text-slate-500 font-medium">畫面上一位使用者。可以同時拿許多事情同時進行（聽音樂、打報告、下載檔案同時跑）。</p>
+              </div>
+            </div>
+            <span class="text-xs font-black bg-sky-100 text-sky-800 px-3 py-1 rounded-full w-fit">代表系統：Windows, iOS, Android</span>
+          </div>
+
+          <div class="bg-slate-900 rounded-2xl p-5 min-h-[180px] flex flex-col md:flex-row items-center justify-between gap-6 border border-slate-800 shadow-inner">
+            
+            <div class="flex flex-col items-center justify-center w-full md:w-1/3 py-2">
+              <div class="w-20 h-20 rounded-full bg-sky-500/20 text-sky-400 flex items-center justify-center text-4xl border-2 border-sky-400 shadow-lg">
+                <i class="fa-solid fa-user"></i>
+              </div>
+              <span class="text-xs font-black text-sky-300 mt-2">1 位使用者</span>
+            </div>
+
+            <div class="w-full md:w-2/3 bg-slate-800 p-4 rounded-xl border border-slate-700 space-y-2.5">
+              <div class="text-xs font-bold text-sky-300 mb-1 flex justify-between">
+                <span>同時並行處理的工作 (Simultaneous Execution)</span>
+                <span class="text-[10px] text-sky-400">系統自動交替推進</span>
+              </div>
+
+              <div id="multi-task-list-2" class="space-y-2">
+                <!-- Concurrently running tasks injected -->
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- MODE 3: Multi-User Multi-Tasking -->
+        <div class="bg-white p-6 rounded-3xl border-2 border-indigo-200 shadow-sm space-y-4">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-indigo-100">
+            <div class="flex items-center gap-3">
+              <span class="w-10 h-10 rounded-2xl bg-indigo-100 text-indigo-700 flex items-center justify-center font-black text-xl">3</span>
+              <div>
+                <h3 class="text-xl font-black text-slate-800">多人多工 (Multi-User Multi-Tasking)</h3>
+                <p class="text-xs text-slate-500 font-medium">畫面上有好幾個人（使用者 A、B、C），這些人同時都在執行很多工作。</p>
+              </div>
+            </div>
+            <span class="text-xs font-black bg-indigo-100 text-indigo-800 px-3 py-1 rounded-full w-fit">代表系統：Linux, Unix, macOS, Windows Server</span>
+          </div>
+
+          <div class="bg-slate-900 rounded-2xl p-5 min-h-[220px] border border-slate-800 shadow-inner">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+              
+              <!-- User A -->
+              <div class="bg-slate-950 p-3.5 rounded-xl border border-indigo-500/40 space-y-3">
+                <div class="flex items-center gap-2">
+                  <div class="w-8 h-8 rounded-full bg-indigo-500/20 text-indigo-300 flex items-center justify-center text-sm border border-indigo-400">
+                    <i class="fa-solid fa-user"></i>
+                  </div>
+                  <span class="text-xs font-black text-indigo-300">使用者 A</span>
+                </div>
+                <div id="user-a-tasks" class="space-y-2">
+                  <!-- Active Tasks injected -->
+                </div>
+              </div>
+
+              <!-- User B -->
+              <div class="bg-slate-950 p-3.5 rounded-xl border border-emerald-500/40 space-y-3">
+                <div class="flex items-center gap-2">
+                  <div class="w-8 h-8 rounded-full bg-emerald-500/20 text-emerald-300 flex items-center justify-center text-sm border border-emerald-400">
+                    <i class="fa-solid fa-user"></i>
+                  </div>
+                  <span class="text-xs font-black text-emerald-300">使用者 B</span>
+                </div>
+                <div id="user-b-tasks" class="space-y-2">
+                  <!-- Active Tasks injected -->
+                </div>
+              </div>
+
+              <!-- User C -->
+              <div class="bg-slate-950 p-3.5 rounded-xl border border-purple-500/40 space-y-3">
+                <div class="flex items-center gap-2">
+                  <div class="w-8 h-8 rounded-full bg-purple-500/20 text-purple-300 flex items-center justify-center text-sm border border-purple-400">
+                    <i class="fa-solid fa-user"></i>
+                  </div>
+                  <span class="text-xs font-black text-purple-300">使用者 C</span>
+                </div>
+                <div id="user-c-tasks" class="space-y-2">
+                  <!-- Active Tasks injected -->
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+    </section>
+
+    <section id="view-systems" class="hidden space-y-8">
+      
+      <div class="bg-white p-6 sm:p-8 rounded-3xl border border-slate-200/80 shadow-sm space-y-6">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <div class="flex items-center gap-2 text-indigo-600 font-extrabold text-sm mb-1">
+              <span>核心觀念 03</span>
+            </div>
+            <h2 class="text-2xl sm:text-3xl font-black text-slate-800">常見作業系統圖鑑與屬性分類</h2>
+            <p class="text-xs sm:text-sm text-slate-500 mt-1">點擊下方分類，快速篩選各大作業系統：</p>
+          </div>
+
+          <div class="flex items-center gap-1.5 bg-slate-100 p-1.5 rounded-2xl border border-slate-200 flex-wrap">
+            <button onclick="filterOsList('all')" id="filter-all" class="os-filter-btn px-3.5 py-1.5 rounded-xl text-xs font-black bg-white text-indigo-600 shadow-sm transition">
+              全部 OS
+            </button>
+            <button onclick="filterOsList('單人單工')" id="filter-single-single" class="os-filter-btn px-3.5 py-1.5 rounded-xl text-xs font-black text-slate-600 hover:text-slate-900 transition">
+              單人單工
+            </button>
+            <button onclick="filterOsList('單人多工')" id="filter-single-multi" class="os-filter-btn px-3.5 py-1.5 rounded-xl text-xs font-black text-slate-600 hover:text-slate-900 transition">
+              單人多工
+            </button>
+            <button onclick="filterOsList('多人多工')" id="filter-multi-multi" class="os-filter-btn px-3.5 py-1.5 rounded-xl text-xs font-black text-slate-600 hover:text-slate-900 transition">
+              多人多工
+            </button>
+          </div>
+        </div>
+
+        <div id="os-cards-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 pt-2">
+          <!-- Injected via JS -->
+        </div>
+      </div>
+
+      <!-- Revision Quiz -->
+      <div class="bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 p-6 sm:p-8 rounded-3xl text-white shadow-xl space-y-6">
+        <div class="flex items-center justify-between flex-wrap gap-3">
+          <div>
+            <span class="text-xs font-black bg-indigo-500/30 border border-indigo-400/40 text-indigo-300 px-3 py-1 rounded-full">隨堂小測驗</span>
+            <h3 class="text-xl sm:text-2xl font-black mt-2">🧠 作業系統屬性速記測驗</h3>
+            <p class="text-xs sm:text-sm text-slate-300 mt-1">請回答下列 OS 分別屬於哪種工作處理類型？</p>
+          </div>
+          <div class="bg-indigo-900/60 border border-indigo-500/40 px-4 py-2 rounded-2xl text-xs font-mono font-bold text-indigo-200">
+            得分：<span id="quiz-score" class="text-lg text-emerald-400 font-black">0</span> / 6
+          </div>
+        </div>
+
+        <div id="quiz-container" class="space-y-4">
+          <!-- Quiz questions injected -->
+        </div>
+      </div>
+
+    </section>
+
+  </main>
+
+  <!-- OS Detail Modal -->
+  <div id="modal-os" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl p-6 sm:p-8 max-w-lg w-full shadow-2xl space-y-5 animate-pop relative border border-slate-100">
+      <button onclick="closeOsModal()" class="absolute top-5 right-5 text-slate-400 hover:text-slate-600 text-xl w-8 h-8 rounded-full flex items-center justify-center hover:bg-slate-100 transition">
+        ✕
+      </button>
+
+      <div class="flex items-center gap-4">
+        <div id="modal-os-icon" class="w-16 h-16 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-4xl shadow-sm"></div>
+        <div>
+          <h4 id="modal-os-title" class="font-black text-2xl text-slate-800">--</h4>
+          <span id="modal-os-badge" class="text-xs px-3 py-1 rounded-full font-black mt-1 inline-block">--</span>
+        </div>
+      </div>
+
+      <div class="space-y-3 text-sm text-slate-600 bg-slate-50 p-4 rounded-2xl border border-slate-200/80 font-medium leading-relaxed">
+        <p id="modal-os-desc">--</p>
+        <div class="pt-2 border-t border-slate-200/60 text-xs text-slate-500 space-y-1">
+          <div><strong>🎯 典型應用裝置：</strong><span id="modal-os-device">--</span></div>
+          <div><strong>💡 核心特色：</strong><span id="modal-os-feature">--</span></div>
+        </div>
+      </div>
+
+      <button onclick="closeOsModal()" class="w-full py-3.5 bg-slate-900 hover:bg-black text-white font-black rounded-2xl text-sm transition shadow-md">
+        理解完畢
+      </button>
+    </div>
+  </div>
+
+  <script>
+    /* Operating Systems Dataset including MS-DOS */
+    const OPERATING_SYSTEMS = [
+      {
+        id: 'msdos',
+        name: 'MS-DOS',
+        type: '單人單工',
+        icon: 'fa-solid fa-square-terminal',
+        color: 'text-amber-600',
+        bg: 'bg-amber-50',
+        border: 'border-amber-200',
+        device: '早期個人電腦 (PC 發展初期)',
+        feature: '採用全文字命令列介面，一次只能執行一個程式，執行完才能輸入下一個命令。',
+        desc: '早期微軟推出的古老作業系統。畫面上只有一位使用者操作，且不支援多工作業，屬於標準的「單人單工」系統。'
+      },
+      {
+        id: 'windows',
+        name: 'Windows',
+        type: '單人多工',
+        icon: 'fa-brands fa-windows',
+        color: 'text-sky-500',
+        bg: 'bg-sky-50',
+        border: 'border-sky-200',
+        device: '個人電腦 (PC / 筆記型電腦)',
+        feature: '圖形介面直覺、軟體生態系龐大，可同時開音樂、瀏覽網頁與打報告。',
+        desc: '微軟公司開發的個人電腦作業系統。雖然可切換多個使用者帳戶登入，但同一時間僅供一位使用者操作畫面並處理多項任務，屬於「單人多工」。'
+      },
+      {
+        id: 'win-server',
+        name: 'Windows Server',
+        type: '多人多工',
+        icon: 'fa-solid fa-server',
+        color: 'text-blue-600',
+        bg: 'bg-blue-50',
+        border: 'border-blue-200',
+        device: '企業級伺服器 / 機架主機',
+        feature: '專為企業網路、遠端桌面 (RDP) 服務、網域控管與資料庫設計。',
+        desc: '專為企業伺服器環境打造的作業系統。支援多位使用者同時遠端登入，各自獨立執行多個應用程式。'
+      },
+      {
+        id: 'macos',
+        name: 'macOS',
+        type: '多人多工',
+        icon: 'fa-brands fa-apple',
+        color: 'text-slate-800',
+        bg: 'bg-slate-100',
+        border: 'border-slate-300',
+        device: 'Apple Mac 系列電腦 (MacBook / iMac)',
+        feature: '底層基於 Unix，畫面極致優雅、系統高度穩定流暢。',
+        desc: '蘋果公司為 Mac 電腦開發的作業系統。其底層繼承自 Unix 核心，完全具備多使用者權限架構與遠端多使用者 concurrent 登入處理能力。'
+      },
+      {
+        id: 'unix',
+        name: 'Unix',
+        type: '多人多工',
+        icon: 'fa-solid fa-terminal',
+        color: 'text-indigo-600',
+        bg: 'bg-indigo-50',
+        border: 'border-indigo-200',
+        device: '大型主機、電信伺服器、工作站',
+        feature: '安全性極高、穩定度極佳，支援強大的 Multi-user 與 Multi-tasking。',
+        desc: '歷史悠久且極度穩定的作業系統典範。設計之初就是為了讓多位工程師同時透過終端機連線共用主機資源。'
+      },
+      {
+        id: 'linux',
+        name: 'Linux',
+        type: '多人多工',
+        icon: 'fa-brands fa-linux',
+        color: 'text-amber-600',
+        bg: 'bg-amber-50',
+        border: 'border-amber-200',
+        device: '雲端伺服器、超級電腦、嵌入式設備',
+        feature: '自由開源 (Open Source)、模組化程度極高，驅動全球多數網路伺服器。',
+        desc: '由 Linus Torvalds 發起的開源作業系統核心。具備優秀的多人多工架構，衍生出 Ubuntu, RedHat 等無數版本。'
+      },
+      {
+        id: 'ios',
+        name: 'iOS',
+        type: '單人多工',
+        icon: 'fa-brands fa-app-store-ios',
+        color: 'text-purple-600',
+        bg: 'bg-purple-50',
+        border: 'border-purple-200',
+        device: 'iPhone / iPod touch',
+        feature: '觸控體驗順暢、App 生態安全且支援背景聽歌與推播等多工作業。',
+        desc: '蘋果公司為 iPhone 設計的行動作業系統。專為單一持有者使用設計，能同時處理背景播放音樂、接收推播與導航。'
+      },
+      {
+        id: 'android',
+        name: 'Android',
+        type: '單人多工',
+        icon: 'fa-brands fa-android',
+        color: 'text-emerald-600',
+        bg: 'bg-emerald-50',
+        border: 'border-emerald-200',
+        device: '智慧型手機、平板電腦、智慧電視',
+        feature: 'Google 主導之開放原始碼系統，支援多品牌手機，客製化程度高。',
+        desc: '基於 Linux 核心開發的行動作業系統。專注於服務單一持有者同時進行滑手機、聽歌與訊息推播。'
+      }
+    ];
+
+    const QUIZ_DATA = [
+      { id: 1, name: 'MS-DOS (早期古老 OS)', answer: '單人單工', options: ['單人單工', '單人多工', '多人多工'] },
+      { id: 2, name: 'Windows 11 個人電腦', answer: '單人多工', options: ['單人單工', '單人多工', '多人多工'] },
+      { id: 3, name: 'Windows Server 伺服器', answer: '多人多工', options: ['單人單工', '單人多工', '多人多工'] },
+      { id: 4, name: 'iOS (iPhone OS)', answer: '單人多工', options: ['單人單工', '單人多工', '多人多工'] },
+      { id: 5, name: 'Linux 雲端主機', answer: '多人多工', options: ['單人單工', '單人多工', '多人多工'] },
+      { id: 6, name: 'Android 智慧型手機', answer: '單人多工', options: ['單人單工', '單人多工', '多人多工'] }
+    ];
+
+    /* Task Templates using Everyday Relatable Concepts */
+    const SIMPLE_TASKS = [
+      { name: '聽音樂', icon: 'fa-music', color: 'bg-sky-500/20 text-sky-300 border-sky-400/40' },
+      { name: '打報告', icon: 'fa-file-word', color: 'bg-indigo-500/20 text-indigo-300 border-indigo-400/40' },
+      { name: '下載檔案', icon: 'fa-download', color: 'bg-emerald-500/20 text-emerald-300 border-emerald-400/40' },
+      { name: '瀏覽網頁', icon: 'fa-globe', color: 'bg-purple-500/20 text-purple-300 border-purple-400/40' },
+      { name: '列印文件', icon: 'fa-print', color: 'bg-amber-500/20 text-amber-300 border-amber-400/40' },
+      { name: '玩遊戲', icon: 'fa-gamepad', color: 'bg-rose-500/20 text-rose-300 border-rose-400/40' },
+      { name: '傳訊息', icon: 'fa-comment-dots', color: 'bg-teal-500/20 text-teal-300 border-teal-400/40' },
+      { name: '開啟影音', icon: 'fa-circle-play', color: 'bg-blue-500/20 text-blue-300 border-blue-400/40' }
+    ];
+
+    let isModeAnimRunning = true;
+    let currentFilter = 'all';
+    let userQuizAnswers = {};
+
+    /* Active Task States for Live Animations */
+    let queueSingleUser = [
+      { name: '打報告', icon: 'fa-file-word' },
+      { name: '列印文件', icon: 'fa-print' },
+      { name: '備份照片', icon: 'fa-image' }
+    ];
+    let singleActiveTask = { name: '聽音樂', icon: 'fa-music', progress: 20 };
+
+    let multiTasksUser1 = [
+      { name: '聽音樂', icon: 'fa-music', progress: 45, color: 'text-sky-300' },
+      { name: '打報告', icon: 'fa-file-word', progress: 70, color: 'text-indigo-300' },
+      { name: '下載檔案', icon: 'fa-download', progress: 30, color: 'text-emerald-300' }
+    ];
+
+    let multiUsersData = {
+      A: [
+        { name: '瀏覽網頁', icon: 'fa-globe', progress: 60, color: 'text-indigo-300' },
+        { name: '聽音樂', icon: 'fa-music', progress: 25, color: 'text-indigo-300' }
+      ],
+      B: [
+        { name: '打報告', icon: 'fa-file-word', progress: 80, color: 'text-emerald-300' },
+        { name: '傳訊息', icon: 'fa-comment-dots', progress: 40, color: 'text-emerald-300' }
+      ],
+      C: [
+        { name: '玩遊戲', icon: 'fa-gamepad', progress: 15, color: 'text-purple-300' },
+        { name: '下載檔案', icon: 'fa-download', progress: 90, color: 'text-purple-300' }
+      ]
+    };
+
+    window.onload = function() {
+      renderOsCards();
+      renderQuiz();
+      startSimultaneousLoop();
+
+      setInterval(() => {
+        const now = new Date();
+        const clockEl = document.getElementById('gui-clock');
+        if (clockEl) {
+          clockEl.innerText = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        }
+      }, 1000);
+    };
+
+    function switchTab(tabName) {
+      document.querySelectorAll('section[id^="view-"]').forEach(sec => sec.classList.add('hidden'));
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.remove('bg-white', 'text-sky-600', 'shadow-sm');
+        btn.classList.add('text-slate-600');
+      });
+
+      document.getElementById(`view-${tabName}`).classList.remove('hidden');
+      const activeBtn = document.getElementById(`tab-${tabName}`);
+      activeBtn.classList.add('bg-white', 'text-sky-600', 'shadow-sm');
+      activeBtn.classList.remove('text-slate-600');
+    }
+
+    /* Tab 1 CUI/GUI Logic */
+    function runCuiCommand(cmd) {
+      const screen = document.getElementById('cui-terminal-screen');
+      const typingText = document.getElementById('cui-typing-text');
+      typingText.innerText = cmd;
+
+      setTimeout(() => {
+        const cmdLine = document.createElement('div');
+        cmdLine.innerHTML = `<span class="text-sky-400">user@cs-os:~$</span> <span class="text-white">${cmd}</span>`;
+        screen.appendChild(cmdLine);
+
+        const responseLine = document.createElement('div');
+        responseLine.className = 'text-slate-300 ml-2 font-mono';
+
+        if (cmd.includes('ls')) {
+          responseLine.innerHTML = `<span class="text-blue-400">drwxr-xr-x</span> project/<br><span class="text-emerald-400">-rw-r--r--</span> system_info.txt<br><span class="text-purple-400">-rwxr-xr-x</span> run_calc.sh`;
+        } else if (cmd.includes('mkdir')) {
+          responseLine.innerHTML = `<span class="text-emerald-400">✓ 成功建立新目錄: ./project</span>`;
+        } else if (cmd.includes('cat')) {
+          responseLine.innerHTML = `<span class="text-amber-300">[OS Info] Kernel: v6.8.0 | Shell: Bash</span>`;
+        } else if (cmd.includes('run_calc')) {
+          responseLine.innerHTML = `<span class="text-purple-300">Executing script... Result = 2026 CS OS OK!</span>`;
+        }
+
+        screen.appendChild(responseLine);
+        typingText.innerText = '';
+        screen.scrollTop = screen.scrollHeight;
+      }, 150);
+    }
+
+    function clearCuiTerminal() {
+      const screen = document.getElementById('cui-terminal-screen');
+      screen.innerHTML = `
+        <div class="text-slate-500">// Terminal screen cleared.</div>
+        <div><span class="text-sky-400">user@cs-os:~$</span> <span id="cui-typing-text" class="text-white"></span><span class="animate-pulse">█</span></div>
+      `;
+    }
+
+    function guiOpenWindow(type) {
+      const win = document.getElementById('gui-modal-window');
+      const title = document.getElementById('gui-window-title');
+      const content = document.getElementById('gui-window-content');
+      win.classList.remove('hidden');
+
+      if (type === 'folder') {
+        title.innerHTML = `<i class="fa-solid fa-folder text-amber-500"></i> 專案資料夾`;
+        content.innerHTML = `包含 3 個檔案：<br>📄 Report.docx (24 KB)<br>📊 Data.xlsx (120 KB)<br>🖼️ Picture.png (1.2 MB)`;
+      } else if (type === 'music') {
+        title.innerHTML = `<i class="fa-solid fa-compact-disc text-pink-500"></i> 音樂播放器`;
+        content.innerHTML = `🎵 正在播放：<strong>CS OS Lo-Fi Beats</strong><br>進度：[████████░░] 3:20 / 4:15`;
+      } else if (type === 'trash') {
+        title.innerHTML = `<i class="fa-solid fa-trash-can text-slate-500"></i> 垃圾桶`;
+        content.innerHTML = `垃圾桶內目前有 1 個項目。<br>點擊下方按鈕可進行「清空垃圾桶」。`;
+      }
+    }
+
+    function guiCloseWindow() {
+      document.getElementById('gui-modal-window').classList.add('hidden');
+    }
+
+    function guiActionEffect() {
+      const content = document.getElementById('gui-window-content');
+      content.innerHTML = `<span class="text-emerald-600 font-black">✓ 指令已透過 GUI 傳遞至 Kernel 執行完畢！</span>`;
+    }
+
+    /* Tab 2 Animation Engine */
+    function toggleModeAnimation() {
+      isModeAnimRunning = !isModeAnimRunning;
+      const btn = document.getElementById('btn-mode-play');
+      btn.innerHTML = isModeAnimRunning 
+        ? `<i class="fa-solid fa-pause"></i> 暫停所有動畫` 
+        : `<i class="fa-solid fa-play"></i> 繼續動畫`;
+    }
+
+    function addNewSimultaneousTasks() {
+      // Pick random tasks for simultaneous addition
+      const randomA = SIMPLE_TASKS[Math.floor(Math.random() * SIMPLE_TASKS.length)];
+      const randomB = SIMPLE_TASKS[Math.floor(Math.random() * SIMPLE_TASKS.length)];
+
+      queueSingleUser.push({ name: randomA.name, icon: randomA.icon });
+      
+      // Concurrently add tasks to Single-User Multi-tasking
+      if (multiTasksUser1.length < 4) {
+        multiTasksUser1.push({ name: randomA.name, icon: randomA.icon, progress: 0, color: 'text-sky-300' });
+      } else {
+        multiTasksUser1[0] = { name: randomA.name, icon: randomA.icon, progress: 0, color: 'text-sky-300' };
+      }
+
+      // Concurrently add tasks across Multi-User Multi-tasking
+      multiUsersData.A.push({ name: randomA.name, icon: randomA.icon, progress: 0, color: 'text-indigo-300' });
+      if (multiUsersData.A.length > 3) multiUsersData.A.shift();
+
+      multiUsersData.B.push({ name: randomB.name, icon: randomB.icon, progress: 0, color: 'text-emerald-300' });
+      if (multiUsersData.B.length > 3) multiUsersData.B.shift();
+
+      renderAllTaskViews();
+    }
+
+    function renderAllTaskViews() {
+      // 1. Single User Queue Render
+      const q1Container = document.getElementById('queue-container-1');
+      const q1Count = document.getElementById('queue-count-1');
+      if (q1Container) {
+        q1Container.innerHTML = '';
+        q1Count.innerText = `${queueSingleUser.length} 個`;
+
+        queueSingleUser.forEach((t, idx) => {
+          const item = document.createElement('div');
+          item.className = 'bg-slate-900 border border-slate-800 text-slate-300 px-3 py-1.5 rounded-lg text-xs font-bold flex items-center justify-between';
+          item.innerHTML = `
+            <span><i class="fa-solid ${t.icon} text-amber-400 mr-2"></i>${t.name}</span>
+            <span class="text-[10px] bg-slate-800 text-slate-400 px-1.5 py-0.5 rounded">排隊 ${idx + 1}</span>
+          `;
+          q1Container.appendChild(item);
+        });
+      }
+
+      const slot1 = document.getElementById('active-task-slot-1');
+      const bar1 = document.getElementById('progress-bar-1');
+      if (slot1 && singleActiveTask) {
+        slot1.innerHTML = `<i class="fa-solid ${singleActiveTask.icon} text-amber-400 mr-2"></i> ${singleActiveTask.name}`;
+        if (bar1) bar1.style.width = `${singleActiveTask.progress}%`;
+      }
+
+      // 2. Single-User Multi-Tasking Render (Concurrent Progress)
+      const list2 = document.getElementById('multi-task-list-2');
+      if (list2) {
+        list2.innerHTML = '';
+        multiTasksUser1.forEach(t => {
+          const item = document.createElement('div');
+          item.className = 'bg-slate-900/90 border border-sky-500/30 p-2 rounded-xl flex items-center justify-between gap-3 text-xs';
+          item.innerHTML = `
+            <div class="font-bold text-sky-200 flex items-center gap-2 w-32 truncate">
+              <i class="fa-solid ${t.icon} text-sky-400"></i> ${t.name}
+            </div>
+            <div class="flex-grow bg-slate-950 h-2 rounded-full overflow-hidden border border-slate-800">
+              <div class="bg-sky-400 h-full transition-all duration-300" style="width: ${t.progress}%"></div>
+            </div>
+            <span class="text-[10px] font-mono text-sky-300 w-9 text-right">${t.progress}%</span>
+          `;
+          list2.appendChild(item);
+        });
+      }
+
+      // 3. Multi-User Multi-Tasking Render (Concurrent Users & Tasks)
+      ['A', 'B', 'C'].forEach(uKey => {
+        const uContainer = document.getElementById(`user-${uKey.toLowerCase()}-tasks`);
+        if (uContainer) {
+          uContainer.innerHTML = '';
+          multiUsersData[uKey].forEach(t => {
+            const item = document.createElement('div');
+            item.className = 'bg-slate-900/80 border border-slate-800 p-2 rounded-lg text-[11px] space-y-1';
+            item.innerHTML = `
+              <div class="font-bold text-slate-200 flex items-center justify-between">
+                <span><i class="fa-solid ${t.icon} ${t.color} mr-1"></i>${t.name}</span>
+                <span class="text-[10px] font-mono opacity-80">${t.progress}%</span>
+              </div>
+              <div class="bg-slate-950 h-1.5 rounded-full overflow-hidden">
+                <div class="bg-indigo-400 h-full transition-all duration-300" style="width: ${t.progress}%"></div>
+              </div>
+            `;
+            uContainer.appendChild(item);
+          });
+        }
+      });
+    }
+
+    function startSimultaneousLoop() {
+      setInterval(() => {
+        if (!isModeAnimRunning) return;
+
+        // Mode 1: Single Task Progress
+        if (singleActiveTask) {
+          singleActiveTask.progress += 15;
+          if (singleActiveTask.progress >= 100) {
+            singleActiveTask.progress = 0;
+            if (queueSingleUser.length > 0) {
+              const next = queueSingleUser.shift();
+              singleActiveTask.name = next.name;
+              singleActiveTask.icon = next.icon;
+            } else {
+              const rand = SIMPLE_TASKS[Math.floor(Math.random() * SIMPLE_TASKS.length)];
+              singleActiveTask.name = rand.name;
+              singleActiveTask.icon = rand.icon;
+            }
+          }
+        }
+
+        // Mode 2: Multi-Tasking Concurrent Progress Update
+        multiTasksUser1.forEach(t => {
+          t.progress += Math.floor(Math.random() * 8) + 5;
+          if (t.progress >= 100) {
+            t.progress = 0;
+            const rand = SIMPLE_TASKS[Math.floor(Math.random() * SIMPLE_TASKS.length)];
+            t.name = rand.name;
+            t.icon = rand.icon;
+          }
+        });
+
+        // Mode 3: Multi-User Concurrent Progress Update
+        ['A', 'B', 'C'].forEach(uKey => {
+          multiUsersData[uKey].forEach(t => {
+            t.progress += Math.floor(Math.random() * 10) + 4;
+            if (t.progress >= 100) {
+              t.progress = 0;
+              const rand = SIMPLE_TASKS[Math.floor(Math.random() * SIMPLE_TASKS.length)];
+              t.name = rand.name;
+              t.icon = rand.icon;
+            }
+          });
+        });
+
+        renderAllTaskViews();
+      }, 400);
+    }
+
+    /* Tab 3 Catalog & Quiz Logic */
+    function renderOsCards() {
+      const container = document.getElementById('os-cards-container');
+      container.innerHTML = '';
+
+      const filtered = OPERATING_SYSTEMS.filter(os => {
+        if (currentFilter === 'all') return true;
+        return os.type === currentFilter;
+      });
+
+      filtered.forEach(os => {
+        const card = document.createElement('div');
+        card.className = `bg-white p-5 rounded-3xl border-2 ${os.border} hover:shadow-lg transition-all duration-200 flex flex-col justify-between space-y-4 group cursor-pointer`;
+        card.onclick = () => openOsModal(os.id);
+
+        let typeBadgeClass = 'bg-sky-100 text-sky-700';
+        if (os.type === '單人單工') typeBadgeClass = 'bg-amber-100 text-amber-800';
+        if (os.type === '多人多工') typeBadgeClass = 'bg-indigo-100 text-indigo-700';
+
+        card.innerHTML = `
+          <div>
+            <div class="flex justify-between items-start mb-3">
+              <div class="w-12 h-12 rounded-2xl ${os.bg} ${os.color} flex items-center justify-center text-2xl font-black shadow-sm group-hover:scale-110 transition">
+                <i class="${os.icon}"></i>
+              </div>
+              <span class="text-xs font-black px-3 py-1 rounded-full ${typeBadgeClass}">
+                ${os.type}
+              </span>
+            </div>
+            <h4 class="text-xl font-black text-slate-800">${os.name}</h4>
+            <p class="text-xs text-slate-500 mt-1 font-medium line-clamp-2">${os.desc}</p>
+          </div>
+
+          <div class="pt-3 border-t border-slate-100 flex items-center justify-between text-xs font-bold text-slate-400">
+            <span><i class="fa-solid fa-desktop mr-1"></i>${os.device.split(' ')[0]}</span>
+            <span class="text-indigo-600 group-hover:underline">詳細屬性 <i class="fa-solid fa-chevron-right text-[10px]"></i></span>
+          </div>
+        `;
+
+        container.appendChild(card);
+      });
+    }
+
+    function filterOsList(type) {
+      currentFilter = type;
+      document.querySelectorAll('.os-filter-btn').forEach(btn => {
+        btn.classList.remove('bg-white', 'text-indigo-600', 'shadow-sm');
+        btn.classList.add('text-slate-600');
+      });
+
+      let btnId = 'filter-all';
+      if (type === '單人單工') btnId = 'filter-single-single';
+      if (type === '單人多工') btnId = 'filter-single-multi';
+      if (type === '多人多工') btnId = 'filter-multi-multi';
+
+      const activeBtn = document.getElementById(btnId);
+      if (activeBtn) {
+        activeBtn.classList.add('bg-white', 'text-indigo-600', 'shadow-sm');
+        activeBtn.classList.remove('text-slate-600');
+      }
+
+      renderOsCards();
+    }
+
+    function openOsModal(osId) {
+      const os = OPERATING_SYSTEMS.find(o => o.id === osId);
+      if (!os) return;
+
+      document.getElementById('modal-os-title').innerText = os.name;
+      document.getElementById('modal-os-icon').innerHTML = `<i class="${os.icon}"></i>`;
+      document.getElementById('modal-os-icon').className = `w-16 h-16 rounded-2xl ${os.bg} ${os.color} flex items-center justify-center text-4xl shadow-sm`;
+
+      let typeBadgeClass = 'bg-sky-100 text-sky-700';
+      if (os.type === '單人單工') typeBadgeClass = 'bg-amber-100 text-amber-800';
+      if (os.type === '多人多工') typeBadgeClass = 'bg-indigo-100 text-indigo-700';
+
+      const badge = document.getElementById('modal-os-badge');
+      badge.innerText = os.type;
+      badge.className = `text-xs px-3 py-1 rounded-full font-black mt-1 inline-block ${typeBadgeClass}`;
+
+      document.getElementById('modal-os-desc').innerText = os.desc;
+      document.getElementById('modal-os-device').innerText = os.device;
+      document.getElementById('modal-os-feature').innerText = os.feature;
+
+      document.getElementById('modal-os').classList.remove('hidden');
+    }
+
+    function closeOsModal() {
+      document.getElementById('modal-os').classList.add('hidden');
+    }
+
+    function renderQuiz() {
+      const quizContainer = document.getElementById('quiz-container');
+      quizContainer.innerHTML = '';
+
+      QUIZ_DATA.forEach(q => {
+        const item = document.createElement('div');
+        item.className = 'bg-slate-800/80 p-4 rounded-2xl border border-indigo-500/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3';
+
+        let optionsHtml = q.options.map(opt => `
+          <button onclick="answerQuiz(${q.id}, '${opt}')" id="quiz-btn-${q.id}-${opt}" class="px-3.5 py-1.5 rounded-xl text-xs font-bold bg-slate-700 hover:bg-indigo-600 text-slate-200 transition border border-slate-600">
+            ${opt}
+          </button>
+        `).join('');
+
+        item.innerHTML = `
+          <div class="font-bold text-sm text-slate-100 flex items-center gap-2">
+            <span class="w-6 h-6 rounded-full bg-indigo-500/30 text-indigo-300 flex items-center justify-center text-xs font-mono">${q.id}</span>
+            <span>${q.name}</span>
+          </div>
+          <div class="flex items-center gap-2 flex-wrap">
+            ${optionsHtml}
+          </div>
+        `;
+
+        quizContainer.appendChild(item);
+      });
+    }
+
+    function answerQuiz(qId, selectedOpt) {
+      const q = QUIZ_DATA.find(item => item.id === qId);
+      if (!q) return;
+
+      userQuizAnswers[qId] = selectedOpt;
+
+      q.options.forEach(opt => {
+        const btn = document.getElementById(`quiz-btn-${qId}-${opt}`);
+        if (!btn) return;
+
+        if (opt === q.answer) {
+          btn.className = 'px-3.5 py-1.5 rounded-xl text-xs font-black bg-emerald-600 text-white shadow-sm border border-emerald-400';
+        } else if (opt === selectedOpt && selectedOpt !== q.answer) {
+          btn.className = 'px-3.5 py-1.5 rounded-xl text-xs font-black bg-red-600 text-white shadow-sm border border-red-400';
+        } else {
+          btn.className = 'px-3.5 py-1.5 rounded-xl text-xs font-bold bg-slate-800 text-slate-500 border border-slate-700 opacity-50';
+        }
+      });
+
+      let score = 0;
+      QUIZ_DATA.forEach(item => {
+        if (userQuizAnswers[item.id] === item.answer) score++;
+      });
+
+      document.getElementById('quiz-score').innerText = score;
+    }
+  </script>
+</body>
+</html>
