@@ -1,0 +1,1216 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CS 資訊科學教室 - 周邊裝置與螢幕技術互動學習網頁</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;700;800&family=Noto+Sans+TC:wght@500;700;900&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            csBlue: { 50: '#f0f7ff', 100: '#e0effe', 500: '#3b82f6', 600: '#2563eb', 700: '#1d4ed8' },
+            csGreen: { 50: '#ecfdf5', 100: '#d1fae5', 500: '#10b981', 600: '#059669' },
+            csPurple: { 50: '#f5f3ff', 100: '#ede9fe', 500: '#8b5cf6', 600: '#7c3aed' }
+          },
+          fontFamily: {
+            sans: ['Noto Sans TC', 'Plus Jakarta Sans', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    @keyframes bounceSubtle {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-4px); }
+    }
+    .animate-bounce-subtle { animation: bounceSubtle 2s infinite ease-in-out; }
+
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      20%, 60% { transform: translateX(-8px); }
+      40%, 80% { transform: translateX(8px); }
+    }
+    .animate-shake { animation: shake 0.4s cubic-bezier(.36,.07,.19,.97) both; }
+
+    @keyframes popIn {
+      0% { transform: scale(0.92); opacity: 0; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+    .animate-pop { animation: popIn 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+
+    .drop-zone-active {
+      border-color: #3b82f6 !important;
+      background-color: #eff6ff !important;
+      transform: scale(1.01);
+    }
+
+    .card-selected {
+      ring: 4px;
+      ring-color: #3b82f6;
+      background-color: #eff6ff !important;
+      transform: translateY(-4px);
+    }
+  </style>
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8522276249008152" crossorigin="anonymous"></script>
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans min-h-screen flex flex-col selection:bg-blue-500 selection:text-white">
+
+  <!-- Header Navigation -->
+  <header class="bg-white/90 backdrop-blur-md border-b border-slate-200 sticky top-0 z-40 shadow-sm">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
+      <div class="flex items-center space-x-3">
+        <a href="index.html" class="text-xs text-blue-600 hover:text-blue-800 transition flex items-center gap-1">
+          <i class="fa-solid fa-arrow-left"></i> 回到首頁
+        </a>
+        <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-blue-600 via-indigo-600 to-purple-600 flex items-center justify-center text-white text-2xl shadow-lg shadow-indigo-200 animate-bounce-subtle">
+          <i class="fa-solid fa-laptop-code"></i>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="text-xl sm:text-2xl font-black bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent">CS 資訊科學教室</h1>
+            <span class="text-xs font-bold px-2.5 py-0.5 rounded-full bg-blue-100 text-blue-700">周邊裝置與顯示技術</span>
+          </div>
+          <p class="text-xs sm:text-sm text-slate-500 font-medium">主題：IO分類實作 & 螢幕面板原理 (LED / Mini-LED / OLED)</p>
+        </div>
+      </div>
+
+      <!-- Navigation Tabs -->
+      <nav class="flex space-x-1 sm:space-x-2 bg-slate-100 p-1.5 rounded-2xl border border-slate-200/80">
+        <button onclick="switchTab('game')" id="tab-game" class="tab-btn px-4 sm:px-6 py-2.5 rounded-xl text-xs sm:text-base font-extrabold transition-all duration-200 bg-white text-blue-600 shadow-md shadow-slate-200/50">
+          <i class="fa-solid fa-gamepad mr-2 text-base sm:text-lg"></i>分類遊戲
+        </button>
+        <button onclick="switchTab('display')" id="tab-display" class="tab-btn px-4 sm:px-6 py-2.5 rounded-xl text-xs sm:text-base font-extrabold transition-all duration-200 text-slate-600 hover:text-slate-900">
+          <i class="fa-solid fa-desktop mr-2 text-base sm:text-lg"></i>螢幕技術探索
+        </button>
+      </nav>
+    </div>
+  </header>
+
+  <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+
+    <!-- ========================================== -->
+    <!-- TAB 1: CLASSIFICATION GAME                 -->
+    <!-- ========================================== -->
+    <section id="view-game" class="space-y-6">
+      
+      <!-- Controls & Progress Banner -->
+      <div class="bg-white p-5 sm:p-6 rounded-3xl border border-slate-200/80 shadow-sm flex flex-col md:flex-row justify-between items-center gap-4">
+        <div>
+          <h2 class="text-2xl sm:text-3xl font-black text-slate-800 flex items-center gap-3">
+            <span>🎮 周邊裝置三分區挑戰</span>
+            <span class="text-xs px-3 py-1 bg-gradient-to-r from-blue-500 to-indigo-500 text-white font-black rounded-full shadow-sm">互動分類</span>
+          </h2>
+          <p class="text-sm sm:text-base text-slate-500 mt-1 font-medium">請將下方裝置歸類至 <strong>「輸入裝置」</strong>、<strong>「輸出裝置」</strong> 或 <strong>「輸入兼輸出裝置」</strong>！(不含儲存與網卡)</p>
+        </div>
+
+        <div class="flex items-center gap-4 w-full md:w-auto justify-between sm:justify-end">
+          <!-- Progress Counter -->
+          <div class="flex items-center gap-3 bg-slate-50 px-5 py-2.5 rounded-2xl border border-slate-200/80">
+            <div class="text-right">
+              <div class="text-xs text-slate-400 font-bold">目前進度</div>
+              <div class="text-xl font-black text-slate-800" id="game-progress-text">0 / 15</div>
+            </div>
+            <div class="w-12 h-12 rounded-full border-4 border-slate-200 border-t-blue-600 flex items-center justify-center font-black text-xs text-blue-600 shadow-inner" id="progress-spinner">
+              0%
+            </div>
+          </div>
+
+          <!-- Reset Button -->
+          <button onclick="resetGame()" class="px-5 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-2xl text-sm font-extrabold transition flex items-center gap-2 active:scale-95 shadow-sm">
+            <i class="fa-solid fa-rotate-right"></i> 重新遊戲
+          </button>
+        </div>
+      </div>
+
+      <!-- Mobile / Click Selection Hint Banner -->
+      <div id="selection-banner" class="hidden bg-blue-50 border-2 border-blue-200 rounded-2xl p-4 flex items-center justify-between text-sm sm:text-base text-blue-900 font-extrabold animate-pop shadow-sm">
+        <span class="flex items-center gap-2">
+          <i class="fa-solid fa-hand-pointer text-blue-600 animate-bounce text-xl"></i>
+          <span>已選取：<strong id="selected-card-name" class="text-blue-700 underline underline-offset-4 text-lg sm:text-xl"></strong>，請點擊目標分類區域進行歸類！</span>
+        </span>
+        <button onclick="clearSelection()" class="text-xs bg-blue-200 hover:bg-blue-300 px-3 py-1.5 rounded-xl text-blue-900 font-bold transition">取消選取</button>
+      </div>
+
+      <!-- Drop Zones Grid -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        
+        <!-- Drop Zone: INPUT -->
+        <div id="zone-input" 
+             ondragover="handleDragOver(event)" 
+             ondragleave="handleDragLeave(event)" 
+             ondrop="handleDrop(event, 'input')" 
+             onclick="handleZoneClick('input')"
+             class="drop-zone bg-white rounded-3xl border-2 border-dashed border-blue-300 p-5 transition-all duration-200 min-h-[380px] flex flex-col hover:border-blue-500 cursor-pointer shadow-sm group">
+          <div class="flex items-center justify-between mb-4 pb-4 border-b border-blue-100">
+            <div class="flex items-center gap-3">
+              <div class="w-12 h-12 rounded-2xl bg-blue-100 text-blue-600 flex items-center justify-center font-black text-2xl shadow-sm">
+                <i class="fa-solid fa-right-to-bracket"></i>
+              </div>
+              <div>
+                <h3 class="font-black text-blue-950 text-xl sm:text-2xl">📥 輸入裝置</h3>
+                <p class="text-xs text-slate-400 font-medium">Input Devices (傳入訊號至電腦)</p>
+              </div>
+            </div>
+            <span id="badge-input-count" class="text-xs bg-blue-100 text-blue-700 px-3 py-1.5 rounded-full font-black">0 個</span>
+          </div>
+
+          <div id="container-input" class="flex-grow space-y-3 flex flex-col items-center justify-start w-full">
+            <div class="empty-placeholder text-center text-slate-300 py-16 pointer-events-none">
+              <i class="fa-solid fa-cloud-arrow-down text-4xl mb-2"></i>
+              <p class="text-xs font-bold">拖曳卡片或點擊選取後放置於此</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Drop Zone: OUTPUT -->
+        <div id="zone-output" 
+             ondragover="handleDragOver(event)" 
+             ondragleave="handleDragLeave(event)" 
+             ondrop="handleDrop(event, 'output')" 
+             onclick="handleZoneClick('output')"
+             class="drop-zone bg-white rounded-3xl border-2 border-dashed border-emerald-300 p-5 transition-all duration-200 min-h-[380px] flex flex-col hover:border-emerald-500 cursor-pointer shadow-sm group">
+          <div class="flex items-center justify-between mb-4 pb-4 border-b border-emerald-100">
+            <div class="flex items-center gap-3">
+              <div class="w-12 h-12 rounded-2xl bg-emerald-100 text-emerald-600 flex items-center justify-center font-black text-2xl shadow-sm">
+                <i class="fa-solid fa-right-from-bracket"></i>
+              </div>
+              <div>
+                <h3 class="font-black text-emerald-950 text-xl sm:text-2xl">📤 輸出裝置</h3>
+                <p class="text-xs text-slate-400 font-medium">Output Devices (呈現結果給人類)</p>
+              </div>
+            </div>
+            <span id="badge-output-count" class="text-xs bg-emerald-100 text-emerald-700 px-3 py-1.5 rounded-full font-black">0 個</span>
+          </div>
+
+          <div id="container-output" class="flex-grow space-y-3 flex flex-col items-center justify-start w-full">
+            <div class="empty-placeholder text-center text-slate-300 py-16 pointer-events-none">
+              <i class="fa-solid fa-cloud-arrow-up text-4xl mb-2"></i>
+              <p class="text-xs font-bold">拖曳卡片或點擊選取後放置於此</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Drop Zone: INPUT & OUTPUT -->
+        <div id="zone-both" 
+             ondragover="handleDragOver(event)" 
+             ondragleave="handleDragLeave(event)" 
+             ondrop="handleDrop(event, 'both')" 
+             onclick="handleZoneClick('both')"
+             class="drop-zone bg-white rounded-3xl border-2 border-dashed border-purple-300 p-5 transition-all duration-200 min-h-[380px] flex flex-col hover:border-purple-500 cursor-pointer shadow-sm group">
+          <div class="flex items-center justify-between mb-4 pb-4 border-b border-purple-100">
+            <div class="flex items-center gap-3">
+              <div class="w-12 h-12 rounded-2xl bg-purple-100 text-purple-600 flex items-center justify-center font-black text-2xl shadow-sm">
+                <i class="fa-solid fa-right-left"></i>
+              </div>
+              <div>
+                <h3 class="font-black text-purple-950 text-xl sm:text-2xl">🔄 輸入兼輸出</h3>
+                <p class="text-xs text-slate-400 font-medium">Input & Output (雙向傳輸/雙重功能)</p>
+              </div>
+            </div>
+            <span id="badge-both-count" class="text-xs bg-purple-100 text-purple-700 px-3 py-1.5 rounded-full font-black">0 個</span>
+          </div>
+
+          <div id="container-both" class="flex-grow space-y-3 flex flex-col items-center justify-start w-full">
+            <div class="empty-placeholder text-center text-slate-300 py-16 pointer-events-none">
+              <i class="fa-solid fa-arrows-rotate text-4xl mb-2"></i>
+              <p class="text-xs font-bold">拖曳卡片或點擊選取後放置於此</p>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Unclassified Devices Pool -->
+      <div class="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-sm space-y-4">
+        <div class="flex items-center justify-between flex-wrap gap-2">
+          <h3 class="font-black text-slate-800 text-lg sm:text-xl flex items-center gap-2">
+            <i class="fa-solid fa-cubes text-indigo-500 text-2xl"></i>
+            <span>待分類周邊裝置庫 (大字體圖卡)</span>
+          </h3>
+          <span class="text-xs font-bold text-slate-500 bg-slate-100 px-3 py-1.5 rounded-full">💡 點擊右側 ℹ️ 可以查看裝置詳細技術說明</span>
+        </div>
+
+        <div id="unclassified-pool" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-4 min-h-[160px] p-4 bg-slate-50/80 rounded-2xl border border-slate-200/60">
+          <!-- Dynamically Injected Cards -->
+        </div>
+      </div>
+
+    </section>
+
+
+    <!-- ========================================== -->
+    <!-- TAB 2: DISPLAY TECHNOLOGIES                -->
+    <!-- ========================================== -->
+    <section id="view-display" class="hidden space-y-10">
+      
+      <!-- Section Intro Banner -->
+      <div class="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 p-6 sm:p-8 rounded-3xl text-white shadow-xl flex flex-col md:flex-row items-center justify-between gap-6">
+        <div class="space-y-2 max-w-2xl">
+          <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/20 border border-blue-400/30 text-blue-300 text-xs font-black">
+            <i class="fa-solid fa-tv"></i> 顯示器專題探索
+          </div>
+          <h2 class="text-2xl sm:text-4xl font-black tracking-tight">螢幕技術、發光模式與核心參數</h2>
+          <p class="text-slate-300 text-sm sm:text-base leading-relaxed font-medium">
+            螢幕是最主要的【輸出裝置】。從背光模組演進（LED $\rightarrow$ Mini-LED $\rightarrow$ OLED）、更新率（60Hz vs 120Hz），到解析度與連接埠，一次徹底搞懂！
+          </p>
+        </div>
+
+        <div class="flex gap-3">
+          <a href="#section-backlight" class="px-4 py-2.5 bg-white/10 hover:bg-white/20 backdrop-blur rounded-xl text-xs sm:text-sm font-bold transition flex items-center gap-2 text-white border border-white/10">
+            <i class="fa-solid fa-lightbulb"></i> 發光模式
+          </a>
+          <a href="#section-hz" class="px-4 py-2.5 bg-white/10 hover:bg-white/20 backdrop-blur rounded-xl text-xs sm:text-sm font-bold transition flex items-center gap-2 text-white border border-white/10">
+            <i class="fa-solid fa-gauge-high"></i> 60Hz/120Hz
+          </a>
+          <a href="#section-specs" class="px-4 py-2.5 bg-white/10 hover:bg-white/20 backdrop-blur rounded-xl text-xs sm:text-sm font-bold transition flex items-center gap-2 text-white border border-white/10">
+            <i class="fa-solid fa-plug"></i> 規格與接頭
+          </a>
+        </div>
+      </div>
+
+
+      <!-- ========================================== -->
+      <!-- SECTION 1: LED vs Mini-LED vs OLED         -->
+      <!-- ========================================== -->
+      <div id="section-backlight" class="bg-white p-6 sm:p-8 rounded-3xl border border-slate-200/80 shadow-sm space-y-6">
+        
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-100 pb-5">
+          <div>
+            <div class="flex items-center gap-2 text-indigo-600 font-extrabold text-sm mb-1">
+              <span>01. 發光原理與面板比較</span>
+            </div>
+            <h3 class="text-2xl sm:text-3xl font-black text-slate-800">LED vs Mini-LED vs OLED 模擬視覺體驗</h3>
+            <p class="text-xs sm:text-sm text-slate-500 mt-1">觀察在顯示深色夜空中的靜止星星時，三種面板的背景漏光差異：</p>
+          </div>
+        </div>
+
+        <!-- 3 Panel Interactive Visualizer Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+          
+          <!-- Panel 1: Traditional LED -->
+          <div class="bg-slate-900 text-white p-5 rounded-3xl border border-slate-800 flex flex-col justify-between space-y-4">
+            <div>
+              <div class="flex justify-between items-center mb-2">
+                <span class="text-xs font-black bg-blue-500/20 border border-blue-400/30 text-blue-300 px-3 py-1 rounded-full">傳統側照/直下式</span>
+                <span class="text-xs font-bold text-slate-400">LCD + 全域背光</span>
+              </div>
+              <h4 class="text-xl font-black text-blue-400">LED 螢幕 (LCD)</h4>
+              <p class="text-xs text-slate-400 mt-1 font-medium">全域背光恆定亮起。黑色背景無法關閉發光，固定呈現灰色漏光狀。</p>
+            </div>
+
+            <!-- Simulated Display Box: LED Gray Light Background -->
+            <div class="relative h-48 rounded-2xl overflow-hidden border-2 border-slate-600 bg-slate-600 flex flex-col items-center justify-center p-3 shadow-inner">
+              <div class="absolute inset-0 bg-slate-500/60 backdrop-blur-[1px]"></div>
+              
+              <div class="relative z-10 flex flex-col items-center justify-center space-y-2">
+                <i class="fa-solid fa-star text-amber-200 text-5xl"></i>
+                <div class="text-xs font-black text-slate-200">靜止深空星星</div>
+              </div>
+
+              <div class="absolute bottom-2 left-2 z-20 bg-slate-900/90 backdrop-blur px-2.5 py-1 rounded-md text-[10px] font-mono text-slate-300 border border-slate-700">
+                背光：背景固定亮灰色 (漏光明顯)
+              </div>
+            </div>
+
+            <ul class="text-xs space-y-1.5 text-slate-300 font-medium pt-2 border-t border-slate-800">
+              <li class="flex items-center gap-2"><i class="fa-solid fa-circle-check text-blue-400"></i> 優點：技術成熟、成本低、壽命長</li>
+              <li class="flex items-center gap-2"><i class="fa-solid fa-circle-xmark text-red-400"></i> 缺點：對比度低、純黑呈灰色</li>
+            </ul>
+          </div>
+
+          <!-- Panel 2: Mini-LED (Updated: No Square Grid & No Star Halo) -->
+          <div class="bg-slate-900 text-white p-5 rounded-3xl border border-slate-800 flex flex-col justify-between space-y-4">
+            <div>
+              <div class="flex justify-between items-center mb-2">
+                <span class="text-xs font-black bg-amber-500/20 border border-amber-400/30 text-amber-300 px-3 py-1 rounded-full">區域控光 (Local Dimming)</span>
+                <span class="text-xs font-bold text-slate-400">LCD + 微型LED陣列</span>
+              </div>
+              <h4 class="text-xl font-black text-amber-400">Mini-LED 螢幕</h4>
+              <p class="text-xs text-slate-400 mt-1 font-medium">劃分分區控光。星星所在的發光分區開啟，背景區域調暗關閉，星星本身保持清晰銳利。</p>
+            </div>
+
+            <!-- Simulated Display Box: Mini-LED Localized Backlight with Sharp Star (No Halo) -->
+            <div class="relative h-48 rounded-2xl overflow-hidden border-2 border-slate-700 bg-slate-950 flex flex-col items-center justify-center p-3 shadow-inner">
+              
+              <!-- Clean Localized Backlight Zone around Star (Crisp edge, No blurred outer halo) -->
+              <div class="relative z-10 flex flex-col items-center justify-center space-y-2">
+                <div class="flex items-center justify-center px-6 py-5 rounded-2xl bg-slate-700/80 border border-slate-600/60">
+                  <i class="fa-solid fa-star text-amber-300 text-5xl"></i>
+                </div>
+                <div class="text-xs font-black text-slate-100">靜止深空星星</div>
+              </div>
+
+              <div class="absolute bottom-2 left-2 z-20 bg-slate-900/90 backdrop-blur px-2.5 py-1 rounded-md text-[10px] font-mono text-amber-300 border border-slate-700">
+                背光：區域精準點亮 (無無效光暈)
+              </div>
+            </div>
+
+            <ul class="text-xs space-y-1.5 text-slate-300 font-medium pt-2 border-t border-slate-800">
+              <li class="flex items-center gap-2"><i class="fa-solid fa-circle-check text-amber-400"></i> 優點：極高亮度 (HDR勝)、無烙印</li>
+              <li class="flex items-center gap-2"><i class="fa-solid fa-circle-xmark text-red-400"></i> 缺點：分區顆粒度受限於硬體數量</li>
+            </ul>
+          </div>
+
+          <!-- Panel 3: OLED -->
+          <div class="bg-slate-900 text-white p-5 rounded-3xl border border-slate-800 flex flex-col justify-between space-y-4">
+            <div>
+              <div class="flex justify-between items-center mb-2">
+                <span class="text-xs font-black bg-purple-500/20 border border-purple-400/30 text-purple-300 px-3 py-1 rounded-full">自發光像素 (Self-Emissive)</span>
+                <span class="text-xs font-bold text-slate-400">無背光模組</span>
+              </div>
+              <h4 class="text-xl font-black text-purple-400">OLED 螢幕</h4>
+              <p class="text-xs text-slate-400 mt-1 font-medium">像素點獨立通電發光。黑色背景像素點 100% 完全通電關閉，背景呈現極致純黑。</p>
+            </div>
+
+            <!-- Simulated Display Box: OLED Pure Black #000000 -->
+            <div class="relative h-48 rounded-2xl overflow-hidden border-2 border-slate-800 bg-black flex flex-col items-center justify-center p-3 shadow-inner">
+              <div class="relative z-10 flex flex-col items-center justify-center space-y-2">
+                <i class="fa-solid fa-star text-yellow-300 text-5xl"></i>
+                <div class="text-xs font-black text-white">靜止深空星星</div>
+              </div>
+
+              <div class="absolute bottom-2 left-2 z-20 bg-slate-900/90 backdrop-blur px-2.5 py-1 rounded-md text-[10px] font-mono text-purple-300 border border-slate-800">
+                像素：背景全黑 #000000 (0 漏光)
+              </div>
+            </div>
+
+            <ul class="text-xs space-y-1.5 text-slate-300 font-medium pt-2 border-t border-slate-800">
+              <li class="flex items-center gap-2"><i class="fa-solid fa-circle-check text-purple-400"></i> 優點：極致純黑、無限對比、超薄</li>
+              <li class="flex items-center gap-2"><i class="fa-solid fa-circle-xmark text-red-400"></i> 缺點：長時間靜止畫面烙印風險</li>
+            </ul>
+          </div>
+
+        </div>
+
+        <!-- Comprehensive Tech Specs Comparison Table -->
+        <div class="overflow-x-auto rounded-2xl border border-slate-200">
+          <table class="w-full text-left text-xs sm:text-sm">
+            <thead class="bg-slate-100 text-slate-700 font-black border-b border-slate-200">
+              <tr>
+                <th class="p-3.5">技術比較指標</th>
+                <th class="p-3.5 text-blue-700">傳統 LED</th>
+                <th class="p-3.5 text-amber-700">Mini-LED</th>
+                <th class="p-3.5 text-purple-700">OLED</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100 font-medium text-slate-600">
+              <tr>
+                <td class="p-3.5 font-bold text-slate-800">發光機制</td>
+                <td class="p-3.5">全域底層背光模組 (畫面背景恆亮發灰)</td>
+                <td class="p-3.5">數千顆微型 LED 獨立區域控光</td>
+                <td class="p-3.5">有機像素點自發光 (背景像素徹底關閉)</td>
+              </tr>
+              <tr>
+                <td class="p-3.5 font-bold text-slate-800">純黑暗部表現</td>
+                <td class="p-3.5 text-slate-500">較差 (固定亮灰色漏光)</td>
+                <td class="p-3.5 text-amber-600 font-bold">優異 (未亮區域關閉背光)</td>
+                <td class="p-3.5 text-purple-600 font-bold">極致 (純黑 0 尼特發光)</td>
+              </tr>
+              <tr>
+                <td class="p-3.5 font-bold text-slate-800">峰值亮度 (HDR)</td>
+                <td class="p-3.5">約 250 - 400 nits</td>
+                <td class="p-3.5 text-emerald-600 font-black">最高 (可達 1000-2000+ nits)</td>
+                <td class="p-3.5">中高 (約 800 - 1000 nits)</td>
+              </tr>
+              <tr>
+                <td class="p-3.5 font-bold text-slate-800">螢幕烙印風險</td>
+                <td class="p-3.5 text-emerald-600 font-bold">無烙印風險</td>
+                <td class="p-3.5 text-emerald-600 font-bold">無烙印風險</td>
+                <td class="p-3.5 text-red-500 font-bold">有風險 (有機材料老化)</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+      </div>
+
+
+      <!-- ========================================== -->
+      <!-- SECTION 2: REFRESH RATE (60Hz vs 120Hz)    -->
+      <!-- ========================================== -->
+      <div id="section-hz" class="bg-white p-6 sm:p-8 rounded-3xl border border-slate-200/80 shadow-sm space-y-6">
+        
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-100 pb-5">
+          <div>
+            <div class="flex items-center gap-2 text-indigo-600 font-extrabold text-sm mb-1">
+              <span>02. 流暢度與幀率</span>
+            </div>
+            <h3 class="text-2xl sm:text-3xl font-black text-slate-800">螢幕更新率：60Hz vs 120Hz 實時動態對比</h3>
+            <p class="text-xs sm:text-sm text-slate-500 mt-1">下方 Live 動畫為真實渲染之畫面更新頻率，觀察物體移動軌跡的連貫度：</p>
+          </div>
+
+          <div class="flex items-center gap-3">
+            <button onclick="toggleSlowMotion()" id="btn-slowmo" class="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-800 font-extrabold text-xs sm:text-sm rounded-xl transition flex items-center gap-2 border border-slate-200">
+              <i class="fa-solid fa-gauge"></i> <span id="slowmo-label">開啟 0.25x 慢動作觀察</span>
+            </button>
+            <button onclick="toggleHzAnimation()" id="btn-hz-play" class="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-xs sm:text-sm rounded-xl transition flex items-center gap-2 shadow-md shadow-indigo-100">
+              <i class="fa-solid fa-pause"></i> 暫停動畫
+            </button>
+          </div>
+        </div>
+
+        <!-- Canvas Animation Container -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          
+          <!-- 60Hz View -->
+          <div class="bg-slate-900 rounded-3xl p-5 border border-slate-800 space-y-3">
+            <div class="flex justify-between items-center text-white">
+              <div class="flex items-center gap-2">
+                <span class="w-3 h-3 rounded-full bg-red-500 animate-pulse"></span>
+                <h4 class="font-black text-lg text-red-400">60Hz 標準螢幕</h4>
+              </div>
+              <span class="text-xs font-mono bg-slate-800 px-2.5 py-1 rounded-md text-slate-300">每秒更新 60 次 (間隔 ~16.6ms)</span>
+            </div>
+
+            <div class="relative bg-slate-950 rounded-2xl h-52 border border-slate-800 overflow-hidden shadow-inner">
+              <canvas id="canvas-60hz" class="w-full h-full block"></canvas>
+              <div class="absolute top-2 left-2 bg-black/80 backdrop-blur px-2.5 py-1 rounded text-[11px] text-red-300 font-mono border border-red-500/20">
+                跳格感 / 影格位移距離大
+              </div>
+            </div>
+            <p class="text-xs text-slate-400 font-medium">一般辦公夠用。但在滑動網頁或電競賽車時，游標與畫面會有微小卡頓與拖影感。</p>
+          </div>
+
+          <!-- 120Hz View -->
+          <div class="bg-slate-900 rounded-3xl p-5 border border-slate-800 space-y-3">
+            <div class="flex justify-between items-center text-white">
+              <div class="flex items-center gap-2">
+                <span class="w-3 h-3 rounded-full bg-emerald-400 animate-pulse"></span>
+                <h4 class="font-black text-lg text-emerald-400">120Hz 高更新率螢幕</h4>
+              </div>
+              <span class="text-xs font-mono bg-slate-800 px-2.5 py-1 rounded-md text-slate-300">每秒更新 120 次 (間隔 ~8.3ms)</span>
+            </div>
+
+            <div class="relative bg-slate-950 rounded-2xl h-52 border border-slate-800 overflow-hidden shadow-inner">
+              <canvas id="canvas-120hz" class="w-full h-full block"></canvas>
+              <div class="absolute top-2 left-2 bg-black/80 backdrop-blur px-2.5 py-1 rounded text-[11px] text-emerald-300 font-mono border border-emerald-500/20">
+                極致滑順 / 影格密集連續
+              </div>
+            </div>
+            <p class="text-xs text-slate-400 font-medium">每秒畫面數量翻倍，運動軌跡極度連貫，大幅降低拖影，讓視窗滑動體感極度順暢。</p>
+          </div>
+
+        </div>
+
+        <!-- Key Takeaway Box -->
+        <div class="bg-indigo-50 border border-indigo-200/80 p-4 rounded-2xl flex items-start gap-3 text-indigo-950 text-xs sm:text-sm font-medium">
+          <i class="fa-solid fa-lightbulb text-indigo-600 text-xl mt-0.5"></i>
+          <div>
+            <strong>觀念小知識：</strong>
+            螢幕更新率 (Hz) 代表硬體「每秒能刷新幾張畫面」。要發揮 120Hz 的極致流暢，電腦顯示卡也必須能輸出達到 120 FPS (Frames Per Second) 的遊戲畫質！
+          </div>
+        </div>
+
+      </div>
+
+
+      <!-- ========================================== -->
+      <!-- SECTION 3: SPECS & PORTS                   -->
+      <!-- ========================================== -->
+      <div id="section-specs" class="bg-white p-6 sm:p-8 rounded-3xl border border-slate-200/80 shadow-sm space-y-8">
+        
+        <div class="border-b border-slate-100 pb-5">
+          <div class="flex items-center gap-2 text-indigo-600 font-extrabold text-sm mb-1">
+            <span>03. 核心規格與連接埠</span>
+          </div>
+          <h3 class="text-2xl sm:text-3xl font-black text-slate-800">螢幕尺寸、解析度 (PPI) 與常見接頭</h3>
+        </div>
+
+        <!-- Size & Aspect Ratio Module -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
+          
+          <div class="space-y-4">
+            <h4 class="text-xl font-black text-slate-800 flex items-center gap-2">
+              <i class="fa-solid fa-ruler-combined text-blue-600"></i>
+              <span>螢幕尺寸如何量測？(對角線英吋)</span>
+            </h4>
+            <p class="text-sm text-slate-600 leading-relaxed font-medium">
+              螢幕標示的「27吋」、「32吋」，指的是<strong>螢幕顯示區域「左上角到右下角」的對角線長度</strong>（1吋 $\approx$ 2.54 公分），並非水平寬度！
+            </p>
+
+            <div class="flex items-center gap-2 bg-slate-100 p-1.5 rounded-2xl w-fit border border-slate-200">
+              <span class="text-xs font-bold text-slate-500 px-2">切換長寬比 (Aspect Ratio)：</span>
+              <button onclick="setAspectRatio('16-9')" id="btn-ratio-169" class="px-3 py-1.5 rounded-xl text-xs font-extrabold bg-white text-blue-600 shadow-sm transition">16:9 標準比例</button>
+              <button onclick="setAspectRatio('21-9')" id="btn-ratio-219" class="px-3 py-1.5 rounded-xl text-xs font-extrabold text-slate-600 hover:text-slate-900 transition">21:9 超寬曲面</button>
+            </div>
+          </div>
+
+          <!-- Visual Diagonal Measurement Diagram -->
+          <div class="bg-slate-900 p-6 rounded-3xl text-white flex flex-col items-center justify-center relative min-h-[220px] border border-slate-800">
+            <div id="screen-ratio-box" class="border-2 border-dashed border-blue-400 bg-blue-950/40 rounded-xl relative flex items-center justify-center transition-all duration-300 w-full max-w-sm h-36">
+              <!-- Corner Points -->
+              <span class="absolute -top-2 -left-2 w-4 h-4 bg-blue-500 rounded-full border-2 border-white"></span>
+              <span class="absolute -bottom-2 -right-2 w-4 h-4 bg-blue-500 rounded-full border-2 border-white"></span>
+              
+              <!-- Diagonal Line -->
+              <svg class="absolute inset-0 w-full h-full pointer-events-none">
+                <line x1="0" y1="0" x2="100%" y2="100%" stroke="#3b82f6" stroke-width="2.5" stroke-dasharray="6,6" />
+              </svg>
+
+              <span class="bg-blue-600 text-white font-black text-xs sm:text-sm px-3 py-1 rounded-full shadow-lg z-10 animate-bounce">
+                對角線測量：<span id="diagonal-size-text">27 吋 (68.6 cm)</span>
+              </span>
+            </div>
+            <div id="aspect-ratio-label" class="mt-4 text-xs font-mono text-slate-400">主流 16:9 比例 (適用於絕大多數文書與遊戲)</div>
+          </div>
+
+        </div>
+
+        <hr class="border-slate-100">
+
+        <!-- Resolution & PPI Grid Module -->
+        <div class="space-y-4">
+          <h4 class="text-xl font-black text-slate-800 flex items-center gap-2">
+            <i class="fa-solid fa-border-all text-indigo-600"></i>
+            <span>螢幕解析度 (Resolution) 與 像素密度 (PPI)</span>
+          </h4>
+          <p class="text-sm text-slate-600 leading-relaxed font-medium">
+            解析度代表螢幕畫面上由多少個「像素點 (Pixel)」組成。相同的螢幕尺寸下，解析度越高，像素點越密集 (PPI 越高)，字體與圖像越清晰細緻！
+          </p>
+
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-5 pt-2">
+            
+            <div class="bg-slate-50 p-5 rounded-2xl border border-slate-200/80 space-y-2">
+              <div class="flex justify-between items-center">
+                <span class="text-xs font-black bg-slate-200 text-slate-700 px-2.5 py-1 rounded-md">FHD Full HD</span>
+                <span class="text-xs font-mono font-bold text-slate-400">1080p</span>
+              </div>
+              <h5 class="text-xl font-black text-slate-800">1920 × 1080 像素</h5>
+              <p class="text-xs text-slate-500 font-medium">總像素約 207 萬個。目前最普及的標準入門解析度。</p>
+              <div class="w-full h-2 bg-slate-200 rounded-full overflow-hidden">
+                <div class="w-1/3 h-full bg-blue-500"></div>
+              </div>
+            </div>
+
+            <div class="bg-slate-50 p-5 rounded-2xl border border-slate-200/80 space-y-2">
+              <div class="flex justify-between items-center">
+                <span class="text-xs font-black bg-indigo-100 text-indigo-700 px-2.5 py-1 rounded-md">2K QHD</span>
+                <span class="text-xs font-mono font-bold text-slate-400">1440p</span>
+              </div>
+              <h5 class="text-xl font-black text-indigo-950">2560 × 1440 像素</h5>
+              <p class="text-xs text-slate-500 font-medium">總像素約 368 萬個。電競遊戲與 27吋 螢幕黃金首選。</p>
+              <div class="w-full h-2 bg-slate-200 rounded-full overflow-hidden">
+                <div class="w-2/3 h-full bg-indigo-600"></div>
+              </div>
+            </div>
+
+            <div class="bg-slate-50 p-5 rounded-2xl border border-slate-200/80 space-y-2">
+              <div class="flex justify-between items-center">
+                <span class="text-xs font-black bg-purple-100 text-purple-700 px-2.5 py-1 rounded-md">4K UHD</span>
+                <span class="text-xs font-mono font-bold text-slate-400">2160p</span>
+              </div>
+              <h5 class="text-xl font-black text-purple-950">3840 × 2160 像素</h5>
+              <p class="text-xs text-slate-500 font-medium">總像素約 829 萬個（FHD 的 4 倍！），畫質極度細緻真切。</p>
+              <div class="w-full h-2 bg-slate-200 rounded-full overflow-hidden">
+                <div class="w-full h-full bg-purple-600"></div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <hr class="border-slate-100">
+
+        <!-- Display Ports Cards -->
+        <div class="space-y-4">
+          <h4 class="text-xl font-black text-slate-800 flex items-center gap-2">
+            <i class="fa-solid fa-plug-circle-bolt text-emerald-600"></i>
+            <span>常見螢幕連接埠 (Display Connectors)</span>
+          </h4>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            
+            <!-- HDMI -->
+            <div class="bg-white p-5 rounded-2xl border-2 border-slate-200 hover:border-blue-400 transition shadow-sm space-y-3">
+              <div class="w-12 h-12 rounded-xl bg-blue-100 text-blue-600 flex items-center justify-center text-2xl font-black">
+                <i class="fa-solid fa-tv"></i>
+              </div>
+              <h5 class="font-black text-lg text-slate-800">HDMI 2.1</h5>
+              <p class="text-xs text-slate-500 font-medium leading-relaxed">
+                最普及的影音傳輸介面！同時傳輸高畫質視訊與多聲道音訊，電視、PS5/Xbox 主機預設接頭。
+              </p>
+            </div>
+
+            <!-- DisplayPort -->
+            <div class="bg-white p-5 rounded-2xl border-2 border-slate-200 hover:border-indigo-400 transition shadow-sm space-y-3">
+              <div class="w-12 h-12 rounded-xl bg-indigo-100 text-indigo-600 flex items-center justify-center text-2xl font-black">
+                <i class="fa-solid fa-desktop"></i>
+              </div>
+              <h5 class="font-black text-lg text-slate-800">DisplayPort (DP)</h5>
+              <p class="text-xs text-slate-500 font-medium leading-relaxed">
+                PC 電競顯示卡的黃金標準！擁有超高頻寬，支援高更新率 (144Hz+) 與 G-Sync / FreeSync 垂直同步。
+              </p>
+            </div>
+
+            <!-- Thunderbolt / Type-C -->
+            <div class="bg-white p-5 rounded-2xl border-2 border-slate-200 hover:border-purple-400 transition shadow-sm space-y-3">
+              <div class="w-12 h-12 rounded-xl bg-purple-100 text-purple-600 flex items-center justify-center text-2xl font-black">
+                <i class="fa-solid fa-bolt"></i>
+              </div>
+              <h5 class="font-black text-lg text-slate-800">USB-C / 雷電</h5>
+              <p class="text-xs text-slate-500 font-medium leading-relaxed">
+                單一纜線即可同時傳輸 4K 畫面、USB 資料，並提供高達 100W PD 供電給筆電，極度便利！
+              </p>
+            </div>
+
+            <!-- Legacy VGA / DVI -->
+            <div class="bg-white p-5 rounded-2xl border-2 border-slate-200 hover:border-slate-400 transition shadow-sm space-y-3">
+              <div class="w-12 h-12 rounded-xl bg-slate-100 text-slate-500 flex items-center justify-center text-2xl font-black">
+                <i class="fa-solid fa-plug"></i>
+              </div>
+              <h5 class="font-black text-lg text-slate-800">VGA / DVI (舊式)</h5>
+              <p class="text-xs text-slate-500 font-medium leading-relaxed">
+                早期傳統藍色梯形 (VGA 類比訊號) 與白接頭 (DVI 數位訊號)，不支援音訊傳輸，現已被 HDMI/DP 取代。
+              </p>
+            </div>
+
+          </div>
+        </div>
+
+      </div>
+
+    </section>
+
+  </main>
+
+  <!-- Victory Modal -->
+  <div id="modal-victory" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl text-center space-y-5 animate-pop">
+      <div class="w-24 h-24 bg-emerald-100 text-emerald-500 rounded-full flex items-center justify-center text-5xl mx-auto shadow-inner">
+        <i class="fa-solid fa-trophy"></i>
+      </div>
+      <div>
+        <h3 class="text-2xl font-black text-slate-800">全部分類完全正確！🎉</h3>
+        <p class="text-sm text-slate-500 mt-1 font-medium">太棒了！你已清楚掌握「輸入」、「輸出」與「輸入兼輸出」周邊裝置的屬性！</p>
+      </div>
+
+      <div class="bg-slate-50 p-4 rounded-2xl border border-slate-200/80 text-xs text-left space-y-2">
+        <div class="font-black text-slate-800 border-b pb-1 text-sm">💡 歸類秘訣複習：</div>
+        <p><strong class="text-blue-600">📥 輸入裝置：</strong>只負責將外部動作（打鼓、移動滑鼠）送入電腦。</p>
+        <p><strong class="text-emerald-600">📤 輸出裝置：</strong>只負責將電腦處理結果（畫面、3D模型、聲音）呈現出來。</p>
+        <p><strong class="text-purple-600">🔄 輸入兼輸出：</strong>同一硬體既能接收指令，又能輸出音訊或畫面（如 AirPods、觸控螢幕）。</p>
+      </div>
+
+      <div class="flex gap-3 pt-2">
+        <button onclick="closeModal('modal-victory'); resetGame();" class="flex-1 py-3.5 bg-slate-100 hover:bg-slate-200 text-slate-800 font-extrabold rounded-2xl text-sm transition">
+          再玩一次
+        </button>
+        <button onclick="closeModal('modal-victory'); switchTab('display');" class="flex-1 py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold rounded-2xl text-sm shadow-md transition">
+          探索螢幕技術 <i class="fa-solid fa-arrow-right ml-1"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Device Detail Info Modal -->
+  <div id="modal-device" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl p-6 max-w-sm w-full shadow-2xl space-y-4 animate-pop relative border border-slate-100">
+      <button onclick="closeModal('modal-device')" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 text-xl w-8 h-8 rounded-full flex items-center justify-center hover:bg-slate-100 transition">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+
+      <div class="flex items-center gap-4">
+        <div id="modal-device-icon" class="w-16 h-16 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-3xl shadow-sm">
+          <!-- Icon -->
+        </div>
+        <div>
+          <h4 id="modal-device-title" class="font-black text-xl text-slate-800">--</h4>
+          <span id="modal-device-badge" class="text-xs px-3 py-1 rounded-full font-black">--</span>
+        </div>
+      </div>
+
+      <div class="space-y-2 text-sm text-slate-600 bg-slate-50 p-4 rounded-2xl border border-slate-200/80 font-medium leading-relaxed">
+        <p id="modal-device-desc">--</p>
+      </div>
+
+      <button onclick="closeModal('modal-device')" class="w-full py-3 bg-slate-900 hover:bg-black text-white font-black rounded-2xl text-sm transition shadow-md">
+        理解！
+      </button>
+    </div>
+  </div>
+
+  <script>
+    /* ===================================================================
+       1. DATA DEFINITIONS (IO Devices List)
+       =================================================================== */
+    const DEVICES = [
+      // Input Devices (輸入裝置)
+      { id: 'mouse', name: '滑鼠', category: 'input', icon: 'fa-computer-mouse', desc: '感測位移與按鈕點擊，輸入控制訊號來操控電腦游標。' },
+      { id: 'keyboard', name: '鍵盤', category: 'input', icon: 'fa-keyboard', desc: '將人類按下的字符按鍵轉為數位訊號輸入電腦。' },
+      { id: 'mic', name: '桌上型麥克風', category: 'input', icon: 'fa-microphone', desc: '將聲音震動轉換為電訊號，經由 ADC 轉為數位聲音數據輸入電腦。' },
+      { id: 'webcam', name: '網路攝影機', category: 'input', icon: 'fa-video', desc: '連續擷取真實世界的光線畫面，轉為數位視訊傳入電腦。' },
+      { id: 'trackpad', name: '獨立觸控板', category: 'input', icon: 'fa-hand-pointer', desc: '感應手指觸碰與手勢軌跡，輸入座標數據以操控系統。' },
+      { id: 'taiko', name: '太鼓控制器', category: 'input', icon: 'fa-drum', desc: '偵測鼓面與鼓邊的物理敲擊震動，將擊鼓訊號輸入電腦判定音符。' },
+
+      // Output Devices (輸出裝置)
+      { id: 'monitor', name: '電腦螢幕', category: 'output', icon: 'fa-desktop', desc: '將顯示卡運算完成的影像訊號轉為光學畫面呈現給人類觀看。' },
+      { id: 'speaker', name: '電腦喇叭', category: 'output', icon: 'fa-volume-high', desc: '將電腦發出的數位音訊轉為聲波推動單體發聲。' },
+      { id: 'printer-2d', name: '印表機', category: 'output', icon: 'fa-print', desc: '接收電腦輸出的圖文指令，將墨水印製在平面紙張上。' },
+      { id: 'projector', name: '單向投影機', category: 'output', icon: 'fa-film', desc: '接收電腦影像訊號，透過高亮度光源將畫面投射在牆面上。' },
+      { id: 'printer-3d', name: '3D 印表機', category: 'output', icon: 'fa-cubes-stacked', desc: '接收電腦輸出的 3D 切片模型指令，將塑料加熱堆疊成實體成品。' },
+
+      // Input & Output Devices (輸入兼輸出裝置)
+      { id: 'touchscreen', name: '觸控螢幕', category: 'both', icon: 'fa-mobile-screen-button', desc: '面板能顯示電腦處理後的畫面（輸出），同時能感應手指點擊位置傳回電腦（輸入）。' },
+      { id: 'vr-headset', name: 'VR 頭戴顯示器', category: 'both', icon: 'fa-vr-cardboard', desc: '雙眼顯示屏輸出 3D 沉浸畫面（輸出），內建陀螺儀與感測器不斷輸入頭部旋轉角度（輸入）。' },
+      { id: 'pen-display', name: '數位繪圖板 (含螢幕)', category: 'both', icon: 'fa-pen-to-square', desc: '繪圖螢幕顯示創作畫面（輸出），同時感應壓感電磁筆的手寫繪圖軌跡（輸入）。' },
+      { id: 'airpods', name: 'AirPods / 藍牙耳機', category: 'both', icon: 'fa-headphones', desc: '播放電腦輸出的無線音樂（輸出），同時配備麥克風與觸控柄可收音及接收控制指令（輸入）。' }
+    ];
+
+    /* ===================================================================
+       2. STATE MANAGEMENT
+       =================================================================== */
+    let gameState = {
+      placed: {},
+      selectedDeviceId: null
+    };
+
+    let isHzAnimRunning = true;
+    let isSlowMo = false;
+
+    /* ===================================================================
+       3. INITIALIZATION & TAB SWITCHING
+       =================================================================== */
+    window.onload = function() {
+      initGame();
+      setTimeout(() => {
+        initHzCanvases();
+        requestAnimationFrame(renderHzAnimation);
+      }, 100);
+    };
+
+    function switchTab(tabName) {
+      document.querySelectorAll('section[id^="view-"]').forEach(sec => sec.classList.add('hidden'));
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.remove('bg-white', 'text-blue-600', 'shadow-md');
+        btn.classList.add('text-slate-600');
+      });
+
+      document.getElementById(`view-${tabName}`).classList.remove('hidden');
+      const activeBtn = document.getElementById(`tab-${tabName}`);
+      activeBtn.classList.add('bg-white', 'text-blue-600', 'shadow-md');
+      activeBtn.classList.remove('text-slate-600');
+
+      if (tabName === 'display') {
+        setTimeout(() => {
+          initHzCanvases();
+        }, 50);
+      }
+    }
+
+    /* ===================================================================
+       4. TAB 1: CLASSIFICATION GAME LOGIC
+       =================================================================== */
+    function initGame() {
+      gameState.placed = {};
+      gameState.selectedDeviceId = null;
+      renderGamePool();
+      updateDropZones();
+      updateProgress();
+      clearSelection();
+    }
+
+    function resetGame() {
+      initGame();
+    }
+
+    function renderGamePool() {
+      const pool = document.getElementById('unclassified-pool');
+      pool.innerHTML = '';
+
+      const unplacedDevices = DEVICES.filter(d => !gameState.placed[d.id]);
+      
+      if (unplacedDevices.length === 0) {
+        pool.innerHTML = `<div class="col-span-full text-center py-8 text-slate-400 font-extrabold text-base">🎉 太棒了！所有周邊裝置皆已成功歸類！</div>`;
+        return;
+      }
+
+      unplacedDevices.forEach(device => {
+        const card = createDeviceCard(device);
+        pool.appendChild(card);
+      });
+    }
+
+    function createDeviceCard(device) {
+      const card = document.createElement('div');
+      card.id = `device-card-${device.id}`;
+      card.draggable = true;
+      
+      card.className = `device-card bg-white p-4 rounded-2xl border-2 border-slate-200 shadow-sm cursor-grab active:cursor-grabbing hover:shadow-md hover:border-indigo-400 transition-all duration-200 flex items-center justify-between gap-3 relative group ${gameState.selectedDeviceId === device.id ? 'card-selected' : ''}`;
+
+      card.innerHTML = `
+        <div class="flex items-center gap-3.5 min-w-0">
+          <div class="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-2xl group-hover:bg-indigo-600 group-hover:text-white transition shadow-sm">
+            <i class="fa-solid ${device.icon}"></i>
+          </div>
+          <div class="min-w-0">
+            <h4 class="font-black text-slate-800 text-lg sm:text-xl truncate">${device.name}</h4>
+            <span class="text-xs font-bold text-slate-400">點擊選取或拖曳</span>
+          </div>
+        </div>
+        <button onclick="event.stopPropagation(); showDeviceDetail('${device.id}')" title="查看說明" class="text-slate-300 hover:text-indigo-600 text-xl p-1.5 transition">
+          <i class="fa-solid fa-circle-info"></i>
+        </button>
+      `;
+
+      card.ondragstart = (e) => handleDragStart(e, device.id);
+      card.onclick = () => handleCardClick(device.id);
+
+      return card;
+    }
+
+    function handleDragStart(e, id) {
+      e.dataTransfer.setData('text/plain', id);
+      selectCard(id);
+    }
+
+    function handleDragOver(e) {
+      e.preventDefault();
+      e.currentTarget.classList.add('drop-zone-active');
+    }
+
+    function handleDragLeave(e) {
+      e.currentTarget.classList.remove('drop-zone-active');
+    }
+
+    function handleDrop(e, targetCategory) {
+      e.preventDefault();
+      e.currentTarget.classList.remove('drop-zone-active');
+      const id = e.dataTransfer.getData('text/plain') || gameState.selectedDeviceId;
+      if (id) {
+        attemptPlacement(id, targetCategory);
+      }
+    }
+
+    function handleCardClick(id) {
+      if (gameState.selectedDeviceId === id) {
+        clearSelection();
+      } else {
+        selectCard(id);
+      }
+    }
+
+    function selectCard(id) {
+      gameState.selectedDeviceId = id;
+      const device = DEVICES.find(d => d.id === id);
+      
+      document.querySelectorAll('.device-card').forEach(el => el.classList.remove('card-selected'));
+      const activeCard = document.getElementById(`device-card-${id}`);
+      if (activeCard) activeCard.classList.add('card-selected');
+
+      const banner = document.getElementById('selection-banner');
+      document.getElementById('selected-card-name').innerText = device.name;
+      banner.classList.remove('hidden');
+    }
+
+    function clearSelection() {
+      gameState.selectedDeviceId = null;
+      document.querySelectorAll('.device-card').forEach(el => el.classList.remove('card-selected'));
+      document.getElementById('selection-banner').classList.add('hidden');
+    }
+
+    function handleZoneClick(targetCategory) {
+      if (gameState.selectedDeviceId) {
+        attemptPlacement(gameState.selectedDeviceId, targetCategory);
+      }
+    }
+
+    function attemptPlacement(deviceId, targetCategory) {
+      const device = DEVICES.find(d => d.id === deviceId);
+      if (!device) return;
+
+      const targetZoneEl = document.getElementById(`zone-${targetCategory}`);
+
+      if (device.category === targetCategory) {
+        gameState.placed[deviceId] = targetCategory;
+        clearSelection();
+        renderGamePool();
+        updateDropZones();
+        updateProgress();
+
+        targetZoneEl.classList.add('ring-4', 'ring-emerald-400');
+        setTimeout(() => targetZoneEl.classList.remove('ring-4', 'ring-emerald-400'), 500);
+
+        if (Object.keys(gameState.placed).length === DEVICES.length) {
+          setTimeout(() => {
+            document.getElementById('modal-victory').classList.remove('hidden');
+          }, 350);
+        }
+
+      } else {
+        targetZoneEl.classList.add('animate-shake', 'ring-4', 'ring-red-400');
+        setTimeout(() => {
+          targetZoneEl.classList.remove('animate-shake', 'ring-4', 'ring-red-400');
+        }, 500);
+
+        showDeviceDetail(deviceId, `❌ 分類錯誤！<br><strong>${device.name}</strong> 的正確分類為「${getCategoryName(device.category)}」。`);
+      }
+    }
+
+    function updateDropZones() {
+      const categories = ['input', 'output', 'both'];
+
+      categories.forEach(cat => {
+        const container = document.getElementById(`container-${cat}`);
+        const badge = document.getElementById(`badge-${cat}-count`);
+        const placeholder = container.querySelector('.empty-placeholder');
+
+        const items = DEVICES.filter(d => gameState.placed[d.id] === cat);
+        badge.innerText = `${items.length} 個`;
+
+        const cardsInZone = container.querySelectorAll('.device-card-placed');
+        cardsInZone.forEach(c => c.remove());
+
+        if (items.length > 0) {
+          if (placeholder) placeholder.classList.add('hidden');
+          items.forEach(dev => {
+            const placedCard = document.createElement('div');
+            placedCard.className = `device-card-placed w-full bg-slate-50 p-3.5 rounded-2xl border border-slate-200 flex items-center justify-between text-base animate-pop font-black`;
+            placedCard.innerHTML = `
+              <div class="flex items-center gap-3">
+                <i class="fa-solid ${dev.icon} text-indigo-600 text-xl"></i>
+                <span class="text-slate-800 font-black">${dev.name}</span>
+              </div>
+              <button onclick="removePlacement('${dev.id}')" title="移除歸類" class="text-slate-300 hover:text-red-500 text-lg px-2 py-1">
+                <i class="fa-solid fa-xmark"></i>
+              </button>
+            `;
+            container.appendChild(placedCard);
+          });
+        } else {
+          if (placeholder) placeholder.classList.remove('hidden');
+        }
+      });
+    }
+
+    function removePlacement(deviceId) {
+      delete gameState.placed[deviceId];
+      renderGamePool();
+      updateDropZones();
+      updateProgress();
+    }
+
+    function updateProgress() {
+      const total = DEVICES.length;
+      const current = Object.keys(gameState.placed).length;
+      const percent = Math.round((current / total) * 100);
+
+      document.getElementById('game-progress-text').innerText = `${current} / ${total}`;
+      document.getElementById('progress-spinner').innerText = `${percent}%`;
+    }
+
+    function getCategoryName(cat) {
+      if (cat === 'input') return '📥 輸入裝置';
+      if (cat === 'output') return '📤 輸出裝置';
+      return '🔄 輸入兼輸出裝置';
+    }
+
+    function showDeviceDetail(deviceId, customNotice = '') {
+      const device = DEVICES.find(d => d.id === deviceId);
+      if (!device) return;
+
+      const badge = document.getElementById('modal-device-badge');
+      document.getElementById('modal-device-title').innerText = device.name;
+      document.getElementById('modal-device-icon').innerHTML = `<i class="fa-solid ${device.icon}"></i>`;
+      
+      badge.innerText = getCategoryName(device.category);
+      if (device.category === 'input') badge.className = 'text-xs px-3 py-1 rounded-full font-black bg-blue-100 text-blue-700';
+      else if (device.category === 'output') badge.className = 'text-xs px-3 py-1 rounded-full font-black bg-emerald-100 text-emerald-700';
+      else badge.className = 'text-xs px-3 py-1 rounded-full font-black bg-purple-100 text-purple-700';
+
+      document.getElementById('modal-device-desc').innerHTML = (customNotice ? `<p class="text-red-600 font-bold mb-2 leading-relaxed">${customNotice}</p>` : '') + device.desc;
+
+      document.getElementById('modal-device').classList.remove('hidden');
+    }
+
+    function closeModal(modalId) {
+      document.getElementById(modalId).classList.add('hidden');
+    }
+
+
+    /* ===================================================================
+       5. TAB 2: REFRESH RATE (60Hz vs 120Hz) CANVAS ANIMATION ENGINE
+       =================================================================== */
+    let canvas60, ctx60, canvas120, ctx120;
+    let ballPositionX = 40;
+    let ballDirection = 1;
+
+    let last60Time = 0;
+    let last120Time = 0;
+    let renderedX60 = 40;
+    let renderedX120 = 40;
+
+    function initHzCanvases() {
+      canvas60 = document.getElementById('canvas-60hz');
+      canvas120 = document.getElementById('canvas-120hz');
+
+      if (!canvas60 || !canvas120) return;
+
+      const rect60 = canvas60.parentElement.getBoundingClientRect();
+      const rect120 = canvas120.parentElement.getBoundingClientRect();
+
+      canvas60.width = rect60.width || 350;
+      canvas60.height = rect60.height || 200;
+      canvas120.width = rect120.width || 350;
+      canvas120.height = rect120.height || 200;
+
+      ctx60 = canvas60.getContext('2d');
+      ctx120 = canvas120.getContext('2d');
+    }
+
+    function toggleHzAnimation() {
+      isHzAnimRunning = !isHzAnimRunning;
+      const btn = document.getElementById('btn-hz-play');
+      if (isHzAnimRunning) {
+        btn.innerHTML = `<i class="fa-solid fa-pause"></i> 暫停動畫`;
+        requestAnimationFrame(renderHzAnimation);
+      } else {
+        btn.innerHTML = `<i class="fa-solid fa-play"></i> 繼續播放`;
+      }
+    }
+
+    function toggleSlowMotion() {
+      isSlowMo = !isSlowMo;
+      const label = document.getElementById('slowmo-label');
+      label.innerText = isSlowMo ? "恢復 1.0x 正常速度" : "開啟 0.25x 慢動作觀察";
+    }
+
+    function renderHzAnimation(timestamp) {
+      if (!isHzAnimRunning) return;
+
+      const speed = isSlowMo ? 1.8 : 7.0;
+      const canvasWidth = canvas60 ? canvas60.width : 350;
+
+      // Update position logic
+      ballPositionX += speed * ballDirection;
+      if (ballPositionX >= canvasWidth - 45) {
+        ballPositionX = canvasWidth - 45;
+        ballDirection = -1;
+      } else if (ballPositionX <= 45) {
+        ballPositionX = 45;
+        ballDirection = 1;
+      }
+
+      // Throttle 60Hz (~16.6ms per frame step)
+      if (timestamp - last60Time >= (1000 / 60)) {
+        renderedX60 = ballPositionX;
+        last60Time = timestamp;
+        drawHzScene(ctx60, canvas60, renderedX60, '#f87171', '#ef4444', '60Hz (~16.6ms)');
+      }
+
+      // Throttle 120Hz (~8.3ms per frame step)
+      if (timestamp - last120Time >= (1000 / 120)) {
+        renderedX120 = ballPositionX;
+        last120Time = timestamp;
+        drawHzScene(ctx120, canvas120, renderedX120, '#34d399', '#10b981', '120Hz (~8.3ms)');
+      }
+
+      requestAnimationFrame(renderHzAnimation);
+    }
+
+    function drawHzScene(ctx, canvas, posX, mainColor, accentColor, rateLabel) {
+      if (!ctx || !canvas) return;
+
+      const w = canvas.width;
+      const h = canvas.height;
+      const centerY = h / 2;
+
+      ctx.clearRect(0, 0, w, h);
+
+      // Track grid lines
+      ctx.beginPath();
+      ctx.strokeStyle = '#1e293b';
+      ctx.lineWidth = 1;
+      for (let x = 0; x < w; x += 30) {
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, h);
+      }
+      ctx.stroke();
+
+      // Main Horizontal Motion Track Line
+      ctx.beginPath();
+      ctx.strokeStyle = '#475569';
+      ctx.lineWidth = 3;
+      ctx.moveTo(35, centerY);
+      ctx.lineTo(w - 35, centerY);
+      ctx.stroke();
+
+      // Motion Trail Ghost Steps
+      for (let i = 1; i <= 3; i++) {
+        const ghostX = posX - (i * 14 * ballDirection);
+        if (ghostX > 30 && ghostX < w - 30) {
+          ctx.beginPath();
+          ctx.arc(ghostX, centerY, 16 - i * 3, 0, Math.PI * 2);
+          ctx.fillStyle = mainColor;
+          ctx.globalAlpha = 0.22 / i;
+          ctx.fill();
+        }
+      }
+
+      // Main Moving Circle
+      ctx.globalAlpha = 1.0;
+      ctx.beginPath();
+      ctx.arc(posX, centerY, 18, 0, Math.PI * 2);
+      ctx.fillStyle = mainColor;
+      ctx.fill();
+      ctx.lineWidth = 3;
+      ctx.strokeStyle = '#ffffff';
+      ctx.stroke();
+
+      // Moving Cursor Arrow Simulation
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.moveTo(posX, centerY - 28);
+      ctx.lineTo(posX - 7, centerY - 42);
+      ctx.lineTo(posX + 7, centerY - 42);
+      ctx.closePath();
+      ctx.fill();
+
+      // Position Indicator Text
+      ctx.font = 'bold 11px monospace';
+      ctx.fillStyle = '#94a3b8';
+      ctx.fillText(`X-Pos: ${Math.round(posX)}px`, 15, 25);
+    }
+
+
+    /* ===================================================================
+       6. TAB 2: SPECS (ASPECT RATIO SWITCHING)
+       =================================================================== */
+    function setAspectRatio(ratioKey) {
+      const box = document.getElementById('screen-ratio-box');
+      const label = document.getElementById('aspect-ratio-label');
+      const sizeText = document.getElementById('diagonal-size-text');
+
+      const btn169 = document.getElementById('btn-ratio-169');
+      const btn219 = document.getElementById('btn-ratio-219');
+
+      if (ratioKey === '16-9') {
+        box.style.maxWidth = '380px';
+        box.style.height = '144px';
+        label.innerText = '主流 16:9 比例 (適用於絕大多數文書、電影與遊戲)';
+        sizeText.innerText = '27 吋 (68.6 cm)';
+
+        btn169.className = 'px-3 py-1.5 rounded-xl text-xs font-extrabold bg-white text-blue-600 shadow-sm transition';
+        btn219.className = 'px-3 py-1.5 rounded-xl text-xs font-extrabold text-slate-600 hover:text-slate-900 transition';
+      } else {
+        box.style.maxWidth = '460px';
+        box.style.height = '115px';
+        label.innerText = '21:9 超寬沉浸曲面 (適用於多視窗剪輯與寬螢幕遊戲)';
+        sizeText.innerText = '34 吋 (86.4 cm)';
+
+        btn219.className = 'px-3 py-1.5 rounded-xl text-xs font-extrabold bg-white text-blue-600 shadow-sm transition';
+        btn169.className = 'px-3 py-1.5 rounded-xl text-xs font-extrabold text-slate-600 hover:text-slate-900 transition';
+      }
+    }
+
+    // Window resize handler for canvas responsiveness
+    window.onresize = function() {
+      initHzCanvases();
+    };
+  </script>
+</body>
+</html>
