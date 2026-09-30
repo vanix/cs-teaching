@@ -1,0 +1,1606 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>作業系統的功能 - 開機螢幕模擬與行程狀態互動教學</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&family=Inter:wght@300;400;500;600;700;800&family=Noto+Sans+TC:wght@300;400;500;700;900&display=swap');
+        
+        body {
+            font-family: 'Noto Sans TC', 'Inter', sans-serif;
+            background-color: #0f172a;
+            color: #f8fafc;
+        }
+
+        .font-mono-code {
+            font-family: 'Fira Code', monospace;
+        }
+
+        /* SVG State Flowchart Styles */
+        .node-rect {
+            transition: all 0.3s ease;
+        }
+
+        .active-state-node {
+            stroke: #3b82f6 !important;
+            stroke-width: 3.5px !important;
+            filter: drop-shadow(0 0 14px rgba(59, 130, 246, 0.9));
+        }
+
+        .active-path {
+            stroke: #60a5fa !important;
+            stroke-width: 3.5px !important;
+            filter: drop-shadow(0 0 8px rgba(96, 165, 250, 0.8));
+        }
+
+        /* Monitor Glow & Stand Styling */
+        .monitor-shadow {
+            box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.8), 0 0 40px rgba(59, 130, 246, 0.15);
+        }
+
+        .monitor-bezel {
+            background: linear-gradient(145deg, #1e293b, #0f172a);
+            border: 4px solid #334155;
+        }
+
+        .phone-shadow {
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7), 0 0 30px rgba(59, 130, 246, 0.15);
+        }
+
+        .phone-screen-bg {
+            background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
+        }
+
+        /* Scanline CRT Effect for BIOS Screen */
+        .crt-scanlines {
+            background: linear-gradient(
+                rgba(18, 16, 16, 0) 50%, 
+                rgba(0, 0, 0, 0.25) 50%
+            );
+            background-size: 100% 4px;
+        }
+
+        @keyframes radar-pulse {
+            0% { transform: scale(0.95); opacity: 0.8; }
+            50% { transform: scale(1.05); opacity: 1; }
+            100% { transform: scale(0.95); opacity: 0.8; }
+        }
+
+        .pulse-element {
+            animation: radar-pulse 2s infinite ease-in-out;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0f172a;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 3px;
+        }
+    </style>
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8522276249008152" crossorigin="anonymous"></script>
+</head>
+<body class="min-h-screen flex flex-col justify-between overflow-x-hidden">
+
+    <!-- Header Navigation -->
+    <header class="bg-slate-900/90 backdrop-blur-md border-b border-slate-800 sticky top-0 z-50 px-4 py-3">
+        <div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-3">
+            <div class="flex items-center space-x-3">
+                <a href="index.html" class="text-xs text-sky-400 hover:text-sky-300 transition flex items-center gap-1">
+                    <i class="fa-solid fa-arrow-left"></i> 回到首頁
+                </a>
+                <div class="p-2 bg-blue-600/20 text-blue-400 rounded-xl border border-blue-500/30">
+                    <i class="fa-solid fa-desktop text-2xl"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 via-indigo-300 to-teal-300">
+                        作業系統核心功能與開機螢幕模擬教學
+                    </h1>
+                    <p class="text-xs text-slate-400">電腦螢幕開機視覺化 x 行程 5 狀態手機模擬器</p>
+                </div>
+            </div>
+
+            <!-- Tab Navigation Buttons -->
+            <nav class="flex bg-slate-800/80 p-1 rounded-xl border border-slate-700/60 text-xs sm:text-sm font-medium">
+                <button onclick="switchTab('boot')" id="tab-boot" class="tab-btn px-3.5 py-2 rounded-lg transition-all bg-blue-600 text-white shadow-lg">
+                    <i class="fa-solid fa-desktop mr-1.5"></i>電腦開機流程
+                </button>
+                <button onclick="switchTab('functions')" id="tab-functions" class="tab-btn px-3.5 py-2 rounded-lg transition-all text-slate-300 hover:text-white">
+                    <i class="fa-solid fa-cubes mr-1.5"></i>五大功能
+                </button>
+                <button onclick="switchTab('process-simulator')" id="tab-process-simulator" class="tab-btn px-3.5 py-2 rounded-lg transition-all text-slate-300 hover:text-white">
+                    <i class="fa-solid fa-mobile-screen-button mr-1.5"></i>行程狀態與手機模擬
+                </button>
+                <button onclick="switchTab('scheduling')" id="tab-scheduling" class="tab-btn px-3.5 py-2 rounded-lg transition-all text-slate-300 hover:text-white">
+                    <i class="fa-solid fa-calculator mr-1.5"></i>排程演算法
+                </button>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="max-w-7xl mx-auto w-full p-4 sm:p-6 flex-grow">
+
+        <!-- ================= TAB 1: BOOT PROCESS WITH COMPUTER MONITOR DISPLAY ================= -->
+        <section id="content-boot" class="tab-content space-y-6">
+            
+            <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-5 sm:p-6">
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+                    <div>
+                        <span class="text-xs font-bold uppercase tracking-widest text-blue-400 bg-blue-500/10 px-3 py-1 rounded-full border border-blue-500/20">
+                            Monitor Display Simulation
+                        </span>
+                        <h2 class="text-xl sm:text-2xl font-extrabold mt-2 text-white flex items-center gap-2">
+                            <i class="fa-solid fa-tv text-blue-400"></i>
+                            電腦螢幕開機畫面模擬器 (Boot Sequence Visualizer)
+                        </h2>
+                        <p class="text-xs sm:text-sm text-slate-400 mt-1">
+                            觀察從按下電源開機、BIOS 韌體檢測、載入作業系統 Kernel 到進入 Shell 桌面的即時螢幕顯示畫面：
+                        </p>
+                    </div>
+
+                    <!-- Interactive Control Buttons -->
+                    <div class="flex items-center gap-2 flex-wrap">
+                        <button onclick="prevBootStep()" class="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs sm:text-sm font-semibold transition border border-slate-700 flex items-center gap-1.5">
+                            <i class="fa-solid fa-backward"></i> 上一步
+                        </button>
+                        <button onclick="nextBootStep()" class="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs sm:text-sm font-semibold transition shadow-lg flex items-center gap-1.5">
+                            <i class="fa-solid fa-forward"></i> 下一步
+                        </button>
+                        <button onclick="toggleAutoBootPlay()" id="btn-auto-boot" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs sm:text-sm font-semibold transition shadow-lg flex items-center gap-1.5">
+                            <i class="fa-solid fa-play"></i> 自動開機演練
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Step Timeline Indicator Bar -->
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-8">
+                    <button onclick="setBootStep(1)" id="step-btn-1" class="step-nav-btn p-3 rounded-xl border text-left transition-all relative overflow-hidden bg-blue-600/20 border-blue-500 text-white shadow-md">
+                        <div class="flex items-center justify-between mb-1">
+                            <span class="text-xs font-extrabold text-blue-400 font-mono">STEP 1</span>
+                            <span class="w-2.5 h-2.5 rounded-full bg-blue-400"></span>
+                        </div>
+                        <div class="text-xs font-bold">1. 按下電源</div>
+                        <div class="text-[10px] text-slate-400 mt-0.5">Power On / POST</div>
+                    </button>
+
+                    <button onclick="setBootStep(2)" id="step-btn-2" class="step-nav-btn p-3 rounded-xl border text-left transition-all relative overflow-hidden bg-slate-800/60 border-slate-700 text-slate-400 hover:bg-slate-800">
+                        <div class="flex items-center justify-between mb-1">
+                            <span class="text-xs font-extrabold text-slate-500 font-mono">STEP 2</span>
+                            <span class="w-2.5 h-2.5 rounded-full bg-slate-600"></span>
+                        </div>
+                        <div class="text-xs font-bold">2. BIOS / UEFI</div>
+                        <div class="text-[10px] text-slate-400 mt-0.5">硬體檢測與讀取載入器</div>
+                    </button>
+
+                    <button onclick="setBootStep(3)" id="step-btn-3" class="step-nav-btn p-3 rounded-xl border text-left transition-all relative overflow-hidden bg-slate-800/60 border-slate-700 text-slate-400 hover:bg-slate-800">
+                        <div class="flex items-center justify-between mb-1">
+                            <span class="text-xs font-extrabold text-slate-500 font-mono">STEP 3</span>
+                            <span class="w-2.5 h-2.5 rounded-full bg-slate-600"></span>
+                        </div>
+                        <div class="text-xs font-bold">3. 載入 OS</div>
+                        <div class="text-[10px] text-slate-400 mt-0.5">Kernel 載入記憶體</div>
+                    </button>
+
+                    <button onclick="setBootStep(4)" id="step-btn-4" class="step-nav-btn p-3 rounded-xl border text-left transition-all relative overflow-hidden bg-slate-800/60 border-slate-700 text-slate-400 hover:bg-slate-800">
+                        <div class="flex items-center justify-between mb-1">
+                            <span class="text-xs font-extrabold text-slate-500 font-mono">STEP 4</span>
+                            <span class="w-2.5 h-2.5 rounded-full bg-slate-600"></span>
+                        </div>
+                        <div class="text-xs font-bold">4. 開機成功</div>
+                        <div class="text-[10px] text-slate-400 mt-0.5">Shell / GUI Ready</div>
+                    </button>
+                </div>
+
+                <!-- Computer Screen Mockup Container -->
+                <div class="flex flex-col items-center">
+                    
+                    <!-- 16:9 Desktop Monitor Outer Frame -->
+                    <div class="w-full max-w-4xl monitor-bezel rounded-2xl p-3 sm:p-4 monitor-shadow relative">
+                        
+                        <!-- Top Monitor WebCam / Bezel Details -->
+                        <div class="flex justify-between items-center px-3 pb-2 text-[11px] text-slate-400 font-mono">
+                            <div class="flex items-center gap-1.5">
+                                <span class="w-2 h-2 rounded-full bg-red-500/80"></span>
+                                <span>UltraWide 4K IPS Display</span>
+                            </div>
+                            <!-- Camera Dot -->
+                            <div class="w-2.5 h-2.5 bg-slate-900 border border-slate-700 rounded-full mx-auto"></div>
+                            <div class="text-[10px] text-slate-500">DISPLAYPORT-1</div>
+                        </div>
+
+                        <!-- Computer Screen Panel Viewport (Aspect Ratio 16:9) -->
+                        <div id="monitor-screen" class="w-full h-[320px] sm:h-[440px] bg-black rounded-xl overflow-hidden relative shadow-inner border border-slate-800/80">
+                            <!-- JS Dynamically Injects Real Computer Screen Content Here -->
+                        </div>
+
+                        <!-- Monitor Bottom Logo & Power LED -->
+                        <div class="flex justify-between items-center pt-2.5 px-3">
+                            <span class="text-[11px] font-bold text-slate-500 tracking-widest font-mono">CS-ACER OS DISPLAY</span>
+                            <!-- Power LED Status Light -->
+                            <div class="flex items-center gap-2">
+                                <span id="monitor-power-label" class="text-[10px] font-mono text-emerald-400 font-semibold">POWER ON</span>
+                                <div id="monitor-power-led" class="w-3 h-3 rounded-full bg-emerald-500 shadow-[0_0_10px_#10b981]"></div>
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <!-- Monitor Stand Base -->
+                    <div class="w-32 h-8 bg-gradient-to-b from-slate-700 to-slate-800 rounded-b-md mx-auto -mt-1 shadow-md"></div>
+                    <div class="w-64 h-3 bg-slate-800 rounded-full mx-auto -mt-0.5 shadow-xl border-t border-slate-700"></div>
+
+                </div>
+
+                <!-- Detailed Hardware & Firmware Explanation Card -->
+                <div class="mt-8 bg-slate-950 p-5 rounded-2xl border border-slate-800">
+                    <div class="flex items-center gap-2 mb-3">
+                        <i class="fa-solid fa-circle-info text-blue-400 text-lg"></i>
+                        <h3 id="boot-explain-title" class="text-base font-bold text-white">步驟 1 技術原理解析：按下電源 (Power On)</h3>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+                        <div class="bg-slate-900/80 p-3.5 rounded-xl border border-slate-800">
+                            <span class="text-blue-400 font-bold block mb-1">⚡ 硬體層 (Hardware)</span>
+                            <p id="boot-explain-hw" class="text-slate-300 leading-relaxed">
+                                電源供應器 (PSU) 送出 Power Good 訊號給主機板，CPU 讀取重設向量 (Reset Vector)，準備執行韌體指令。
+                            </p>
+                        </div>
+                        <div class="bg-slate-900/80 p-3.5 rounded-xl border border-slate-800">
+                            <span class="text-purple-400 font-bold block mb-1">💾 記憶體與韌體 (Firmware / RAM)</span>
+                            <p id="boot-explain-fw" class="text-slate-300 leading-relaxed">
+                                RAM 此時無任何作業系統資料（揮發性記憶體）。CPU 開始執行燒錄於 ROM 晶片上的 BIOS/UEFI 程式。
+                            </p>
+                        </div>
+                        <div class="bg-slate-900/80 p-3.5 rounded-xl border border-slate-800">
+                            <span class="text-emerald-400 font-bold block mb-1">🖥️ 作業系統核心 (Kernel State)</span>
+                            <p id="boot-explain-os" class="text-slate-300 leading-relaxed">
+                                作業系統尚未啟動，Kernel 依然儲存在 NVMe SSD / 硬碟的 Boot 磁區中靜止不動。
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ================= TAB 2: OS 5 MAIN FUNCTIONS ================= -->
+        <section id="content-functions" class="tab-content hidden space-y-6">
+            <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-6">
+                <h2 class="text-xl font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-mobile-button text-blue-400"></i>
+                    作業系統五大功能與智慧型手機 App 實例演示
+                </h2>
+                <p class="text-sm text-slate-400 mt-1">點擊下方各項功能，觀察手機 App 操作背後的作業系統運作機制：</p>
+
+                <!-- Functions Selector -->
+                <div class="grid grid-cols-2 sm:grid-cols-5 gap-2 mt-5">
+                    <button onclick="selectFunction(0)" id="func-btn-0" class="func-tab p-3 rounded-xl border border-blue-500/50 bg-blue-600/20 text-blue-300 font-medium text-xs sm:text-sm flex flex-col items-center gap-1.5 transition">
+                        <i class="fa-solid fa-microchip text-base"></i>
+                        <span>1. 行程管理</span>
+                    </button>
+                    <button onclick="selectFunction(1)" id="func-btn-1" class="func-tab p-3 rounded-xl border border-slate-800 bg-slate-800/40 text-slate-400 font-medium text-xs sm:text-sm flex flex-col items-center gap-1.5 transition">
+                        <i class="fa-solid fa-memory text-base"></i>
+                        <span>2. 記憶體管理</span>
+                    </button>
+                    <button onclick="selectFunction(2)" id="func-btn-2" class="func-tab p-3 rounded-xl border border-slate-800 bg-slate-800/40 text-slate-400 font-medium text-xs sm:text-sm flex flex-col items-center gap-1.5 transition">
+                        <i class="fa-solid fa-folder-open text-base"></i>
+                        <span>3. 檔案與儲存</span>
+                    </button>
+                    <button onclick="selectFunction(3)" id="func-btn-3" class="func-tab p-3 rounded-xl border border-slate-800 bg-slate-800/40 text-slate-400 font-medium text-xs sm:text-sm flex flex-col items-center gap-1.5 transition">
+                        <i class="fa-solid fa-gamepad text-base"></i>
+                        <span>4. I/O 裝置管理</span>
+                    </button>
+                    <button onclick="selectFunction(4)" id="func-btn-4" class="func-tab p-3 rounded-xl border border-slate-800 bg-slate-800/40 text-slate-400 font-medium text-xs sm:text-sm flex flex-col items-center gap-1.5 transition">
+                        <i class="fa-solid fa-shield-virus text-base"></i>
+                        <span>5. 保護與安全</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Dynamic Demo Area -->
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                <!-- Interactive Phone Mockup Animation -->
+                <div class="lg:col-span-5 flex justify-center">
+                    <div class="w-full max-w-[320px] h-[580px] bg-slate-950 rounded-[40px] border-4 border-slate-800 shadow-2xl p-4 flex flex-col relative overflow-hidden ring-1 ring-slate-800/50">
+                        <!-- Phone Notch / Camera -->
+                        <div class="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-5 bg-slate-900 rounded-b-xl flex items-center justify-center gap-2 z-30">
+                            <div class="w-2.5 h-2.5 bg-slate-950 rounded-full"></div>
+                            <div class="w-10 h-1 bg-slate-800 rounded-full"></div>
+                        </div>
+
+                        <!-- Phone Status Bar -->
+                        <div class="flex justify-between items-center text-[10px] text-slate-400 pt-1 pb-2 px-2 z-20">
+                            <span>19:28</span>
+                            <div class="flex items-center gap-1.5">
+                                <i class="fa-solid fa-wifi"></i>
+                                <i class="fa-solid fa-signal"></i>
+                                <i class="fa-solid fa-battery-three-quarters text-xs"></i>
+                            </div>
+                        </div>
+
+                        <!-- Phone Content Display (Animated per function) -->
+                        <div id="phone-screen" class="flex-grow bg-slate-900 rounded-2xl overflow-hidden relative flex flex-col p-3 border border-slate-800/80">
+                            <!-- JS Inject Animation Screens Here -->
+                        </div>
+
+                        <!-- Phone Home Bar -->
+                        <div class="pt-2 flex justify-center z-20">
+                            <div class="w-28 h-1 bg-slate-700 rounded-full"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Explanation Panel -->
+                <div class="lg:col-span-7 bg-slate-900/60 border border-slate-800 rounded-2xl p-6 flex flex-col justify-between">
+                    <div>
+                        <div class="flex items-center gap-3 mb-4">
+                            <span id="func-badge" class="px-3 py-1 rounded-md text-xs font-bold bg-blue-500/20 text-blue-400 border border-blue-500/30">
+                                核心功能 01
+                            </span>
+                            <h3 id="func-title" class="text-xl font-bold text-white">行程管理 (Process Management)</h3>
+                        </div>
+
+                        <p id="func-desc" class="text-slate-300 text-sm leading-relaxed mb-6">
+                            手機系統（Android/iOS）在背景為每一個開啟的 App（如《傳說對決》、LINE、IG）分配 CPU 算力時間片（Time Slices），並在切換 App 時執行內存狀態切換。
+                        </p>
+
+                        <div class="space-y-3 bg-slate-950/50 p-4 rounded-xl border border-slate-800/80 text-xs sm:text-sm">
+                            <h4 class="font-semibold text-slate-200 flex items-center gap-2">
+                                <i class="fa-solid fa-circle-info text-blue-400"></i> 手機日常運轉實際案例：
+                            </h4>
+                            <ul id="func-examples" class="space-y-2 text-slate-400">
+                                <li class="flex items-start gap-2">
+                                    <i class="fa-solid fa-caret-right text-blue-500 mt-1"></i>
+                                    <span>玩《傳說對決》團戰時，系統給予遊戲最高 Priority（優先權）以維持 60 FPS 幀率。</span>
+                                </li>
+                                <li class="flex items-start gap-2">
+                                    <i class="fa-solid fa-caret-right text-blue-500 mt-1"></i>
+                                    <span>跳出 LINE 訊息通知時，系統中斷 CPU 當前計算，優先繪製懸浮通知視窗。</span>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="mt-6 pt-4 border-t border-slate-800 flex justify-between items-center text-xs text-slate-500">
+                        <span>點擊手機畫面進行互動</span>
+                        <span id="func-status-tag" class="text-blue-400 font-mono">Status: ACTIVE_SIMULATION</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= TAB 3: PROCESS STATE SIMULATOR ================= -->
+        <section id="content-process-simulator" class="tab-content hidden space-y-6">
+            
+            <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-5 sm:p-6">
+                <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                    <div>
+                        <span class="text-xs font-bold uppercase tracking-widest text-blue-400 bg-blue-500/10 px-3 py-1 rounded-full border border-blue-500/20">Interactive Simulator</span>
+                        <h2 class="text-xl sm:text-2xl font-extrabold mt-2 text-white flex items-center gap-2">
+                            <i class="fa-solid fa-mobile-screen-button text-blue-400"></i>
+                            手機 App 畫面 x 5 狀態模型 (5-State Model) 雙向同步
+                        </h2>
+                        <p class="text-xs sm:text-sm text-slate-400 mt-1">
+                            點擊手機控制按鈕，觀察《傳說對決》遊戲畫面與右側 SVG 流程圖節點的同步轉換：
+                        </p>
+                    </div>
+
+                    <div class="flex items-center gap-2">
+                        <button onclick="autoPlayPhoneScenario()" id="btn-auto-scenario" class="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs sm:text-sm font-semibold transition shadow-lg flex items-center gap-2">
+                            <i class="fa-solid fa-play"></i> 自動劇本演示
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Interactive Controller Action Bar -->
+                <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5 mt-5">
+                    <button onclick="handlePhoneAction('click_app')" class="p-3 rounded-xl bg-purple-950/40 border border-purple-500/50 text-purple-200 hover:bg-purple-900/60 text-xs font-bold transition text-left flex flex-col justify-between h-16 shadow-md">
+                        <span class="flex items-center gap-1.5"><i class="fa-solid fa-hand-pointer text-purple-400"></i> 1. 點擊遊戲 App</span>
+                        <span class="text-[10px] text-purple-300/80 font-mono">【新生 ➔ 就緒】</span>
+                    </button>
+
+                    <button onclick="handlePhoneAction('start_battle')" class="p-3 rounded-xl bg-blue-950/40 border border-blue-500/50 text-blue-200 hover:bg-blue-900/60 text-xs font-bold transition text-left flex flex-col justify-between h-16 shadow-md">
+                        <span class="flex items-center gap-1.5"><i class="fa-solid fa-play text-blue-400"></i> 2. 開始對戰</span>
+                        <span class="text-[10px] text-blue-300/80 font-mono">【就緒 ➔ 執行】</span>
+                    </button>
+
+                    <button onclick="handlePhoneAction('incoming_call')" class="p-3 rounded-xl bg-cyan-950/40 border border-cyan-500/50 text-cyan-200 hover:bg-cyan-900/60 text-xs font-bold transition text-left flex flex-col justify-between h-16 shadow-md">
+                        <span class="flex items-center gap-1.5"><i class="fa-solid fa-phone text-cyan-400"></i> 3. 來電中斷</span>
+                        <span class="text-[10px] text-cyan-300/80 font-mono">【執行 ➔ 中斷 ➔ 就緒】</span>
+                    </button>
+
+                    <button onclick="handlePhoneAction('net_loading')" class="p-3 rounded-xl bg-amber-950/40 border border-amber-500/50 text-amber-200 hover:bg-amber-900/60 text-xs font-bold transition text-left flex flex-col justify-between h-16 shadow-md">
+                        <span class="flex items-center gap-1.5"><i class="fa-solid fa-wifi text-amber-400"></i> 4. 網路 I/O 讀取</span>
+                        <span class="text-[10px] text-amber-300/80 font-mono">【執行 ➔ 等待 I/O】</span>
+                    </button>
+
+                    <button onclick="handlePhoneAction('io_complete')" class="p-3 rounded-xl bg-emerald-950/40 border border-emerald-500/50 text-emerald-200 hover:bg-emerald-900/60 text-xs font-bold transition text-left flex flex-col justify-between h-16 shadow-md">
+                        <span class="flex items-center gap-1.5"><i class="fa-solid fa-circle-check text-emerald-400"></i> 5. I/O 完成</span>
+                        <span class="text-[10px] text-emerald-300/80 font-mono">【等待 ➔ 就緒】</span>
+                    </button>
+
+                    <button onclick="handlePhoneAction('swipe_close')" class="p-3 rounded-xl bg-rose-950/40 border border-rose-500/50 text-rose-200 hover:bg-rose-900/60 text-xs font-bold transition text-left flex flex-col justify-between h-16 shadow-md">
+                        <span class="flex items-center gap-1.5"><i class="fa-solid fa-power-off text-rose-400"></i> 6. 滑掉 App</span>
+                        <span class="text-[10px] text-rose-300/80 font-mono">【執行 ➔ 結束】</span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+                
+                <!-- LEFT: Smartphone UI Simulator -->
+                <div class="lg:col-span-5 flex flex-col items-center bg-slate-900/60 border border-slate-800 rounded-2xl p-5 shadow-xl">
+                    <div class="w-full flex items-center justify-between mb-3 px-1">
+                        <span class="text-xs font-bold text-slate-300 flex items-center gap-1.5">
+                            <i class="fa-solid fa-mobile-button text-blue-400"></i> 手機畫面模擬器
+                        </span>
+                        <span id="phone-fps-badge" class="text-[10px] font-mono bg-blue-500/20 text-blue-300 px-2 py-0.5 rounded border border-blue-500/30">
+                            FPS: --
+                        </span>
+                    </div>
+
+                    <!-- Smartphone Device Frame -->
+                    <div class="w-full max-w-[300px] h-[540px] bg-slate-950 rounded-[42px] border-4 border-slate-800 phone-shadow p-3.5 flex flex-col relative overflow-hidden ring-1 ring-slate-800">
+                        <div class="absolute top-0 left-1/2 -translate-x-1/2 w-28 h-5 bg-slate-900 rounded-b-xl flex items-center justify-center gap-2 z-40">
+                            <div class="w-2.5 h-2.5 bg-slate-950 rounded-full"></div>
+                            <div class="w-8 h-1 bg-slate-800 rounded-full"></div>
+                        </div>
+
+                        <div class="flex justify-between items-center text-[10px] text-slate-400 pt-1 pb-2 px-2 z-30 font-mono">
+                            <span>19:30</span>
+                            <div class="flex items-center gap-1.5">
+                                <i class="fa-solid fa-wifi text-[9px]"></i>
+                                <i class="fa-solid fa-signal text-[9px]"></i>
+                                <span class="text-[9px]">100%</span>
+                            </div>
+                        </div>
+
+                        <div id="phone-screen-viewport" class="flex-grow phone-screen-bg rounded-[26px] overflow-hidden relative flex flex-col justify-between p-3 border border-slate-800/80">
+                            <!-- JS Dynamically Injects Screen -->
+                        </div>
+
+                        <div class="pt-2 flex justify-center z-30">
+                            <div class="w-24 h-1 bg-slate-700/80 rounded-full"></div>
+                        </div>
+                    </div>
+
+                    <!-- Scenario Description -->
+                    <div class="mt-4 w-full bg-slate-950/80 p-3.5 rounded-xl border border-slate-800 text-xs">
+                        <div class="text-slate-400 font-bold mb-1 flex items-center gap-1.5">
+                            <i class="fa-solid fa-lightbulb text-amber-400"></i>
+                            <span id="scenario-title">情境說明：手機桌面</span>
+                        </div>
+                        <p id="scenario-desc" class="text-slate-300 leading-relaxed">
+                            手機目前停留在桌面，尚未點擊啟動任何遊戲 App。作業系統記憶體中沒有該行程。
+                        </p>
+                    </div>
+                </div>
+
+                <!-- RIGHT: Process State SVG Flowchart -->
+                <div class="lg:col-span-7 bg-slate-900/80 border border-slate-800 rounded-2xl p-5 shadow-xl flex flex-col justify-between min-h-[610px]">
+                    <div>
+                        <div class="flex items-center justify-between mb-3">
+                            <h3 class="text-base font-bold text-white flex items-center gap-2">
+                                <i class="fa-solid fa-diagram-project text-blue-400"></i>
+                                5 狀態模型 (Standard 5-State Model) 轉換圖
+                            </h3>
+                            <span id="current-state-pill" class="text-xs font-mono font-bold bg-purple-500/20 text-purple-300 px-2.5 py-1 rounded-full border border-purple-500/30">
+                                當前狀態：NEW (新生)
+                            </span>
+                        </div>
+
+                        <!-- SVG Flowchart -->
+                        <div class="w-full bg-slate-950 rounded-xl p-3 border border-slate-800/80 overflow-x-auto">
+                            <svg id="process-svg" viewBox="0 0 760 380" class="w-full min-w-[650px] h-auto select-none">
+                                <defs>
+                                    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                                        <path d="M 0 0 L 10 5 L 0 10 z" fill="#64748b" />
+                                    </marker>
+                                </defs>
+
+                                <path id="line-new-ready" d="M 140 120 L 250 120" stroke="#475569" stroke-width="2.5" fill="none" marker-end="url(#arrow)" />
+                                <text x="195" y="108" text-anchor="middle" class="text-[10px] fill-slate-400 font-bold">進入 (Admitted)</text>
+
+                                <path id="line-ready-running" d="M 370 120 L 480 120" stroke="#475569" stroke-width="2.5" fill="none" marker-end="url(#arrow)" />
+                                <text x="425" y="108" text-anchor="middle" class="text-[10px] fill-slate-400 font-bold">排程 (Dispatch)</text>
+
+                                <path id="line-running-waiting" d="M 510 160 C 490 260, 410 260, 370 260" stroke="#475569" stroke-width="2.5" fill="none" marker-end="url(#arrow)" />
+                                <text x="460" y="250" text-anchor="middle" class="text-[10px] fill-amber-400 font-bold">等待 I/O 或事件</text>
+
+                                <path id="line-waiting-ready" d="M 270 260 C 240 260, 270 180, 290 160" stroke="#475569" stroke-width="2.5" fill="none" marker-end="url(#arrow)" />
+                                <text x="225" y="225" text-anchor="middle" class="text-[10px] fill-emerald-400 font-bold">I/O 或事件完成</text>
+
+                                <path id="line-running-ready" d="M 510 80 C 460 30, 360 30, 330 80" stroke="#475569" stroke-width="2.5" fill="none" marker-end="url(#arrow)" />
+                                <text x="420" y="38" text-anchor="middle" class="text-[10px] fill-cyan-400 font-bold">中斷 (Interrupt)</text>
+
+                                <path id="line-running-terminated" d="M 590 120 L 680 120" stroke="#475569" stroke-width="2.5" fill="none" marker-end="url(#arrow)" />
+                                <text x="635" y="108" text-anchor="middle" class="text-[10px] fill-rose-400 font-bold">離開 (Exit)</text>
+
+                                <!-- Nodes -->
+                                <g id="snode-new" class="cursor-pointer" onclick="handlePhoneAction('click_app')">
+                                    <rect x="30" y="80" width="110" height="75" rx="14" fill="#1e293b" stroke="#64748b" stroke-width="2" class="node-rect" />
+                                    <text x="85" y="115" text-anchor="middle" class="text-xs font-extrabold fill-purple-300">❶ 新生</text>
+                                    <text x="85" y="133" text-anchor="middle" class="text-[9px] fill-slate-400 font-mono">NEW</text>
+                                </g>
+
+                                <g id="snode-ready" class="cursor-pointer" onclick="handlePhoneAction('io_complete')">
+                                    <rect x="250" y="80" width="120" height="75" rx="14" fill="#1e293b" stroke="#64748b" stroke-width="2" class="node-rect" />
+                                    <text x="310" y="115" text-anchor="middle" class="text-xs font-extrabold fill-blue-300">❷ 就緒</text>
+                                    <text x="310" y="133" text-anchor="middle" class="text-[9px] fill-slate-400 font-mono">READY</text>
+                                </g>
+
+                                <g id="snode-running" class="cursor-pointer" onclick="handlePhoneAction('start_battle')">
+                                    <rect x="480" y="80" width="110" height="75" rx="14" fill="#1e293b" stroke="#64748b" stroke-width="2" class="node-rect" />
+                                    <text x="535" y="115" text-anchor="middle" class="text-xs font-extrabold fill-emerald-300">❸ 執行</text>
+                                    <text x="535" y="133" text-anchor="middle" class="text-[9px] fill-slate-400 font-mono">RUNNING</text>
+                                </g>
+
+                                <g id="snode-waiting" class="cursor-pointer" onclick="handlePhoneAction('net_loading')">
+                                    <rect x="260" y="250" width="120" height="75" rx="14" fill="#1e293b" stroke="#64748b" stroke-width="2" class="node-rect" />
+                                    <text x="320" y="285" text-anchor="middle" class="text-xs font-extrabold fill-amber-300">❹ 等待</text>
+                                    <text x="320" y="303" text-anchor="middle" class="text-[9px] fill-slate-400 font-mono">WAITING</text>
+                                </g>
+
+                                <g id="snode-terminated" class="cursor-pointer" onclick="handlePhoneAction('swipe_close')">
+                                    <rect x="670" y="80" width="80" height="75" rx="14" fill="#1e293b" stroke="#64748b" stroke-width="2" class="node-rect" />
+                                    <text x="710" y="115" text-anchor="middle" class="text-xs font-extrabold fill-rose-300">❺ 結束</text>
+                                    <text x="710" y="133" text-anchor="middle" class="text-[9px] fill-slate-400 font-mono">EXIT</text>
+                                </g>
+
+                                <circle id="svg-glow-token" cx="85" cy="117" r="9" fill="#38bdf8" class="shadow-lg transition-all duration-700 opacity-0">
+                                    <animate attributeName="r" values="7;11;7" dur="1.2s" repeatCount="indefinite" />
+                                </circle>
+                            </svg>
+                        </div>
+                    </div>
+
+                    <!-- PCB Card -->
+                    <div class="mt-4 bg-slate-950 p-4 rounded-xl border border-slate-800 text-xs">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="font-bold text-slate-200 flex items-center gap-1.5">
+                                <i class="fa-solid fa-file-invoice text-blue-400"></i> 行程控制區塊 (PCB) 狀態表
+                            </span>
+                            <span class="text-[10px] text-slate-500 font-mono">Process ID: #4802</span>
+                        </div>
+                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-[11px]">
+                            <div class="bg-slate-900 p-2 rounded border border-slate-800">
+                                <span class="text-slate-400 block text-[10px]">App 名稱</span>
+                                <span class="font-bold text-slate-200">傳說對決 (Arena)</span>
+                            </div>
+                            <div class="bg-slate-900 p-2 rounded border border-slate-800">
+                                <span class="text-slate-400 block text-[10px]">RAM 位址</span>
+                                <span id="pcb-ram" class="font-mono text-blue-400">0x7FFF9400</span>
+                            </div>
+                            <div class="bg-slate-900 p-2 rounded border border-slate-800">
+                                <span class="text-slate-400 block text-[10px]">CPU 優先權</span>
+                                <span id="pcb-prio" class="font-bold text-emerald-400">HIGH (Level 1)</span>
+                            </div>
+                            <div class="bg-slate-900 p-2 rounded border border-slate-800">
+                                <span class="text-slate-400 block text-[10px]">I/O 狀態</span>
+                                <span id="pcb-io" class="font-mono text-slate-300">IDLE</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ================= TAB 4: SCHEDULING ALGORITHMS ================= -->
+        <section id="content-scheduling" class="tab-content hidden space-y-6">
+            <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-6">
+                <h2 class="text-xl font-bold text-white flex items-center gap-2 mb-2">
+                    <i class="fa-solid fa-calculator text-blue-400"></i>
+                    CPU 排程演算法 (Scheduling Algorithms) 甘特圖與計算題
+                </h2>
+                <p class="text-xs sm:text-sm text-slate-400 mb-4">
+                    切換排程策略，觀察等待時間與周轉時間的差別：
+                </p>
+
+                <div class="flex gap-2 mb-6">
+                    <button onclick="switchAlgo('fcfs')" id="algo-btn-fcfs" class="algo-btn px-4 py-2 rounded-lg bg-blue-600 text-white text-xs sm:text-sm font-semibold shadow">
+                        FCFS (先到先服務)
+                    </button>
+                    <button onclick="switchAlgo('sjf')" id="algo-btn-sjf" class="algo-btn px-4 py-2 rounded-lg bg-slate-800 text-slate-300 text-xs sm:text-sm font-semibold hover:bg-slate-700">
+                        SJF (最短工作優先)
+                    </button>
+                    <button onclick="switchAlgo('priority')" id="algo-btn-priority" class="algo-btn px-4 py-2 rounded-lg bg-slate-800 text-slate-300 text-xs sm:text-sm font-semibold hover:bg-slate-700">
+                        Priority (優先權排程)
+                    </button>
+                </div>
+
+                <div class="overflow-x-auto mb-6">
+                    <table class="w-full text-left text-xs sm:text-sm text-slate-300">
+                        <thead class="bg-slate-800 text-slate-200 uppercase text-[11px] font-mono">
+                            <tr>
+                                <th class="p-3">行程 (Process)</th>
+                                <th class="p-3">到達時間 (Arrival)</th>
+                                <th class="p-3">CPU 執行時間 (Burst Time)</th>
+                                <th class="p-3">優先權 (Priority)</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-800 bg-slate-900/50">
+                            <tr>
+                                <td class="p-3 font-bold text-blue-400">P1 (LINE)</td>
+                                <td class="p-3 font-mono">0 ms</td>
+                                <td class="p-3 font-mono">8 ms</td>
+                                <td class="p-3 font-mono">3</td>
+                            </tr>
+                            <tr>
+                                <td class="p-3 font-bold text-purple-400">P2 (傳說對決)</td>
+                                <td class="p-3 font-mono">0 ms</td>
+                                <td class="p-3 font-mono">4 ms</td>
+                                <td class="p-3 font-mono">1 (最高)</td>
+                            </tr>
+                            <tr>
+                                <td class="p-3 font-bold text-emerald-400">P3 (相機錄影)</td>
+                                <td class="p-3 font-mono">0 ms</td>
+                                <td class="p-3 font-mono">2 ms</td>
+                                <td class="p-3 font-mono">2</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 mb-6">
+                    <h3 class="text-xs font-bold text-slate-400 mb-3">CPU 執行甘特圖 (Gantt Chart Timeline)</h3>
+                    <div id="gantt-bar-container" class="flex h-12 w-full rounded-lg overflow-hidden border border-slate-800 font-mono text-xs font-bold">
+                        <!-- Injected by JS -->
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+                    <div class="bg-slate-950 p-4 rounded-xl border border-slate-800">
+                        <span class="text-slate-400">平均等待時間 (Avg Waiting Time):</span>
+                        <div id="avg-waiting-text" class="text-lg font-bold text-blue-400 mt-1">-- ms</div>
+                    </div>
+                    <div class="bg-slate-950 p-4 rounded-xl border border-slate-800">
+                        <span class="text-slate-400">平均周轉時間 (Avg Turnaround Time):</span>
+                        <div id="avg-turnaround-text" class="text-lg font-bold text-emerald-400 mt-1">-- ms</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-slate-950 border-t border-slate-800 py-4 px-6 text-center text-xs text-slate-500">
+        作業系統功能與螢幕模擬教學網頁 &copy; 2026 CS Interactive Learning.
+    </footer>
+
+    <!-- JavaScript Logic -->
+    <script>
+        let currentTab = 'boot';
+        let currentBootStep = 1;
+        let bootAutoTimer = null;
+        let currentFuncIndex = 0;
+
+        // Switch Main Tabs
+        function switchTab(tabName) {
+            currentTab = tabName;
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('bg-blue-600', 'text-white', 'shadow-lg');
+                btn.classList.add('text-slate-300');
+            });
+
+            document.getElementById(`content-${tabName}`).classList.remove('hidden');
+            const activeBtn = document.getElementById(`tab-${tabName}`);
+            activeBtn.classList.add('bg-blue-600', 'text-white', 'shadow-lg');
+            activeBtn.classList.remove('text-slate-300');
+
+            if (tabName === 'boot') {
+                renderComputerScreenStep(currentBootStep);
+            } else if (tabName === 'functions') {
+                selectFunction(currentFuncIndex);
+            } else if (tabName === 'process-simulator') {
+                handlePhoneAction(currentPhoneState || 'desktop');
+            } else if (tabName === 'scheduling') {
+                switchAlgo('fcfs');
+            }
+        }
+
+        /* ----------------------------------------------------
+           TAB 1: COMPUTER SCREEN BOOT PROCESS VISUALIZER
+           ---------------------------------------------------- */
+        const bootStepData = {
+            1: {
+                title: "步驟 1：按下電源 (Power On / POST)",
+                hw: "按下機殼 Power 鍵，電源供應器 (PSU) 送出 Power Good 訊號，CPU 執行重設向量 (Reset Vector)，風扇開始旋轉。",
+                fw: "ROM 中的 BIOS / UEFI 韌體開始被 CPU 讀取。此時 RAM 記憶體完全清空，等待硬體自檢指令。",
+                os: "作業系統 Kernel 完全關閉，依舊靜止存放在 SSD 磁碟中。",
+                screen: `
+                    <div class="h-full bg-black crt-scanlines p-6 flex flex-col justify-between font-mono-code text-xs">
+                        <div class="space-y-2">
+                            <div class="flex items-center gap-2 text-slate-500">
+                                <i class="fa-solid fa-fan animate-spin text-blue-400"></i>
+                                <span>SYSTEM POWER ON... [12.1V / OK]</span>
+                            </div>
+                            <p class="text-slate-600">CPU: Intel Core i7-14700K @ 3.40GHz (Initialization...)</p>
+                            <p class="text-slate-600">Checking Hardware Bus Interconnects...</p>
+                        </div>
+                        <div class="flex justify-between items-end">
+                            <div class="text-slate-600 text-[11px]">POWER LED: GREEN</div>
+                            <div class="text-blue-500 animate-pulse text-xs font-bold">READY FOR BIOS CHECK _</div>
+                        </div>
+                    </div>
+                `
+            },
+            2: {
+                title: "步驟 2：BIOS / UEFI 硬體檢測與讀取載入器",
+                hw: "BIOS 進行 POST (Power-On Self-Test) 硬體自我檢測，確認 RAM 容量、NVMe SSD 硬碟、顯示卡與鍵盤連接正常。",
+                fw: "BIOS 依據 Boot Priority 尋找引導磁區 (MBR / GPT)，找到 Bootloader (引導載入程式如 GRUB 或 Windows Boot Manager)。",
+                os: "Bootloader 讀取檔案系統表格，定位作業系統 Kernel 在硬碟中的開機位址。",
+                screen: `
+                    <div class="h-full bg-slate-950 crt-scanlines p-5 flex flex-col justify-between font-mono-code text-xs text-emerald-400">
+                        <div class="space-y-2">
+                            <div class="flex justify-between items-center border-b border-emerald-900/60 pb-2">
+                                <span class="font-bold text-amber-400 text-sm"><i class="fa-solid fa-microchip"></i> ASUS UEFI BIOS UTILITY</span>
+                                <span class="text-[10px] text-slate-400">Ver 2.20.1271</span>
+                            </div>
+                            <p class="text-emerald-300">CPU Temp: 38°C | VCore: 1.21V</p>
+                            <p class="text-emerald-400">RAM: DDR5 32768 MB OK (Testing Passed)</p>
+                            <p class="text-emerald-400">Detecting Storage Drives...</p>
+                            <p class="text-slate-300 pl-4">-> NVMe M.2 SSD: Samsung 990 PRO 1TB [BOOT DRIVE OK]</p>
+                            <p class="text-slate-300 pl-4">-> USB Drive: None</p>
+                        </div>
+                        <div class="bg-emerald-950/60 p-2 border border-emerald-800/80 rounded text-[11px] flex justify-between text-emerald-200">
+                            <span>Press DEL or F2 to enter Setup</span>
+                            <span class="animate-pulse">Loading Bootloader...</span>
+                        </div>
+                    </div>
+                `
+            },
+            3: {
+                title: "步驟 3：載入作業系統到 RAM (OS Kernel Loading)",
+                hw: "Bootloader 將作業系統 Kernel 檔案 (如 kernel.sys / vmlinuz) 從 SSD 磁碟複製並載入實體 RAM 記憶體。",
+                fw: "BIOS 將系統控制權正式轉交給 RAM 中的 Kernel。控制權交接完畢。",
+                os: "Kernel 啟動核心驅動程式 (Drivers)、記憶體管理模組與 Process 1 (init / systemd) 背景服務。",
+                screen: `
+                    <div class="h-full bg-gradient-to-b from-slate-950 via-slate-900 to-black p-6 flex flex-col justify-between items-center text-white">
+                        <div class="w-full flex justify-between text-[11px] text-slate-500 font-mono">
+                            <span>LOADING KERNEL</span>
+                            <span class="text-blue-400 font-bold">MEMORY: 2.4 GB ALLOCATED</span>
+                        </div>
+
+                        <!-- Boot Splash Logo Animation -->
+                        <div class="text-center space-y-4 my-auto">
+                            <div class="w-20 h-20 bg-gradient-to-tr from-blue-600 to-indigo-500 rounded-3xl mx-auto flex items-center justify-center text-3xl font-extrabold shadow-2xl border border-blue-400/40 animate-pulse">
+                                <i class="fa-brands fa-windows text-white"></i>
+                            </div>
+                            <h3 class="text-lg font-bold tracking-wide">CS-OS Loading...</h3>
+                            
+                            <!-- Spinner Wheel -->
+                            <div class="w-8 h-8 border-3 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
+                            <p class="text-xs text-slate-400 font-mono">Initializing System Drivers & Service Daemons...</p>
+                        </div>
+
+                        <div class="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
+                            <div class="bg-blue-500 h-full w-[78%] rounded-full"></div>
+                        </div>
+                    </div>
+                `
+            },
+            4: {
+                title: "步驟 4：開機成功 (Shell / Desktop Ready)",
+                hw: "顯示卡 (GPU) 與螢幕啟動高解析度 GUI 渲染，周邊 I/O 裝置 (鍵盤/滑鼠/網路卡) 全數歸位可用。",
+                fw: "韌體完全休眠，僅留微碼運作。",
+                os: "Kernel 啟動 GUI Shell (圖形使用者介面) 或 CUI 終端機，呈現桌面畫面，隨時接收使用者指令。",
+                screen: `
+                    <div class="h-full bg-gradient-to-br from-indigo-950 via-slate-900 to-slate-950 p-4 flex flex-col justify-between relative overflow-hidden">
+                        
+                        <!-- Desktop Wallpapers Details -->
+                        <div class="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-blue-600/20 via-transparent to-transparent"></div>
+
+                        <!-- Top Desktop Status Bar -->
+                        <div class="flex justify-between items-center text-xs text-slate-300 z-10 bg-slate-900/60 backdrop-blur px-3 py-1.5 rounded-lg border border-slate-800">
+                            <div class="flex items-center gap-3">
+                                <span class="font-bold text-blue-400 flex items-center gap-1">
+                                    <i class="fa-solid fa-terminal"></i> CS-Desktop OS v4.2
+                                </span>
+                                <span class="text-[10px] text-slate-400">RAM: 3.2 GB / 32 GB</span>
+                            </div>
+                            <div class="flex items-center gap-2 font-mono text-[11px]">
+                                <i class="fa-solid fa-wifi text-emerald-400"></i>
+                                <i class="fa-solid fa-volume-high text-slate-300"></i>
+                                <span>19:30 PM</span>
+                            </div>
+                        </div>
+
+                        <!-- Desktop App Icons Grid -->
+                        <div class="grid grid-cols-4 gap-4 p-2 z-10 max-w-xs">
+                            <div class="flex flex-col items-center gap-1 cursor-pointer group">
+                                <div class="w-12 h-12 bg-blue-600/30 border border-blue-400/50 rounded-2xl flex items-center justify-center text-blue-300 text-xl shadow-lg group-hover:scale-105 transition">
+                                    <i class="fa-solid fa-hard-drive"></i>
+                                </div>
+                                <span class="text-[10px] font-bold text-slate-200">我的電腦</span>
+                            </div>
+                            <div class="flex flex-col items-center gap-1 cursor-pointer group">
+                                <div class="w-12 h-12 bg-purple-600/30 border border-purple-400/50 rounded-2xl flex items-center justify-center text-purple-300 text-xl shadow-lg group-hover:scale-105 transition">
+                                    <i class="fa-solid fa-terminal"></i>
+                                </div>
+                                <span class="text-[10px] font-bold text-slate-200">Terminal</span>
+                            </div>
+                            <div class="flex flex-col items-center gap-1 cursor-pointer group">
+                                <div class="w-12 h-12 bg-amber-600/30 border border-amber-400/50 rounded-2xl flex items-center justify-center text-amber-300 text-xl shadow-lg group-hover:scale-105 transition">
+                                    <i class="fa-solid fa-gamepad"></i>
+                                </div>
+                                <span class="text-[10px] font-bold text-slate-200">遊戲選單</span>
+                            </div>
+                        </div>
+
+                        <!-- Welcome Banner Alert -->
+                        <div class="bg-emerald-950/80 border border-emerald-500/50 p-3 rounded-xl z-10 flex items-center justify-between shadow-xl">
+                            <div class="flex items-center gap-2 text-emerald-300 text-xs">
+                                <i class="fa-solid fa-circle-check text-emerald-400 text-base"></i>
+                                <span>開機完成！Shell 介面已準備好接受使用者指令。</span>
+                            </div>
+                            <span class="text-[10px] bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded font-mono">SYSTEM READY</span>
+                        </div>
+
+                    </div>
+                `
+            }
+        };
+
+        function renderComputerScreenStep(step) {
+            currentBootStep = step;
+            const data = bootStepData[step];
+
+            // Update Monitor Screen Panel
+            document.getElementById('monitor-screen').innerHTML = data.screen;
+
+            // Update Explanation Text Card
+            document.getElementById('boot-explain-title').innerText = data.title;
+            document.getElementById('boot-explain-hw').innerText = data.hw;
+            document.getElementById('boot-explain-fw').innerText = data.fw;
+            document.getElementById('boot-explain-os').innerText = data.os;
+
+            // Update Nav Indicator Buttons
+            for (let i = 1; i <= 4; i++) {
+                const btn = document.getElementById(`step-btn-${i}`);
+                if (i === step) {
+                    btn.className = "step-nav-btn p-3 rounded-xl border text-left transition-all relative overflow-hidden bg-blue-600/20 border-blue-500 text-white shadow-md";
+                    btn.querySelector('span:first-child').className = "text-xs font-extrabold text-blue-400 font-mono";
+                    btn.querySelector('span:last-child').className = "w-2.5 h-2.5 rounded-full bg-blue-400";
+                } else {
+                    btn.className = "step-nav-btn p-3 rounded-xl border text-left transition-all relative overflow-hidden bg-slate-800/60 border-slate-700 text-slate-400 hover:bg-slate-800";
+                    btn.querySelector('span:first-child').className = "text-xs font-extrabold text-slate-500 font-mono";
+                    btn.querySelector('span:last-child').className = "w-2.5 h-2.5 rounded-full bg-slate-600";
+                }
+            }
+        }
+
+        function setBootStep(step) {
+            renderComputerScreenStep(step);
+        }
+
+        function nextBootStep() {
+            let next = (currentBootStep % 4) + 1;
+            renderComputerScreenStep(next);
+        }
+
+        function prevBootStep() {
+            let prev = currentBootStep - 1;
+            if (prev < 1) prev = 4;
+            renderComputerScreenStep(prev);
+        }
+
+        function toggleAutoBootPlay() {
+            const btn = document.getElementById('btn-auto-boot');
+            if (bootAutoTimer) {
+                clearInterval(bootAutoTimer);
+                bootAutoTimer = null;
+                btn.classList.remove('bg-rose-600');
+                btn.classList.add('bg-emerald-600');
+                btn.innerHTML = '<i class="fa-solid fa-play"></i> 自動開機演練';
+            } else {
+                btn.classList.remove('bg-emerald-600');
+                btn.classList.add('bg-rose-600');
+                btn.innerHTML = '<i class="fa-solid fa-square"></i> 停止演練';
+                
+                bootAutoTimer = setInterval(() => {
+                    nextBootStep();
+                }, 2200);
+            }
+        }
+
+        /* ----------------------------------------------------
+           TAB 2: OS 5 MAIN FUNCTIONS DEMO
+           ---------------------------------------------------- */
+        const functionsData = [
+            {
+                badge: "核心功能 01",
+                title: "行程管理 (Process Management)",
+                desc: "作業系統在背景安排微處理器（CPU）的時間分配，掌控 App 開啟、背景執行、優先權分配與暫停中斷。",
+                examples: [
+                    "當你正在玩《傳說對決》時，OS 將 80% 的 CPU 算力優先配給遊戲 App。",
+                    "切換至 LINE 回覆訊息時，OS 進行內存狀態切換 (Context Switch)，將《傳說對決》掛起至背景。"
+                ],
+                renderScreen: () => `
+                    <div class="h-full flex flex-col justify-between">
+                        <div class="text-xs font-bold text-slate-300 mb-2 flex items-center justify-between">
+                            <span>多工作業切換器</span>
+                            <span class="text-[10px] text-emerald-400">CPU 佔用: 84%</span>
+                        </div>
+                        <div class="space-y-2">
+                            <!-- App Card 1 (Running) -->
+                            <div class="bg-blue-600/30 border border-blue-500 rounded-xl p-2.5 flex items-center justify-between shadow-lg animate-pulse">
+                                <div class="flex items-center gap-2">
+                                    <div class="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center text-white text-xs font-bold">傳</div>
+                                    <div>
+                                        <div class="text-xs font-bold text-white">傳說對決</div>
+                                        <div class="text-[9px] text-blue-300">前景執行中 (Running)</div>
+                                    </div>
+                                </div>
+                                <span class="text-[10px] text-blue-300 font-mono">60 FPS</span>
+                            </div>
+
+                            <!-- App Card 2 (Background) -->
+                            <div class="bg-slate-800/80 border border-slate-700 rounded-xl p-2.5 flex items-center justify-between">
+                                <div class="flex items-center gap-2">
+                                    <div class="w-8 h-8 bg-emerald-500 rounded-lg flex items-center justify-center text-white text-xs font-bold">L</div>
+                                    <div>
+                                        <div class="text-xs font-bold text-slate-200">LINE</div>
+                                        <div class="text-[9px] text-slate-400">背景等待 (Ready)</div>
+                                    </div>
+                                </div>
+                                <span class="text-[10px] text-slate-500">掛起中</span>
+                            </div>
+
+                            <!-- App Card 3 (Background) -->
+                            <div class="bg-slate-800/80 border border-slate-700 rounded-xl p-2.5 flex items-center justify-between">
+                                <div class="flex items-center gap-2">
+                                    <div class="w-8 h-8 bg-pink-500 rounded-lg flex items-center justify-center text-white text-xs font-bold">IG</div>
+                                    <div>
+                                        <div class="text-xs font-bold text-slate-200">Instagram</div>
+                                        <div class="text-[9px] text-slate-400">背景等待 (Ready)</div>
+                                    </div>
+                                </div>
+                                <span class="text-[10px] text-slate-500">掛起中</span>
+                            </div>
+                        </div>
+                        <div class="bg-slate-950 p-2 rounded-lg text-center text-[10px] text-slate-400 border border-slate-800">
+                            點擊按鈕示範：CPU 正在執行時間片切割
+                        </div>
+                    </div>
+                `
+            },
+            {
+                badge: "核心功能 02",
+                title: "記憶體管理 (Memory Management)",
+                desc: "作業系統負責動態分配與回收手機 RAM 記憶體。確保 App 執行時有充足空間，並在不夠用時觸發回收機制。",
+                examples: [
+                    "啟動《傳說對決》時，OS 動態在 RAM 中割出 2.5 GB 獨立空間給遊戲使用。",
+                    "記憶體不足時，OS 自動關閉不重要的背景 App（清記憶體）以避免遊戲閃退。"
+                ],
+                renderScreen: () => `
+                    <div class="h-full flex flex-col justify-between">
+                        <div class="text-xs font-bold text-slate-300 mb-1 flex justify-between">
+                            <span>RAM 記憶體動態配置</span>
+                            <span class="text-blue-400 font-mono">6.2GB / 8.0GB</span>
+                        </div>
+
+                        <!-- Progress Bar -->
+                        <div class="w-full bg-slate-800 h-3 rounded-full overflow-hidden p-0.5 border border-slate-700 flex">
+                            <div class="bg-blue-500 h-full w-[40%] rounded-l-full"></div>
+                            <div class="bg-purple-500 h-full w-[25%]"></div>
+                            <div class="bg-emerald-500 h-full w-[12%]"></div>
+                        </div>
+
+                        <!-- Memory Distribution Legend -->
+                        <div class="space-y-1.5 text-[11px] my-2">
+                            <div class="flex justify-between items-center bg-slate-800/50 p-1.5 rounded">
+                                <span class="text-blue-400 flex items-center gap-1.5"><i class="fa-solid fa-square text-[8px]"></i> 傳說對決 (手遊)</span>
+                                <span class="font-mono text-slate-300">3.2 GB</span>
+                            </div>
+                            <div class="flex justify-between items-center bg-slate-800/50 p-1.5 rounded">
+                                <span class="text-purple-400 flex items-center gap-1.5"><i class="fa-solid fa-square text-[8px]"></i> OS 核心作業系統</span>
+                                <span class="font-mono text-slate-300">2.0 GB</span>
+                            </div>
+                            <div class="flex justify-between items-center bg-slate-800/50 p-1.5 rounded">
+                                <span class="text-emerald-400 flex items-center gap-1.5"><i class="fa-solid fa-square text-[8px]"></i> 社群與通訊 App</span>
+                                <span class="font-mono text-slate-300">1.0 GB</span>
+                            </div>
+                        </div>
+
+                        <button onclick="alert('OS 自動執行內存清理！釋放 850MB 快取。')" class="w-full py-2 bg-blue-600/80 hover:bg-blue-600 text-white rounded-lg text-xs font-semibold transition shadow">
+                            <i class="fa-solid fa-broom mr-1"></i> 模擬 OS 智慧釋放 RAM
+                        </button>
+                    </div>
+                `
+            },
+            {
+                badge: "核心功能 03",
+                title: "檔案與儲存管理 (File Management)",
+                desc: "作業系統將手機中的照片、影片、遊戲資源整理成檔案系統（如 APFS, ext4, F2FS），維護索引與快取讀寫。",
+                examples: [
+                    "當你在遊戲中下載 1.2GB 更新檔時，OS 將數據區塊寫入快閃記憶體 (UFS)。",
+                    "開啟手機相簿時，OS 透過檔案索引表 (Index Directory) 瞬間載入照片預覽圖。"
+                ],
+                renderScreen: () => `
+                    <div class="h-full flex flex-col justify-between">
+                        <div class="text-xs font-bold text-slate-300 mb-2">Android 檔案系統樹狀圖 (Directory Tree)</div>
+
+                        <div class="bg-slate-950 rounded-xl border border-slate-800 p-2.5 font-mono text-[10px] leading-[1.5] flex-grow overflow-y-auto">
+                            <div class="text-amber-300 font-bold mb-1">📁 內部儲存空間 <span class="text-slate-400">/storage/emulated/0/</span></div>
+                            <div class="pl-3 space-y-0.5">
+
+                                <div class="text-blue-300 flex items-start gap-1">
+                                    <span class="text-slate-500 shrink-0">├─</span>
+                                    <div>
+                                        <span class="font-bold text-blue-300">📁 Android/data/</span>
+                                        <span class="text-slate-500">　← App 程式與資料</span>
+                                        <div class="pl-3 text-slate-400">
+                                            <div>│　├─ com.garena.傳說對決/</div>
+                                            <div>│　└─ com.instagram/</div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="text-purple-300 flex items-start gap-1">
+                                    <span class="text-slate-500 shrink-0">├─</span>
+                                    <div>
+                                        <span class="font-bold text-purple-300">📁 DCIM/Camera/</span>
+                                        <span class="text-slate-500">　← 相機拍的照片</span>
+                                        <div class="pl-3 text-slate-400">
+                                            <div>│　└─ IMG_20260910_1200.jpg</div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="text-emerald-300 flex items-start gap-1">
+                                    <span class="text-slate-500 shrink-0">├─</span>
+                                    <div>
+                                        <span class="font-bold text-emerald-300">📁 Movies/</span>
+                                        <span class="text-slate-500">　← 錄製的影片</span>
+                                        <div class="pl-3 text-slate-400">
+                                            <div>│　└─ 我的創作_片段.mp4</div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="text-pink-300 flex items-start gap-1">
+                                    <span class="text-slate-500 shrink-0">├─</span>
+                                    <div>
+                                        <span class="font-bold text-pink-300">📁 Pictures/</span>
+                                        <span class="text-slate-500">　← 螢幕截圖、編輯過的圖片</span>
+                                        <div class="pl-3 text-slate-400">
+                                            <div>│　└─ Screenshot_2026.png</div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="text-amber-300 flex items-start gap-1">
+                                    <span class="text-slate-500 shrink-0">└─</span>
+                                    <div>
+                                        <span class="font-bold text-amber-300">📁 Download/</span>
+                                        <span class="text-slate-500">　← 下載的檔案</span>
+                                        <div class="pl-3 text-slate-400">
+                                            <div>　　└─ 段考重點整理.pdf</div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                            </div>
+                        </div>
+
+                        <div class="bg-slate-950 p-2 rounded-xl border border-slate-800 text-[11px] text-slate-300 space-y-1 mt-2">
+                            <div class="flex justify-between">
+                                <span class="text-slate-400">已用容量：</span>
+                                <span class="font-mono font-bold text-white">68.4 GB / 128 GB</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-slate-400">檔案系統：</span>
+                                <span class="font-mono text-blue-400">F2FS / ext4</span>
+                            </div>
+                        </div>
+                    </div>
+                `
+            },
+            {
+                badge: "核心功能 04",
+                title: "輸入/輸出管理 (I/O Management)",
+                desc: "作業系統負責調配觸控螢幕、藍牙耳機、揚聲器、震動馬達與鏡頭等硬體設備的訊號輸入與輸出。",
+                examples: [
+                    "當你在螢幕上手滑釋放技能時，觸控面板每秒傳送 240Hz 訊號給 OS 的 I/O Buffer 緩衝區。",
+                    "連線藍牙耳機時，OS 負責將遊戲音訊編碼並廣播至耳機晶片。"
+                ],
+                renderScreen: () => `
+                    <div class="h-full flex flex-col justify-between">
+                        <div class="text-xs font-bold text-slate-300 mb-1">I/O 裝置即時訊號流</div>
+
+                        <div class="space-y-2">
+                            <!-- Touch Event -->
+                            <div class="bg-slate-800 p-2 rounded-lg border border-slate-700 flex items-center justify-between">
+                                <div class="flex items-center gap-2">
+                                    <i class="fa-solid fa-hand-pointer text-amber-400 text-sm"></i>
+                                    <div>
+                                        <div class="text-xs text-white font-medium">觸控螢幕輸入</div>
+                                        <div class="text-[9px] text-slate-400">Touch Buffer: (X:240, Y:512)</div>
+                                    </div>
+                                </div>
+                                <span class="text-[10px] text-amber-400 bg-amber-400/10 px-1.5 py-0.5 rounded">240 Hz</span>
+                            </div>
+
+                            <!-- Audio Output -->
+                            <div class="bg-slate-800 p-2 rounded-lg border border-slate-700 flex items-center justify-between">
+                                <div class="flex items-center gap-2">
+                                    <i class="fa-solid fa-headphones text-blue-400 text-sm"></i>
+                                    <div>
+                                        <div class="text-xs text-white font-medium">藍牙音訊輸出</div>
+                                        <div class="text-[9px] text-slate-400">AAC Codec Stream</div>
+                                    </div>
+                                </div>
+                                <span class="text-[10px] text-blue-400 bg-blue-400/10 px-1.5 py-0.5 rounded">Connected</span>
+                            </div>
+                        </div>
+
+                        <div class="p-2 bg-emerald-950/40 border border-emerald-500/30 rounded-lg text-center text-[10px] text-emerald-300">
+                            <i class="fa-solid fa-bolt mr-1"></i> I/O 驅動程式無延遲傳輸中
+                        </div>
+                    </div>
+                `
+            },
+            {
+                badge: "核心功能 05",
+                title: "保護與安全管理 (Protection & Security)",
+                desc: "作業系統建立沙盒隔離（Sandbox）與存取權限控管（Permissions），保護相機、簡訊與相簿不被惡意 App 偷竊。",
+                examples: [
+                    "首次開啟 App 時，OS 跳出「是否允許存取麥克風」視窗，防止背景竊聽。",
+                    "行程沙盒機制讓《傳說對決》無法直接讀取你的網銀 App 或 LINE 對話紀錄。"
+                ],
+                renderScreen: () => `
+                    <div class="h-full flex flex-col justify-between">
+                        <div class="text-xs font-bold text-slate-300 mb-1">App 隱私與權限沙盒</div>
+
+                        <div class="bg-slate-900 border border-slate-700 rounded-xl p-3 space-y-2">
+                            <div class="flex items-center justify-between text-xs">
+                                <span class="text-slate-200 flex items-center gap-1.5">
+                                    <i class="fa-solid fa-microphone text-rose-400"></i> 麥克風 (隊伍語音)
+                                </span>
+                                <input type="checkbox" checked class="accent-blue-500">
+                            </div>
+                            <div class="flex items-center justify-between text-xs">
+                                <span class="text-slate-200 flex items-center gap-1.5">
+                                    <i class="fa-solid fa-location-dot text-amber-400"></i> 定位服務 (尋找隊友)
+                                </span>
+                                <input type="checkbox" checked class="accent-blue-500">
+                            </div>
+                            <div class="flex items-center justify-between text-xs">
+                                <span class="text-slate-200 flex items-center gap-1.5">
+                                    <i class="fa-solid fa-address-book text-slate-400"></i> 通訊錄存取
+                                </span>
+                                <input type="checkbox" class="accent-blue-500">
+                            </div>
+                        </div>
+
+                        <div class="p-2 bg-blue-950/50 border border-blue-500/30 rounded-lg text-center text-[10px] text-blue-300">
+                            <i class="fa-solid fa-shield-halved mr-1"></i> 行程沙盒隔離 Protection ACTIVE
+                        </div>
+                    </div>
+                `
+            }
+        ];
+
+        function selectFunction(index) {
+            currentFuncIndex = index;
+            document.querySelectorAll('.func-tab').forEach((btn, i) => {
+                if (i === index) {
+                    btn.className = "func-tab p-3 rounded-xl border border-blue-500/50 bg-blue-600/20 text-blue-300 font-medium text-xs sm:text-sm flex flex-col items-center gap-1.5 transition";
+                } else {
+                    btn.className = "func-tab p-3 rounded-xl border border-slate-800 bg-slate-800/40 text-slate-400 font-medium text-xs sm:text-sm flex flex-col items-center gap-1.5 transition";
+                }
+            });
+
+            const data = functionsData[index];
+            document.getElementById('func-badge').innerText = data.badge;
+            document.getElementById('func-title').innerText = data.title;
+            document.getElementById('func-desc').innerText = data.desc;
+
+            const listEl = document.getElementById('func-examples');
+            listEl.innerHTML = data.examples.map(ex => `
+                <li class="flex items-start gap-2">
+                    <i class="fa-solid fa-caret-right text-blue-500 mt-1"></i>
+                    <span>${ex}</span>
+                </li>
+            `).join('');
+
+            renderPhoneScreen(index);
+        }
+
+        function renderPhoneScreen(index) {
+            const screen = document.getElementById('phone-screen');
+            if (screen) {
+                screen.innerHTML = functionsData[index].renderScreen();
+            }
+        }
+
+        /* ----------------------------------------------------
+           TAB 3: PROCESS 5-STATE SIMULATOR
+           ---------------------------------------------------- */
+        let currentPhoneState = 'desktop';
+
+        const phoneScenarios = {
+            'desktop': {
+                fps: '--',
+                title: '情境 1：手機主桌面 (Home Screen)',
+                desc: '手機停留在桌面，使用者尚未點擊《傳說對決》App。系統尚未建立 Process 行程。',
+                ram: 'FREE (無配置)',
+                prio: 'NONE',
+                io: 'IDLE',
+                pillText: '當前狀態：DESKTOP (尚未啟動)',
+                pillClass: 'bg-slate-800 text-slate-300 border-slate-700',
+                activeNode: 'snode-new',
+                activeLine: null,
+                renderPhone: () => `
+                    <div class="h-full flex flex-col justify-between pt-2">
+                        <div class="grid grid-cols-4 gap-3 p-1">
+                            <div onclick="handlePhoneAction('click_app')" class="flex flex-col items-center gap-1 cursor-pointer group">
+                                <div class="w-11 h-11 bg-gradient-to-tr from-amber-500 to-red-600 rounded-2xl flex items-center justify-center text-white text-lg font-bold shadow-lg ring-2 ring-yellow-400/50 group-hover:scale-105 transition">
+                                    傳
+                                </div>
+                                <span class="text-[9px] font-bold text-white tracking-tight">傳說對決</span>
+                            </div>
+                            <div class="flex flex-col items-center gap-1 opacity-70">
+                                <div class="w-11 h-11 bg-emerald-500 rounded-2xl flex items-center justify-center text-white text-lg font-bold shadow">
+                                    L
+                                </div>
+                                <span class="text-[9px] text-slate-300">LINE</span>
+                            </div>
+                            <div class="flex flex-col items-center gap-1 opacity-70">
+                                <div class="w-11 h-11 bg-gradient-to-tr from-purple-500 to-pink-500 rounded-2xl flex items-center justify-center text-white text-lg font-bold shadow">
+                                    IG
+                                </div>
+                                <span class="text-[9px] text-slate-300">Instagram</span>
+                            </div>
+                            <div class="flex flex-col items-center gap-1 opacity-70">
+                                <div class="w-11 h-11 bg-red-600 rounded-2xl flex items-center justify-center text-white text-lg font-bold shadow">
+                                    YT
+                                </div>
+                                <span class="text-[9px] text-slate-300">YouTube</span>
+                            </div>
+                        </div>
+
+                        <div class="bg-blue-950/60 p-2.5 rounded-xl border border-blue-500/30 text-[10px] text-blue-200 text-center animate-pulse">
+                            👉 請點擊桌面上的 **《傳說對決》** 圖示！
+                        </div>
+                    </div>
+                `
+            },
+            'click_app': {
+                fps: '0 FPS (Loading)',
+                title: '情境 2：點擊 App 啟動 ➔ 就緒大廳',
+                desc: '使用者點擊遊戲圖示，作業系統向 RAM 申請空間（新生 New），隨後載入遊戲資源進入對戰大廳（就緒 Ready），等待 CPU 排程。',
+                ram: '0x7FFF9400 (Allocated 2.1GB)',
+                prio: 'NORMAL (Level 2)',
+                io: 'READ_DISK',
+                pillText: '當前狀態：READY (就緒排隊)',
+                pillClass: 'bg-blue-500/20 text-blue-300 border-blue-500/30',
+                activeNode: 'snode-ready',
+                activeLine: 'line-new-ready',
+                renderPhone: () => `
+                    <div class="h-full flex flex-col justify-between pt-4">
+                        <div class="text-center space-y-2 my-auto">
+                            <div class="w-16 h-16 bg-gradient-to-tr from-amber-500 to-red-600 rounded-3xl mx-auto flex items-center justify-center text-white text-2xl font-bold shadow-2xl animate-bounce">
+                                傳
+                            </div>
+                            <h4 class="text-sm font-bold text-white">《傳說對決》經典對戰</h4>
+                            <p class="text-[10px] text-amber-400 font-mono">系統載入核心資源中...</p>
+                            
+                            <div class="w-3/4 mx-auto bg-slate-800 h-2 rounded-full overflow-hidden border border-slate-700">
+                                <div class="bg-gradient-to-r from-amber-500 to-red-500 h-full w-[85%] rounded-full"></div>
+                            </div>
+                        </div>
+
+                        <div class="bg-slate-900/90 p-2.5 rounded-xl border border-slate-800 text-[10px] text-slate-300 flex justify-between items-center">
+                            <span>狀態：停留在選角大廳</span>
+                            <span class="text-blue-400 font-bold">就緒 READY</span>
+                        </div>
+                    </div>
+                `
+            },
+            'start_battle': {
+                fps: '60 FPS',
+                title: '情境 3：CPU 排程分派 ➔ 進入對戰執行中',
+                desc: 'CPU 撥出核心算力，進入 5v5 對戰場面（執行 Running）。CPU 正高速繪製角色走位與技能物理算力。',
+                ram: '0x7FFF9400 (Active)',
+                prio: 'HIGH (Level 1)',
+                io: 'GPU_RENDER',
+                pillText: '當前狀態：RUNNING (執行中)',
+                pillClass: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30',
+                activeNode: 'snode-running',
+                activeLine: 'line-ready-running',
+                renderPhone: () => `
+                    <div class="h-full flex flex-col justify-between pt-1 relative">
+                        <div class="bg-slate-900 rounded-xl p-2 border border-slate-700 h-40 relative overflow-hidden flex flex-col justify-between">
+                            <div class="flex justify-between text-[9px] text-slate-300 font-mono z-10">
+                                <span class="text-red-400 font-bold"><i class="fa-solid fa-swords"></i> 團戰爆發</span>
+                                <span class="text-emerald-400 font-bold">PING: 18ms</span>
+                            </div>
+
+                            <div class="flex justify-around items-center my-auto z-10">
+                                <div class="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center text-xs font-bold border-2 border-white shadow">刀</div>
+                                <span class="text-amber-400 text-xs font-bold animate-ping">⚡VS⚡</span>
+                                <div class="w-8 h-8 bg-red-600 rounded-full flex items-center justify-center text-xs font-bold border-2 border-white shadow">盾</div>
+                            </div>
+
+                            <div class="text-[9px] text-center text-slate-400 z-10">CPU 正在雙核心上全速運算</div>
+                        </div>
+
+                        <div class="grid grid-cols-3 gap-2 my-2">
+                            <button class="p-2 bg-slate-800 rounded-xl border border-slate-700 text-[10px] text-amber-300 font-bold text-center">
+                                閃現
+                            </button>
+                            <button class="p-2 bg-blue-600/80 rounded-xl text-[10px] text-white font-bold text-center shadow">
+                                招式 1
+                            </button>
+                            <button class="p-2 bg-red-600/80 rounded-xl text-[10px] text-white font-bold text-center shadow">
+                                終極大招
+                            </button>
+                        </div>
+
+                        <div class="bg-emerald-950/60 p-2 rounded-xl border border-emerald-500/30 text-[10px] text-emerald-300 text-center font-semibold">
+                            🟢 CPU 正全速執行此 Process 算力
+                        </div>
+                    </div>
+                `
+            },
+            'incoming_call': {
+                fps: '15 FPS (Background)',
+                title: '情境 4：來電中斷 (Interrupt) ➔ 退回就緒',
+                desc: '玩遊戲到一半突然有電話打進來（更高優先權事件）。OS 強制中斷《傳說對決》的 CPU 執行權，將其狀態退回「就緒 Ready」列隊等待。',
+                ram: '0x7FFF9400 (Suspended)',
+                prio: 'LOW (Degraded)',
+                io: 'PAUSED',
+                pillText: '當前狀態：READY (經中斷退回)',
+                pillClass: 'bg-cyan-500/20 text-cyan-300 border-cyan-500/30',
+                activeNode: 'snode-ready',
+                activeLine: 'line-running-ready',
+                renderPhone: () => `
+                    <div class="h-full flex flex-col justify-between pt-1 relative">
+                        <div class="bg-slate-900 opacity-40 blur-[1px] rounded-xl p-2 border border-slate-800 h-32">
+                            <span class="text-[9px] text-slate-500">遊戲畫面已暫停...</span>
+                        </div>
+
+                        <div class="absolute inset-x-0 top-6 bg-slate-900 border-2 border-cyan-500/80 rounded-2xl p-3 shadow-2xl space-y-2 z-30">
+                            <div class="flex items-center gap-2">
+                                <div class="w-8 h-8 bg-cyan-600 rounded-full flex items-center justify-center text-white text-xs pulse-element">
+                                    <i class="fa-solid fa-phone"></i>
+                                </div>
+                                <div>
+                                    <div class="text-xs font-bold text-white">媽媽 來電...</div>
+                                    <div class="text-[9px] text-cyan-400">高優先權系統中斷 (Interrupt)</div>
+                                </div>
+                            </div>
+                            <div class="flex gap-2 pt-1">
+                                <button onclick="handlePhoneAction('start_battle')" class="flex-1 py-1 bg-emerald-600 text-white rounded text-[10px] font-bold">接聽</button>
+                                <button onclick="handlePhoneAction('start_battle')" class="flex-1 py-1 bg-red-600 text-white rounded text-[10px] font-bold">拒絕</button>
+                            </div>
+                        </div>
+
+                        <div class="bg-cyan-950/80 p-2 rounded-xl border border-cyan-500/30 text-[10px] text-cyan-300 text-center">
+                            ⚡ 中斷發生！遊戲移回 Ready 列隊
+                        </div>
+                    </div>
+                `
+            },
+            'net_loading': {
+                fps: '0 FPS (Blocked)',
+                title: '情境 5：網路/檔案 I/O 請求 ➔ 進入等待 (Waiting)',
+                desc: '遊戲進行至載入新地圖或向伺服器發送網路封包時，CPU 無法繼續算術，行程進入「等待 Waiting / Blocked」狀態，釋放 CPU 給其他程式。',
+                ram: '0x7FFF9400 (Waiting I/O)',
+                prio: 'NORMAL',
+                io: 'WAITING_NETWORK_ACK',
+                pillText: '當前狀態：WAITING (阻塞/等待)',
+                pillClass: 'bg-amber-500/20 text-amber-300 border-amber-500/30',
+                activeNode: 'snode-waiting',
+                activeLine: 'line-running-waiting',
+                renderPhone: () => `
+                    <div class="h-full flex flex-col justify-between pt-4">
+                        <div class="text-center space-y-3 my-auto">
+                            <div class="w-10 h-10 border-4 border-amber-400 border-t-transparent rounded-full animate-spin mx-auto"></div>
+                            <h4 class="text-xs font-bold text-amber-300">地圖資源與網路載入中...</h4>
+                            <p class="text-[10px] text-slate-400">正在等待 I/O 晶片完成數據傳輸</p>
+                        </div>
+
+                        <button onclick="handlePhoneAction('io_complete')" class="w-full py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold transition shadow">
+                            <i class="fa-solid fa-check mr-1"></i> 模擬 I/O 讀取完畢 (傳送訊號)
+                        </button>
+                    </div>
+                `
+            },
+            'io_complete': {
+                fps: '0 FPS (Ready)',
+                title: '情境 6：I/O 完成 ➔ 返回就緒 (Ready)',
+                desc: '地圖資源加載完畢或網路封包已接收完成，行程收到 I/O 中斷訊號，從「等待」狀態重新進入「就緒 Ready」隊列。',
+                ram: '0x7FFF9400 (Ready)',
+                prio: 'HIGH',
+                io: 'COMPLETED',
+                pillText: '當前狀態：READY (就緒準備)',
+                pillClass: 'bg-blue-500/20 text-blue-300 border-blue-500/30',
+                activeNode: 'snode-ready',
+                activeLine: 'line-waiting-ready',
+                renderPhone: () => `
+                    <div class="h-full flex flex-col justify-between pt-4">
+                        <div class="text-center space-y-2 my-auto">
+                            <div class="w-12 h-12 bg-emerald-500/20 border border-emerald-500 text-emerald-400 rounded-full flex items-center justify-center mx-auto text-xl">
+                                <i class="fa-solid fa-circle-check"></i>
+                            </div>
+                            <h4 class="text-xs font-bold text-emerald-300">I/O 數據載入成功！</h4>
+                            <p class="text-[10px] text-slate-400">行程已重新回歸就緒佇列 (Ready Queue)</p>
+                        </div>
+
+                        <button onclick="handlePhoneAction('start_battle')" class="w-full py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-bold transition shadow">
+                            <i class="fa-solid fa-play mr-1"></i> 讓 CPU 分配排程 (回到對戰)
+                        </button>
+                    </div>
+                `
+            },
+            'swipe_close': {
+                fps: '0 FPS (Closed)',
+                title: '情境 7：劃掉關閉 App ➔ 行程結束 (Exit)',
+                desc: '使用者在多工切換器中向上劃掉《傳說對決》。作業系統回收該 App 佔用的 RAM 記憶體與控制區塊，行程生命週期完結。',
+                ram: 'RELEASED (記憶體已回收)',
+                prio: 'NONE',
+                io: 'CLOSED',
+                pillText: '當前狀態：EXIT (結束/回收)',
+                pillClass: 'bg-rose-500/20 text-rose-300 border-rose-500/30',
+                activeNode: 'snode-terminated',
+                activeLine: 'line-running-terminated',
+                renderPhone: () => `
+                    <div class="h-full flex flex-col justify-between pt-2">
+                        <div class="bg-slate-900 border-2 border-rose-500/60 rounded-2xl p-3 shadow-2xl transform -translate-y-4 opacity-80 space-y-2 my-auto">
+                            <div class="flex items-center justify-between text-[10px]">
+                                <span class="font-bold text-white flex items-center gap-1">
+                                    <span class="w-4 h-4 bg-red-600 rounded text-[8px] flex items-center justify-center">傳</span>
+                                    傳說對決
+                                </span>
+                                <span class="text-rose-400 font-bold">劃掉關閉 ↑</span>
+                            </div>
+                            <div class="h-20 bg-slate-950 rounded-xl flex items-center justify-center text-[10px] text-slate-500">
+                                正在從 RAM 清除資料...
+                            </div>
+                        </div>
+
+                        <button onclick="handlePhoneAction('desktop')" class="w-full py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs transition">
+                            <i class="fa-solid fa-house mr-1"></i> 返回手機主桌面
+                        </button>
+                    </div>
+                `
+            }
+        };
+
+        function handlePhoneAction(actionKey) {
+            currentPhoneState = actionKey;
+            const scenario = phoneScenarios[actionKey];
+
+            const screenViewport = document.getElementById('phone-screen-viewport');
+            if (screenViewport) {
+                screenViewport.innerHTML = scenario.renderPhone();
+            }
+
+            document.getElementById('phone-fps-badge').innerText = `FPS: ${scenario.fps}`;
+            document.getElementById('scenario-title').innerText = scenario.title;
+            document.getElementById('scenario-desc').innerText = scenario.desc;
+
+            document.getElementById('pcb-ram').innerText = scenario.ram;
+            document.getElementById('pcb-prio').innerText = scenario.prio;
+            document.getElementById('pcb-io').innerText = scenario.io;
+
+            const pill = document.getElementById('current-state-pill');
+            pill.innerText = scenario.pillText;
+            pill.className = `text-xs font-mono font-bold px-2.5 py-1 rounded-full border ${scenario.pillClass}`;
+
+            highlightSvgDiagram(scenario.activeNode, scenario.activeLine);
+        }
+
+        function highlightSvgDiagram(activeNodeId, activeLineId) {
+            document.querySelectorAll('.node-rect').forEach(rect => rect.classList.remove('active-state-node'));
+            document.querySelectorAll('#process-svg path').forEach(path => {
+                if (path.id && path.id.startsWith('line-')) {
+                    path.classList.remove('active-path');
+                }
+            });
+
+            if (activeNodeId) {
+                const group = document.getElementById(activeNodeId);
+                if (group) {
+                    const rect = group.querySelector('.node-rect');
+                    if (rect) rect.classList.add('active-state-node');
+                }
+            }
+
+            if (activeLineId) {
+                const path = document.getElementById(activeLineId);
+                if (path) path.classList.add('active-path');
+            }
+
+            const token = document.getElementById('svg-glow-token');
+            const nodeCenters = {
+                'snode-new': { x: 85, y: 117 },
+                'snode-ready': { x: 310, y: 117 },
+                'snode-running': { x: 535, y: 117 },
+                'snode-waiting': { x: 320, y: 287 },
+                'snode-terminated': { x: 710, y: 117 }
+            };
+
+            if (activeNodeId && nodeCenters[activeNodeId]) {
+                const pos = nodeCenters[activeNodeId];
+                token.setAttribute('cx', pos.x);
+                token.setAttribute('cy', pos.y);
+                token.setAttribute('class', 'shadow-lg transition-all duration-700 opacity-100');
+            }
+        }
+
+        function autoPlayPhoneScenario() {
+            const steps = ['desktop', 'click_app', 'start_battle', 'incoming_call', 'start_battle', 'net_loading', 'io_complete', 'start_battle', 'swipe_close', 'desktop'];
+            let idx = 0;
+            const btn = document.getElementById('btn-auto-scenario');
+            btn.classList.add('opacity-50');
+            btn.innerText = '自動劇本播放中...';
+
+            const timer = setInterval(() => {
+                handlePhoneAction(steps[idx]);
+                idx++;
+                if (idx >= steps.length) {
+                    clearInterval(timer);
+                    btn.classList.remove('opacity-50');
+                    btn.innerText = '自動劇本演示';
+                }
+            }, 1800);
+        }
+
+        /* ----------------------------------------------------
+           TAB 4: CPU SCHEDULING ALGORITHMS
+           ---------------------------------------------------- */
+        function switchAlgo(algoKey) {
+            const container = document.getElementById('gantt-bar-container');
+            const avgWait = document.getElementById('avg-waiting-text');
+            const avgTurn = document.getElementById('avg-turnaround-text');
+
+            if (algoKey === 'fcfs') {
+                container.innerHTML = `
+                    <div class="bg-blue-600 h-full w-[57%] flex items-center justify-center text-white border-r border-slate-900">P1 (0-8ms)</div>
+                    <div class="bg-purple-600 h-full w-[28%] flex items-center justify-center text-white border-r border-slate-900">P2 (8-12ms)</div>
+                    <div class="bg-emerald-600 h-full w-[15%] flex items-center justify-center text-white">P3 (12-14ms)</div>
+                `;
+                avgWait.innerText = "6.67 ms ( (0 + 8 + 12) / 3 )";
+                avgTurn.innerText = "11.33 ms ( (8 + 12 + 14) / 3 )";
+            } else if (algoKey === 'sjf') {
+                container.innerHTML = `
+                    <div class="bg-emerald-600 h-full w-[15%] flex items-center justify-center text-white border-r border-slate-900">P3 (0-2ms)</div>
+                    <div class="bg-purple-600 h-full w-[28%] flex items-center justify-center text-white border-r border-slate-900">P2 (2-6ms)</div>
+                    <div class="bg-blue-600 h-full w-[57%] flex items-center justify-center text-white">P1 (6-14ms)</div>
+                `;
+                avgWait.innerText = "2.67 ms ( (6 + 2 + 0) / 3 )";
+                avgTurn.innerText = "7.33 ms ( (14 + 6 + 2) / 3 )";
+            } else if (algoKey === 'priority') {
+                container.innerHTML = `
+                    <div class="bg-purple-600 h-full w-[28%] flex items-center justify-center text-white border-r border-slate-900">P2 (0-4ms)</div>
+                    <div class="bg-emerald-600 h-full w-[15%] flex items-center justify-center text-white border-r border-slate-900">P3 (4-6ms)</div>
+                    <div class="bg-blue-600 h-full w-[57%] flex items-center justify-center text-white">P1 (6-14ms)</div>
+                `;
+                avgWait.innerText = "3.33 ms ( (6 + 0 + 4) / 3 )";
+                avgTurn.innerText = "8.00 ms ( (14 + 4 + 6) / 3 )";
+            }
+        }
+
+        // On Page Load Initialization
+        window.onload = function () {
+            switchTab('boot');
+            renderComputerScreenStep(1);
+            selectFunction(0);
+        };
+    </script>
+</body>
+</html>
