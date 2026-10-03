@@ -1,0 +1,654 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>網路是什麼 - 第一分頁：一朵雲？</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: #f8fafc;
+        }
+
+        .packet-glow {
+            filter: drop-shadow(0px 0px 14px rgba(59, 130, 246, 0.95)) drop-shadow(0px 0px 6px rgba(236, 72, 153, 0.8));
+            transition: transform 0.85s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .mode-btn {
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* In-place breathing pulse ONLY (Zero movement / Zero translate) */
+        @keyframes fixedNodePulse {
+            0%, 100% { fill: #0284c7; r: 6.5px; opacity: 0.85; }
+            50% { fill: #38bdf8; r: 8.5px; opacity: 1; }
+        }
+        .mesh-node-fixed {
+            animation: fixedNodePulse 2.5s infinite ease-in-out;
+            transform-box: fill-box;
+            transform-origin: center;
+        }
+
+        @keyframes lineGlow {
+            0%, 100% { stroke-opacity: 0.55; stroke-width: 2; }
+            50% { stroke-opacity: 1; stroke-width: 2.8; }
+        }
+        .mesh-line {
+            animation: lineGlow 3s infinite ease-in-out;
+        }
+
+        @keyframes wifiPulse {
+            0%, 100% { opacity: 0.3; }
+            50% { opacity: 1; }
+        }
+        .wifi-wave {
+            animation: wifiPulse 1.8s infinite ease-in-out;
+        }
+    </style>
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8522276249008152" crossorigin="anonymous"></script>
+</head>
+<body class="text-slate-800 min-h-screen flex flex-col justify-between">
+
+    <!-- Header Section -->
+    <header class="bg-white/90 backdrop-blur-md border-b border-slate-200 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <a href="index.html" class="text-xs text-sky-600 hover:text-sky-800 transition flex items-center gap-1">
+                    <i class="fa-solid fa-arrow-left"></i> 回到首頁
+                </a>
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-500 flex items-center justify-center text-white font-bold text-xl shadow-md">
+                    <i class="fa-solid fa-cloud"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-lg text-slate-900 leading-tight">網路是什麼？</h1>
+                    <p class="text-xs text-blue-600 font-semibold tracking-wide">第一分頁：一朵雲？ (Mesh 網格架構與封包路徑)</p>
+                </div>
+            </div>
+            
+            <div class="flex items-center space-x-2 text-xs font-medium bg-slate-100 p-1.5 rounded-lg border border-slate-200">
+                <span class="px-2.5 py-1 rounded-md bg-blue-600 text-white font-semibold">單元 1</span>
+                <span class="text-slate-600 font-medium hidden sm:inline">From your device to the world</span>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-grow space-y-8">
+
+        <!-- Controls & Mode Selector -->
+        <div class="bg-white rounded-2xl p-4 sm:p-6 shadow-sm border border-slate-200 flex flex-col lg:flex-row items-center justify-between gap-4">
+            <div>
+                <h2 class="text-xl font-extrabold text-slate-800 flex items-center gap-2">
+                    <i class="fa-solid fa-network-wired text-blue-600"></i>
+                    From your device to the world
+                </h2>
+                <p class="text-sm text-slate-500 mt-0.5">觀察照片封包沿著精確固定的 Internet Mesh 網格連線發送至 Instagram 伺服器</p>
+            </div>
+
+            <!-- Mode Selector Buttons -->
+            <div class="flex flex-wrap items-center gap-2 bg-slate-100 p-1.5 rounded-xl border border-slate-200 w-full lg:w-auto justify-center">
+                <button id="btn-mode-basic" onclick="switchMode('basic')" class="mode-btn px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 bg-white text-blue-600 shadow-sm border border-slate-200/60">
+                    <i class="fa-solid fa-diagram-project"></i>
+                    基本架構 + 照片上傳動圖
+                </button>
+                <button id="btn-mode-scope" onclick="switchMode('scope')" class="mode-btn px-4 py-2 rounded-lg text-sm font-semibold text-slate-600 hover:text-slate-900 hover:bg-white/50">
+                    <i class="fa-solid fa-expand-arrows-alt"></i>
+                    涵蓋範圍 (PAN / LAN / MAN / WAN)
+                </button>
+                <button id="btn-mode-role" onclick="switchMode('role')" class="mode-btn px-4 py-2 rounded-lg text-sm font-semibold text-slate-600 hover:text-slate-900 hover:bg-white/50">
+                    <i class="fa-solid fa-user-gear"></i>
+                    角色分工 (ISP / NSP / ICP)
+                </button>
+            </div>
+        </div>
+
+        <!-- Dynamic Network Architecture SVG Canvas -->
+        <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 relative overflow-hidden">
+            
+            <!-- Action Bar -->
+            <div id="action-bar" class="mb-6 flex flex-col sm:flex-row items-center justify-between gap-4 bg-gradient-to-r from-blue-50 to-indigo-50/50 p-4 rounded-xl border border-blue-100">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-full bg-blue-600 text-white flex items-center justify-center shrink-0 shadow">
+                        <i id="action-icon" class="fa-solid fa-paper-plane"></i>
+                    </div>
+                    <div>
+                        <div id="status-title" class="font-bold text-slate-800 text-sm sm:text-base">準備將照片上傳至 Instagram 伺服器</div>
+                        <div id="status-desc" class="text-xs sm:text-sm text-slate-600">點擊右側「開始上傳照片」按鈕，觀察照片封包如何沿著 Mesh 內部固定節點進行折線傳送</div>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-3 shrink-0">
+                    <button id="upload-btn" onclick="startPhotoUpload()" class="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 active:scale-95 text-white px-5 py-2.5 rounded-xl font-bold text-sm shadow-md transition-all flex items-center gap-2">
+                        <i class="fa-solid fa-cloud-arrow-up"></i>
+                        <span>開始上傳照片</span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="relative w-full overflow-x-auto pb-4">
+                <div class="min-w-[1050px] relative">
+                    
+                    <!-- Mode Highlight Overlays -->
+                    <div id="overlay-container" class="absolute inset-0 z-0 pointer-events-none transition-all duration-300">
+                        <!-- Dynamic overlays rendered by JS -->
+                    </div>
+
+                    <!-- Main Vector Network Canvas -->
+                    <svg id="network-svg" class="w-full h-[380px] relative z-10" viewBox="0 0 1050 380" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        
+                        <!-- Connecting Direction Arrows Between Nodes -->
+                        <!-- 1. Your Device (center ~70) -> Router (center ~210) -->
+                        <g stroke="#94a3b8" stroke-width="3">
+                            <line x1="115" y1="200" x2="152" y2="200" stroke-dasharray="6 6" />
+                            <polygon points="159,200 147,194 147,206" fill="#64748b" />
+                        </g>
+
+                        <!-- 2. Router (center ~210) -> ISP (center ~350) -->
+                        <g stroke="#94a3b8" stroke-width="3">
+                            <line x1="260" y1="200" x2="312" y2="200" stroke-dasharray="6 6" />
+                            <polygon points="319,200 307,194 307,206" fill="#64748b" />
+                        </g>
+
+                        <!-- 3. ISP (380 right edge) -> Cloud Mesh Entrance Node (480, 200) [Equal gap: 100px] -->
+                        <g stroke="#94a3b8" stroke-width="3">
+                            <line x1="380" y1="200" x2="470" y2="200" stroke-dasharray="6 6" />
+                            <polygon points="477,200 465,194 465,206" fill="#64748b" />
+                        </g>
+
+                        <!-- 4. Cloud Mesh Exit Node (630, 200) -> Data Center (725 left edge) [Equal gap: 95px] -->
+                        <g stroke="#94a3b8" stroke-width="3">
+                            <line x1="630" y1="200" x2="715" y2="200" stroke-dasharray="6 6" />
+                            <polygon points="722,200 710,194 710,206" fill="#64748b" />
+                        </g>
+
+                        <!-- 5. Data Centers (800) -> Online Services (895) -->
+                        <g stroke="#94a3b8" stroke-width="3">
+                            <line x1="800" y1="200" x2="885" y2="200" stroke-dasharray="6 6" />
+                            <polygon points="892,200 880,194 880,206" fill="#64748b" />
+                        </g>
+
+                        <!-- NODE 1: Your Device -->
+                        <g transform="translate(20, 70)">
+                            <rect x="20" y="10" width="70" height="42" rx="4" fill="#0f172a" />
+                            <rect x="24" y="14" width="62" height="34" rx="2" fill="#38bdf8" />
+                            <path d="M 10 52 L 100 52 L 92 58 L 18 58 Z" fill="#475569" />
+
+                            <rect x="42" y="68" width="26" height="46" rx="5" fill="#1e293b" />
+                            <rect x="45" y="72" width="20" height="38" rx="3" fill="#0284c7" />
+
+                            <rect x="15" y="124" width="80" height="54" rx="6" fill="#334155" />
+                            <rect x="19" y="128" width="72" height="46" rx="4" fill="#38bdf8" />
+
+                            <text x="50" y="202" text-anchor="middle" font-weight="800" font-size="15" fill="#0f172a">Your Device</text>
+                            <text x="50" y="220" text-anchor="middle" font-size="11" font-weight="600" fill="#64748b">(Laptop, Phone, Tablet)</text>
+                        </g>
+
+                        <!-- NODE 2: Home / Office Router -->
+                        <g transform="translate(160, 135)">
+                            <line x1="25" y1="50" x2="18" y2="12" stroke="#1e293b" stroke-width="4.5" stroke-linecap="round" />
+                            <line x1="75" y1="50" x2="82" y2="12" stroke="#1e293b" stroke-width="4.5" stroke-linecap="round" />
+
+                            <path class="wifi-wave" d="M 38 20 A 18 18 0 0 1 62 20" stroke="#3b82f6" stroke-width="3" fill="none" stroke-linecap="round" />
+                            <path class="wifi-wave" d="M 30 10 A 28 28 0 0 1 70 10" stroke="#3b82f6" stroke-width="3" fill="none" stroke-linecap="round" />
+
+                            <rect x="10" y="48" width="80" height="36" rx="8" fill="#1e293b" />
+                            <circle cx="28" cy="66" r="3.5" fill="#4ade80" />
+                            <circle cx="40" cy="66" r="3.5" fill="#4ade80" />
+                            <circle cx="52" cy="66" r="3.5" fill="#38bdf8" />
+                            <circle cx="64" cy="66" r="3.5" fill="#4ade80" />
+
+                            <text x="50" y="112" text-anchor="middle" font-weight="800" font-size="15" fill="#0f172a">Home / Office</text>
+                            <text x="50" y="130" text-anchor="middle" font-weight="800" font-size="15" fill="#0f172a">Router</text>
+                            <text x="50" y="148" text-anchor="middle" font-size="11" font-weight="600" fill="#64748b">(Wi-Fi 路由器 / 數據機)</text>
+                        </g>
+
+                        <!-- NODE 3: ISP (Center X = 350) -->
+                        <g transform="translate(300, 115)">
+                            <rect x="20" y="50" width="60" height="75" rx="5" fill="#2563eb" />
+                            <rect x="30" y="60" width="14" height="14" rx="2" fill="#bfdbfe" />
+                            <rect x="52" y="60" width="14" height="14" rx="2" fill="#bfdbfe" />
+                            <rect x="30" y="82" width="14" height="14" rx="2" fill="#bfdbfe" />
+                            <rect x="52" y="82" width="14" height="14" rx="2" fill="#bfdbfe" />
+                            <rect x="30" y="104" width="14" height="14" rx="2" fill="#bfdbfe" />
+                            <rect x="52" y="104" width="14" height="14" rx="2" fill="#bfdbfe" />
+
+                            <line x1="50" y1="50" x2="50" y2="15" stroke="#1d4ed8" stroke-width="3.5" />
+                            <polygon points="50,10 43,22 57,22" fill="#1d4ed8" />
+                            <path d="M 36 28 A 16 16 0 0 1 64 28" stroke="#60a5fa" stroke-width="2.5" fill="none" />
+                            <path d="M 28 18 A 25 25 0 0 1 72 18" stroke="#60a5fa" stroke-width="2.5" fill="none" />
+
+                            <text x="50" y="152" text-anchor="middle" font-weight="800" font-size="15" fill="#0f172a">ISP</text>
+                            <text x="50" y="170" text-anchor="middle" font-size="11" font-weight="600" fill="#64748b">(Internet Service Provider)</text>
+                        </g>
+
+                        <!-- NODE 4: Internet Cloud with FIXED Mesh Nodes -->
+                        <g id="internet-cloud-group">
+                            <!-- Static Mesh Line Edges (Connecting Fixed Nodes in High Contrast Blue) -->
+                            <g stroke="#2563eb" stroke-width="2" class="mesh-line">
+                                <!-- Entrance (480, 200) Edges -->
+                                <line x1="480" y1="200" x2="515" y2="165" />
+                                <line x1="480" y1="200" x2="520" y2="235" />
+                                <line x1="480" y1="200" x2="555" y2="200" stroke-dasharray="3 3" />
+
+                                <!-- Inter-mesh Edges -->
+                                <line x1="515" y1="165" x2="555" y2="200" />
+                                <line x1="515" y1="165" x2="590" y2="165" />
+                                <line x1="520" y1="235" x2="555" y2="200" />
+                                <line x1="520" y1="235" x2="595" y2="235" />
+
+                                <line x1="555" y1="200" x2="590" y2="165" />
+                                <line x1="555" y1="200" x2="595" y2="235" />
+                                <line x1="555" y1="200" x2="630" y2="200" stroke-dasharray="3 3" />
+
+                                <!-- Exit (630, 200) Edges -->
+                                <line x1="590" y1="165" x2="630" y2="200" />
+                                <line x1="595" y1="235" x2="630" y2="200" />
+                                <line x1="590" y1="165" x2="595" y2="235" stroke-dasharray="2 2" />
+                            </g>
+
+                            <!-- FIXED Mesh Nodes -->
+                            <!-- Node 1: Entrance (480, 200) -->
+                            <circle cx="480" cy="200" r="9" fill="#0284c7" />
+                            <circle cx="480" cy="200" class="mesh-node-fixed" />
+                            <circle cx="480" cy="200" r="3.5" fill="#ffffff" />
+
+                            <!-- Node 2: Top Left (515, 165) -->
+                            <circle cx="515" cy="165" r="8" fill="#1d4ed8" />
+                            <circle cx="515" cy="165" class="mesh-node-fixed" />
+                            <circle cx="515" cy="165" r="3" fill="#ffffff" />
+
+                            <!-- Node 3: Bottom Left (520, 235) -->
+                            <circle cx="520" cy="235" r="8" fill="#1d4ed8" />
+                            <circle cx="520" cy="235" class="mesh-node-fixed" />
+                            <circle cx="520" cy="235" r="3" fill="#ffffff" />
+
+                            <!-- Node 4: Center Core (555, 200) -->
+                            <circle cx="555" cy="200" r="10" fill="#0284c7" />
+                            <circle cx="555" cy="200" class="mesh-node-fixed" />
+                            <circle cx="555" cy="200" r="4" fill="#ffffff" />
+
+                            <!-- Node 5: Top Right (590, 165) -->
+                            <circle cx="590" cy="165" r="8" fill="#1d4ed8" />
+                            <circle cx="590" cy="165" class="mesh-node-fixed" />
+                            <circle cx="590" cy="165" r="3" fill="#ffffff" />
+
+                            <!-- Node 6: Bottom Right (595, 235) -->
+                            <circle cx="595" cy="235" r="8" fill="#1d4ed8" />
+                            <circle cx="595" cy="235" class="mesh-node-fixed" />
+                            <circle cx="595" cy="235" r="3" fill="#ffffff" />
+
+                            <!-- Node 7: Exit (630, 200) -->
+                            <circle cx="630" cy="200" r="9" fill="#0284c7" />
+                            <circle cx="630" cy="200" class="mesh-node-fixed" />
+                            <circle cx="630" cy="200" r="3.5" fill="#ffffff" />
+
+                            <text x="555" y="275" text-anchor="middle" font-weight="800" font-size="16" fill="#0f172a">Internet Mesh Cloud</text>
+                            <text x="555" y="293" text-anchor="middle" font-size="11" font-weight="600" fill="#64748b">(Mesh Architecture / 網狀拓撲)</text>
+                        </g>
+
+                        <!-- NODE 5: Data Centers (Center X = 760) -->
+                        <g transform="translate(710, 110)">
+                            <rect x="10" y="10" width="80" height="30" rx="4" fill="#1e293b" />
+                            <circle cx="22" cy="25" r="3" fill="#38bdf8" />
+                            <circle cx="32" cy="25" r="3" fill="#4ade80" />
+                            <line x1="45" y1="25" x2="80" y2="25" stroke="#64748b" stroke-width="3" stroke-dasharray="3 3" />
+
+                            <rect x="5" y="46" width="90" height="30" rx="4" fill="#0f172a" />
+                            <circle cx="19" cy="61" r="3" fill="#4ade80" />
+                            <circle cx="29" cy="61" r="3" fill="#4ade80" />
+                            <line x1="42" y1="61" x2="83" y2="61" stroke="#64748b" stroke-width="3" stroke-dasharray="3 3" />
+
+                            <rect x="10" y="82" width="80" height="30" rx="4" fill="#1e293b" />
+                            <circle cx="22" cy="97" r="3" fill="#38bdf8" />
+                            <circle cx="32" cy="97" r="3" fill="#4ade80" />
+                            <line x1="45" y1="97" x2="80" y2="97" stroke="#64748b" stroke-width="3" stroke-dasharray="3 3" />
+
+                            <text x="50" y="157" text-anchor="middle" font-weight="800" font-size="15" fill="#0f172a">Data Centers</text>
+                            <text x="50" y="175" text-anchor="middle" font-size="11" font-weight="600" fill="#64748b">(Web Servers / Cloud)</text>
+                        </g>
+
+                        <!-- NODE 6: Online Services -->
+                        <g transform="translate(895, 80)">
+                            <g transform="translate(15, 0)">
+                                <rect x="0" y="0" width="40" height="28" rx="5" fill="#2563eb" />
+                                <rect x="3" y="6" width="34" height="19" rx="2" fill="#ffffff" />
+                                <ellipse cx="20" cy="15.5" rx="5" ry="8" fill="none" stroke="#2563eb" stroke-width="1.5" />
+                                <line x1="8" y1="15.5" x2="32" y2="15.5" stroke="#2563eb" stroke-width="1.5" />
+                            </g>
+
+                            <g transform="translate(18, 36)">
+                                <rect x="0" y="0" width="34" height="24" rx="6" fill="#ef4444" />
+                                <polygon points="14,7 23,12 14,17" fill="#ffffff" />
+                            </g>
+
+                            <g transform="translate(18, 68)">
+                                <rect x="0" y="0" width="34" height="24" rx="6" fill="#0284c7" />
+                                <path d="M8 16 C6.5 16 5 14.5 6 12.5 C5.5 11 7.5 10 10 11 C11 9 14 9 15 10.5 C16 10.5 17.5 11.5 17 13 C18 14 17 16 15 16 Z" fill="#ffffff" />
+                            </g>
+
+                            <g transform="translate(18, 100)">
+                                <rect x="0" y="0" width="34" height="24" rx="6" fill="#10b981" />
+                                <circle cx="17" cy="12" r="6" fill="none" stroke="#ffffff" stroke-width="2" />
+                            </g>
+
+                            <g transform="translate(15, 132)">
+                                <rect x="0" y="0" width="40" height="40" rx="10" fill="url(#ig-grad)" />
+                                <rect x="8" y="8" width="24" height="24" rx="7" fill="none" stroke="#ffffff" stroke-width="2.5" />
+                                <circle cx="20" cy="20" r="6" fill="none" stroke="#ffffff" stroke-width="2.5" />
+                                <circle cx="26" cy="14" r="1.5" fill="#ffffff" />
+                            </g>
+
+                            <text x="35" y="200" text-anchor="middle" font-weight="800" font-size="15" fill="#0f172a">Online Services</text>
+                            <text x="35" y="218" text-anchor="middle" font-size="11" font-weight="bold" fill="#db2777">(Instagram Server)</text>
+                        </g>
+
+                        <!-- Gradient Definition -->
+                        <defs>
+                            <linearGradient id="ig-grad" x1="0%" y1="100%" x2="100%" y2="0%">
+                                <stop offset="0%" stop-color="#fde047" />
+                                <stop offset="30%" stop-color="#f97316" />
+                                <stop offset="60%" stop-color="#e11d48" />
+                                <stop offset="100%" stop-color="#831843" />
+                            </linearGradient>
+                        </defs>
+
+                        <!-- TOPMOST Z-ORDER LAYER: Photo Packet Element -->
+                        <g id="packet-element" opacity="0" class="packet-glow" transform="translate(70, 200)">
+                            <circle r="22" fill="#2563eb" stroke="#ffffff" stroke-width="2.5" />
+                            <circle r="17" fill="#ec4899" />
+                            <!-- Photo Icon -->
+                            <path d="M-8 -6 H8 C9 -6 10 -5 10 -4 V6 C10 7 9 8 8 8 H-8 C-9 8 -10 7 -10 6 V-4 C-10 -5 -9 -6 -8 -6 Z" fill="none" stroke="white" stroke-width="2" />
+                            <circle cx="-3" cy="-1" r="2" fill="white" />
+                            <path d="M-8 5 L-3 0 L2 4 L5 1 L8 5" stroke="white" stroke-width="2" fill="none" stroke-linecap="round" />
+                        </g>
+
+                    </svg>
+
+                </div>
+            </div>
+
+            <!-- Dynamic Explanatory Info Box -->
+            <div id="dynamic-info-panel" class="mt-4 pt-4 border-t border-slate-100">
+                <!-- Info cards generated dynamically -->
+            </div>
+        </div>
+
+        <!-- Video Resource Section -->
+        <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
+            <div class="lg:col-span-7">
+                <div class="flex items-center gap-2 text-blue-600 font-bold text-sm mb-2">
+                    <i class="fa-solid fa-film"></i>
+                    <span>實體機房影片導覽</span>
+                </div>
+                <h3 class="text-xl font-extrabold text-slate-900 mb-3">開箱 Meta (Facebook) 超大型資料中心內部</h3>
+                <p class="text-slate-600 text-sm mb-4 leading-relaxed">
+                    當你在手機上點擊「發布照片」時，照片數據經過家用路由器與電信業者骨幹，最終會傳輸至如同數座足球場大的 **Data Center (資料中心)** 伺服器群中進行永久保存與運算處理。
+                </p>
+
+                <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-2 text-xs sm:text-sm">
+                    <div class="font-bold text-slate-800 flex items-center gap-1.5 mb-1">
+                        <i class="fa-solid fa-circle-dot text-blue-600"></i> Key Watching Points 觀看重點指南：
+                    </div>
+                    <ul class="space-y-1.5 text-slate-600 pl-4 list-disc font-medium">
+                        <li><strong>伺服器機架 (Server Racks)：</strong> 成千上萬台伺服器如何並排組成處理 Instagram 照片的核心。</li>
+                        <li><strong>冷卻散熱系統：</strong> 24 小時不間斷的高速運算需要強大的風冷與水冷系統。</li>
+                        <li><strong>高速光纖網路：</strong> 資料中心內部每秒數 TB 數據流動的實體傳輸線路。</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="lg:col-span-5 flex flex-col items-center justify-center">
+                <div class="w-full aspect-video rounded-xl overflow-hidden shadow-md bg-slate-900 relative border border-slate-800">
+                    <iframe class="w-full h-full" src="https://www.youtube-nocookie.com/embed/zDAYZU4A3w0" title="Meta Data Center Inside" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+                </div>
+                <span class="text-xs text-slate-400 mt-2 font-medium">影片來源: Meta Data Center Tour</span>
+            </div>
+        </div>
+
+        <!-- Submarine Cable Interactive Maps Section -->
+        <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 space-y-6">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-4">
+                <div>
+                    <div class="flex items-center gap-2 text-blue-600 font-bold text-sm mb-1">
+                        <i class="fa-solid fa-water"></i>
+                        <span>實體網路基礎設施</span>
+                    </div>
+                    <h3 class="text-xl font-extrabold text-slate-900">海底光纖纜線動態地圖 (Submarine Cable Maps)</h3>
+                    <p class="text-slate-600 text-sm mt-1">全球 99% 以上的跨國數據皆透過深埋於海底的光纖電纜傳輸，探索台灣與全球的實體網路樞紐。</p>
+                </div>
+
+                <!-- Cable Tab Controls -->
+                <div class="flex items-center gap-2 bg-slate-100 p-1.5 rounded-xl border border-slate-200 shrink-0">
+                    <button id="tab-btn-smc" onclick="switchCableTab('smc')" class="cable-tab-btn px-4 py-2 rounded-lg text-xs sm:text-sm font-bold bg-white text-blue-600 shadow-sm border border-slate-200/60 transition-all flex items-center gap-2">
+                        <i class="fa-solid fa-location-dot"></i>
+                        台灣海纜動態地圖
+                    </button>
+                    <button id="tab-btn-global" onclick="switchCableTab('global')" class="cable-tab-btn px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold text-slate-600 hover:text-slate-900 transition-all flex items-center gap-2">
+                        <i class="fa-solid fa-globe"></i>
+                        全球海底纜線地圖
+                    </button>
+                </div>
+            </div>
+
+            <!-- Tab Content 1: Taiwan Submarine Cable Map -->
+            <div id="cable-tab-smc" class="space-y-3">
+                <div class="flex items-center justify-between text-xs sm:text-sm text-slate-500 font-medium px-1">
+                    <span class="flex items-center gap-1.5"><i class="fa-solid fa-circle-info text-blue-500"></i> SMC Peering TW — 台灣海底光纖電纜與陸上登陸站即時動態</span>
+                    <a href="https://smc.peering.tw/" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:text-blue-800 font-semibold inline-flex items-center gap-1 hover:underline">
+                        全螢幕開啟 <i class="fa-solid fa-arrow-up-right-from-square text-xs"></i>
+                    </a>
+                </div>
+                <div class="w-full h-[600px] rounded-xl overflow-hidden border border-slate-200 bg-slate-100 relative shadow-inner">
+                    <iframe src="https://smc.peering.tw/" class="w-full h-full border-0" loading="lazy" title="台灣海纜動態地圖"></iframe>
+                </div>
+            </div>
+
+            <!-- Tab Content 2: Global Submarine Cable Map -->
+            <div id="cable-tab-global" class="space-y-3 hidden">
+                <div class="flex items-center justify-between text-xs sm:text-sm text-slate-500 font-medium px-1">
+                    <span class="flex items-center gap-1.5"><i class="fa-solid fa-circle-info text-blue-500"></i> TeleGeography — 全球海底光纖纜線分佈與連線拓撲</span>
+                    <a href="https://www.submarinecablemap.com/" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:text-blue-800 font-semibold inline-flex items-center gap-1 hover:underline">
+                        全螢幕開啟 <i class="fa-solid fa-arrow-up-right-from-square text-xs"></i>
+                    </a>
+                </div>
+                <div class="w-full h-[600px] rounded-xl overflow-hidden border border-slate-200 bg-slate-100 relative shadow-inner">
+                    <iframe src="https://www.submarinecablemap.com/" class="w-full h-full border-0" loading="lazy" title="全球海底纜線地圖"></iframe>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t border-slate-200 py-6 mt-12 text-center text-xs text-slate-500 font-medium">
+        <div class="max-w-7xl mx-auto px-4">
+            <p>© CS Computer Science Interactive Teaching Module — 網路架構與數據傳輸原理</p>
+        </div>
+    </footer>
+
+    <!-- JavaScript Control Logic -->
+    <script>
+        let currentMode = 'basic';
+        let isUploading = false;
+
+        // ACCURATE Mesh Traversal Waypoints (Matching Exact Fixed Mesh Nodes with Equal Spacing)
+        // Device (70, 200) -> Router (210, 200) -> ISP (350, 200)
+        // Cloud Entrance (480, 200) -> Cloud Turn 1 (515, 165) -> Cloud Turn 2 (595, 235) -> Cloud Exit (630, 200)
+        // Data Center (760, 200) -> Instagram (930, 200)
+        const pathSteps = [
+            { x: 70, y: 200, text: "1. 智慧型手機 / 電腦將照片檔案編碼為數位數據封包", title: "步驟 1：用戶裝置 (Your Device)", icon: "fa-mobile-screen-button" },
+            { x: 210, y: 200, text: "2. 路由器 (Router) 接收無線訊號，將封包經由數據機發送", title: "步驟 2：家用 / 辦公室路由器 (Router)", icon: "fa-wifi" },
+            { x: 350, y: 200, text: "3. 封包抵達電信業者機房 (ISP Base Station)", title: "步驟 3：電信業者機房 (ISP)", icon: "fa-tower-cell" },
+            
+            // --- EQUAL SPACING Mesh Cloud Traversal Steps ---
+            { x: 480, y: 200, text: "4a. 封包進入全球 Internet 雲朵入口路由器 (Mesh Entrance Node)", title: "步驟 4a：進入 Internet Mesh 雲朵入口", icon: "fa-cloud" },
+            { x: 515, y: 165, text: "4b. 沿著網格連線 (Mesh Edge) 上方轉折發送至轉接路由器 (515, 165)", title: "步驟 4b：網格內部動態路由轉折 1 (Mesh Turn 1)", icon: "fa-diagram-project" },
+            { x: 595, y: 235, text: "4c. 經由 Mesh 最佳化路徑轉折至下方節點 (595, 235) 避開擁塞線路", title: "步驟 4c：網格內部動態路由轉折 2 (Mesh Turn 2)", icon: "fa-route" },
+            { x: 630, y: 200, text: "4d. 抵達網格出口節點 (630, 200)，準備離開網際網路雲朵", title: "步驟 4d：到達網格出口節點 (Mesh Exit)", icon: "fa-right-to-bracket" },
+            
+            { x: 760, y: 200, text: "5. 封包抵達 Meta 超大型資料中心 (Data Center) 進行伺服器寫入", title: "步驟 5：雲端資料中心 (Data Center)", icon: "fa-server" },
+            { x: 930, y: 200, text: "6. 上傳成功！照片成功展示於 Instagram App 伺服器與好友動態牆", title: "步驟 6：Instagram 線上服務 (Online Services)", icon: "fa-circle-check" }
+        ];
+
+        function switchMode(mode) {
+            if (isUploading) return;
+            currentMode = mode;
+
+            ['basic', 'scope', 'role'].forEach(m => {
+                const btn = document.getElementById(`btn-mode-${m}`);
+                if (m === mode) {
+                    btn.className = "mode-btn px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 bg-white text-blue-600 shadow-sm border border-slate-200/60";
+                } else {
+                    btn.className = "mode-btn px-4 py-2 rounded-lg text-sm font-semibold text-slate-600 hover:text-slate-900 hover:bg-white/50";
+                }
+            });
+
+            renderOverlays();
+            renderInfoPanel();
+        }
+
+        // Render Scope (PAN/LAN/MAN/WAN) & Role (ISP/NSP/ICP) Overlays updated to new coordinates
+        function renderOverlays() {
+            const container = document.getElementById('overlay-container');
+            container.innerHTML = '';
+
+            if (currentMode === 'basic') return;
+
+            if (currentMode === 'scope') {
+                container.innerHTML = `
+                    <!-- WAN 廣域網路：最外層包裹 MAN、LAN、PAN 及全球網際網路 -->
+                    <div class="absolute left-[0.5%] top-[2%] w-[99%] h-[96%] rounded-2xl border-2 border-dashed border-purple-500 bg-purple-500/5 pointer-events-auto hover:bg-purple-500/10 transition-all flex flex-col justify-between p-2">
+                        <div class="flex justify-between items-center">
+                            <span class="text-[10px] text-purple-900 font-bold bg-purple-100/90 px-2 py-0.5 rounded"> </span>
+                            <span class="bg-purple-600 text-white text-[11px] font-bold px-2.5 py-0.5 rounded-full shadow">WAN 廣域網路 (跨國 / 全球網際網路)</span>
+                        </div>
+                    </div>
+
+                    <!-- MAN 都會區域網路：包裹 LAN、PAN 及城市電信網路 -->
+                    <div class="absolute left-[1%] top-[7%] w-[42.5%] h-[86%] rounded-2xl border-2 border-dashed border-amber-500 bg-amber-500/10 pointer-events-auto hover:bg-amber-500/15 transition-all flex flex-col justify-between p-2">
+                        <div class="flex justify-between items-center">
+                            <span class="text-[10px] text-amber-900 font-bold bg-amber-100/90 px-2 py-0.5 rounded"> </span>
+                            <span class="bg-amber-600 text-white text-[11px] font-bold px-2.5 py-0.5 rounded-full shadow">MAN 都會區域網路 (城市 / 縣市範圍)</span>
+				
+                        </div>
+                    </div>
+
+                    <!-- LAN 區域網路：包裹 PAN 及家庭/辦公室 Wi-Fi -->
+                    <div class="absolute left-[1.5%] top-[12%] w-[26.5%] h-[76%] rounded-2xl border-2 border-dashed border-blue-500 bg-blue-500/10 pointer-events-auto hover:bg-blue-500/20 transition-all flex flex-col justify-between p-2">
+                        <div class="flex justify-between items-center">
+                            <span class="text-[10px] text-blue-900 font-bold bg-blue-100/90 px-2 py-0.5 rounded"> </span>
+                            <span class="bg-blue-600 text-white text-[11px] font-bold px-2.5 py-0.5 rounded-full shadow">LAN 區域網路 公司/學校</span>							
+                        </div>
+                    </div>
+
+                    <!-- PAN 個人區域網路：最內層個人隨身裝置 -->
+                    <div class="absolute left-[2%] top-[17%] w-[14.5%] h-[66%] rounded-2xl border-2 border-dashed border-emerald-500 bg-emerald-500/20 pointer-events-auto hover:bg-emerald-500/30 transition-all flex flex-col justify-between p-2">
+                        <div class="flex justify-between items-center">
+                            <span class="text-[10px] text-emerald-900 font-bold bg-emerald-100/90 px-1 py-0.5 rounded text-center">PAN</span>
+                            <span class="bg-emerald-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow">個人網路</span>
+                        </div>
+                    </div>
+                `;
+            } else if (currentMode === 'role') {
+                container.innerHTML = `
+                    <div class="absolute left-[28%] top-[8%] w-[15%] h-[88%] rounded-2xl border-2 border-sky-500 bg-sky-500/10 pointer-events-auto hover:bg-sky-500/20 transition-all flex flex-col justify-between p-2">
+                        <span class="bg-sky-600 text-white text-[11px] font-bold px-2 py-0.5 rounded-full w-max shadow">ISP 網際網路服務提供者</span>
+                        <div class="text-[10px] text-sky-900 bg-white/90 p-1 rounded font-bold border border-sky-200">中華電信、遠傳、台哥大</div>
+                    </div>
+
+                    <div class="absolute left-[44%] top-[8%] w-[20%] h-[88%] rounded-2xl border-2 border-indigo-500 bg-indigo-500/10 pointer-events-auto hover:bg-indigo-500/20 transition-all flex flex-col justify-between p-2">
+                        <span class="bg-indigo-600 text-white text-[11px] font-bold px-2 py-0.5 rounded-full w-max shadow mx-auto">NSP 骨幹提供者</span>
+                        <div class="text-[10px] text-indigo-900 bg-white/90 p-1 rounded font-bold border border-indigo-200 text-center">跨國海底電纜 / 光纖骨幹</div>
+                    </div>
+
+                    <div class="absolute left-[65%] top-[8%] w-[34%] h-[88%] rounded-2xl border-2 border-rose-500 bg-rose-500/10 pointer-events-auto hover:bg-rose-500/20 transition-all flex flex-col justify-between p-2">
+                        <span class="bg-rose-600 text-white text-[11px] font-bold px-2 py-0.5 rounded-full w-max shadow ml-auto">ICP 內容提供者</span>
+                        <div class="text-[10px] text-rose-900 bg-white/90 p-1 rounded font-bold border border-rose-200">Meta (Instagram), Google, OpenAI</div>
+                    </div>
+                `;
+            }
+        }
+
+        // Photo Upload Sequence Animation Script
+        function startPhotoUpload() {
+            if (isUploading) return;
+            isUploading = true;
+
+            const uploadBtn = document.getElementById('upload-btn');
+            const packetEl = document.getElementById('packet-element');
+            const statusTitle = document.getElementById('status-title');
+            const statusDesc = document.getElementById('status-desc');
+            const actionIcon = document.getElementById('action-icon');
+
+            uploadBtn.disabled = true;
+            uploadBtn.classList.add('opacity-50', 'cursor-not-allowed');
+
+            if (currentMode !== 'basic') {
+                switchMode('basic');
+            }
+
+            packetEl.setAttribute('opacity', '1');
+
+            let currentStepIndex = 0;
+            const durationPerStep = 900;
+
+            function animateNextStep() {
+                if (currentStepIndex >= pathSteps.length) {
+                    statusTitle.innerText = "🎉 上傳成功！照片已發布至 Instagram 伺服器";
+                    statusDesc.innerText = "照片封包順利經由等距且固定的 Mesh 節點折線路徑，完成完整網路架構傳輸！";
+                    actionIcon.className = "fa-solid fa-circle-check text-green-400";
+
+                    setTimeout(() => {
+                        packetEl.setAttribute('opacity', '0');
+                        uploadBtn.disabled = false;
+                        uploadBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                        isUploading = false;
+                        actionIcon.className = "fa-solid fa-paper-plane";
+                    }, 2000);
+                    return;
+                }
+
+                const step = pathSteps[currentStepIndex];
+                statusTitle.innerText = step.title;
+                statusDesc.innerText = step.text;
+                actionIcon.className = `fa-solid ${step.icon}`;
+
+                // Smooth position translation along exact fixed vector coordinates
+                packetEl.setAttribute('transform', `translate(${step.x}, ${step.y})`);
+
+                currentStepIndex++;
+                setTimeout(animateNextStep, durationPerStep + 80);
+            }
+
+            animateNextStep();
+        }
+
+        window.onload = function() {
+            renderOverlays();
+            renderInfoPanel();
+        };
+
+        function switchCableTab(tab) {
+            const smcTab = document.getElementById('cable-tab-smc');
+            const globalTab = document.getElementById('cable-tab-global');
+            const btnSmc = document.getElementById('tab-btn-smc');
+            const btnGlobal = document.getElementById('tab-btn-global');
+
+            if (tab === 'smc') {
+                smcTab.classList.remove('hidden');
+                globalTab.classList.add('hidden');
+                btnSmc.className = "cable-tab-btn px-4 py-2 rounded-lg text-xs sm:text-sm font-bold bg-white text-blue-600 shadow-sm border border-slate-200/60 transition-all flex items-center gap-2";
+                btnGlobal.className = "cable-tab-btn px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold text-slate-600 hover:text-slate-900 transition-all flex items-center gap-2";
+            } else {
+                smcTab.classList.add('hidden');
+                globalTab.classList.remove('hidden');
+                btnGlobal.className = "cable-tab-btn px-4 py-2 rounded-lg text-xs sm:text-sm font-bold bg-white text-blue-600 shadow-sm border border-slate-200/60 transition-all flex items-center gap-2";
+                btnSmc.className = "cable-tab-btn px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold text-slate-600 hover:text-slate-900 transition-all flex items-center gap-2";
+            }
+        }
+    </script>
+</body>
+</html>
