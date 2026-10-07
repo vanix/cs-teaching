@@ -1,0 +1,990 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>網路服務架構互動教學</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts: Noto Sans TC & Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@600;700;800;900&family=Noto+Sans+TC:wght@600;700;900&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            dark: '#030712',
+                            card: 'rgba(15, 23, 42, 0.85)',
+                            ig: '#FF2A7A',
+                            airdrop: '#00A3FF',
+                            bt: '#10B981',
+                            amber: '#F59E0B'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Noto Sans TC', 'Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: #030712;
+            background-image: 
+                radial-gradient(at 0% 0%, rgba(255, 42, 122, 0.18) 0px, transparent 60%),
+                radial-gradient(at 100% 0%, rgba(0, 163, 255, 0.18) 0px, transparent 60%),
+                radial-gradient(at 50% 100%, rgba(16, 185, 129, 0.18) 0px, transparent 60%);
+            background-attachment: fixed;
+            color: #f9fafb;
+            font-family: 'Noto Sans TC', 'Inter', sans-serif;
+            font-size: 20px;
+        }
+
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 2px solid rgba(255, 255, 255, 0.12);
+            box-shadow: 0 15px 35px -5px rgba(0, 0, 0, 0.7);
+        }
+
+        .glass-card {
+            background: rgba(30, 41, 59, 0.65);
+            backdrop-filter: blur(12px);
+            border: 2px solid rgba(255, 255, 255, 0.12);
+        }
+
+        /* Whiteboard Touch Buttons */
+        .btn-whiteboard {
+            padding: 14px 24px;
+            font-size: 14px;
+            font-weight: 400;
+            border-radius: 16px;
+            transition: all 0.2s ease;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .btn-whiteboard:active {
+            transform: scale(0.95);
+        }
+
+        /* Custom Scrollbar for terminal logs */
+        ::-webkit-scrollbar {
+            width: 10px;
+            height: 10px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(15, 23, 42, 0.9);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 6px;
+        }
+    </style>
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8522276249008152" crossorigin="anonymous"></script>
+</head>
+<body class="min-h-screen flex flex-col justify-between select-none">
+
+    <!-- Header restored to original compact title size -->
+    <header class="sticky top-0 z-50 glass-panel border-b border-gray-800 px-6 py-2.5">
+        <div class="max-w-[1650px] mx-auto flex flex-col xl:flex-row justify-between items-center gap-3">
+            <div class="flex items-center space-x-3">
+                <a href="index.html" class="text-xs text-sky-400 hover:text-sky-300 transition flex items-center gap-1">
+                    <i class="fa-solid fa-arrow-left"></i> 回到首頁
+                </a>
+                <div class="bg-gradient-to-tr from-pink-500 via-indigo-500 to-emerald-400 p-2.5 rounded-xl text-white shadow-md">
+                    <i class="fa-solid fa-network-wired text-2xl"></i>
+                </div>
+                <div>
+                    <!-- Compact restored Title font sizes -->
+                    <h1 class="text-[28px] leading-tight font-black bg-clip-text text-transparent bg-gradient-to-r from-pink-400 via-sky-300 to-emerald-300">
+                        網路服務架構互動教學
+                    </h1>
+                    <p class="text-[15px] leading-snug text-gray-300 font-bold">主從式架構 (Client-Server) vs. 點對點架構 (P2P)</p>
+                </div>
+            </div>
+
+            <!-- Navigation Tabs -->
+            <nav class="flex flex-wrap p-1.5 bg-gray-950/90 rounded-2xl border border-gray-800 gap-2">
+                <button id="tab-cs" onclick="switchTab('cs')" class="btn-whiteboard bg-pink-600 text-white shadow-pink-600/40">
+                    <i class="fa-brands fa-instagram text-[20px]"></i>
+                    <span>主從式 (IG 貼文)</span>
+                </button>
+                <button id="tab-airdrop" onclick="switchTab('airdrop')" class="btn-whiteboard bg-gray-800 text-gray-300 hover:text-white">
+                    <i class="fa-solid fa-wifi text-[20px]"></i>
+                    <span>P2P：AirDrop 直連</span>
+                </button>
+                <button id="tab-bt" onclick="switchTab('bt')" class="btn-whiteboard bg-gray-800 text-gray-300 hover:text-white">
+                    <i class="fa-solid fa-cubes text-[20px]"></i>
+                    <span>P2P：BT 種子下載</span>
+                </button>
+                <button id="tab-compare" onclick="switchTab('compare')" class="btn-whiteboard bg-gray-800 text-gray-300 hover:text-white">
+                    <i class="fa-solid fa-scale-balanced text-[20px]"></i>
+                    <span>架構綜合比較表</span>
+                </button>
+            </nav>
+        </div>
+    </header>
+
+    <main class="max-w-[1650px] mx-auto w-full p-6 flex-grow">
+
+        <!-- SECTION 1: Client-Server -->
+        <section id="sec-cs" class="space-y-6">
+            <div class="glass-panel rounded-3xl p-8 relative overflow-hidden">
+                <div class="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-6 mb-4">
+                    <div>
+                        <div class="inline-flex items-center px-4 py-1.5 rounded-full text-lg font-black bg-pink-500/30 text-pink-300 border border-pink-500/50 mb-2">
+                            <i class="fa-brands fa-instagram mr-2 text-xl"></i> 情境 1：Instagram 發照片與看動態
+                        </div>
+                        <h2 class="text-2xl font-black text-white">主從式架構 (Client-Server Architecture)</h2>
+                        <p class="text-gray-200 text-[20px] font-bold mt-1">上方為中央伺服器 (Server)，下方為使用者 (Clients)。發文必須先傳至 Server，粉絲才能從 Server 接收貼文。</p>
+                    </div>
+                    <div class="flex flex-wrap gap-4">
+                        <button id="cs-toggle-crash-btn" onclick="toggleCSCrash()" class="btn-whiteboard bg-rose-950/90 hover:bg-rose-900 border-2 border-rose-600 text-rose-200">
+                            <i class="fa-solid fa-burst text-xl"></i> 模擬「IG 伺服器當機/維護」
+                        </button>
+                        <button id="cs-publish-btn" onclick="triggerCSPublish()" class="btn-whiteboard bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-500 hover:to-purple-500 text-white shadow-pink-600/40">
+                            <i class="fa-solid fa-paper-plane text-xl"></i> 發布 IG 新貼文
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Simulation Canvas -->
+                <div class="relative w-full h-[600px] bg-gray-950/90 rounded-2xl border-2 border-gray-800 overflow-hidden my-4" id="cs-canvas-container">
+                    <canvas id="cs-canvas" class="w-full h-full block"></canvas>
+                </div>
+
+                <!-- Log Box -->
+                <div class="glass-card rounded-2xl p-4 font-mono h-36 overflow-y-auto" id="cs-log-box">
+                    <div class="text-gray-300 font-black text-xl flex items-center gap-2 mb-2 sticky top-0 bg-slate-900/90 py-1">
+                        <i class="fa-solid fa-terminal text-pink-400 text-xl"></i>
+                        <span>Client-Server HTTP/HTTPS 傳輸日誌</span>
+                    </div>
+                    <div id="cs-logs" class="space-y-1 text-xl font-bold">
+                        <p class="text-gray-400">> 系統準備就緒，請點擊「發布 IG 新貼文」開始測試...</p>
+                    </div>
+                </div>
+
+                <!-- Concept Cards -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
+                    <div class="glass-card p-6 rounded-2xl border-l-8 border-pink-500">
+                        <div class="flex items-center space-x-3 text-pink-400 font-black text-2xl mb-2">
+                            <i class="fa-solid fa-sitemap"></i>
+                            <h4>集中管理 (Centralized)</h4>
+                        </div>
+                        <p class="text-gray-200 text-lg font-bold">所有請求（發文、按讚、讀取動態）都必須經過中央 Server 驗證處理，權限集中。</p>
+                    </div>
+                    <div class="glass-card p-6 rounded-2xl border-l-8 border-amber-500">
+                        <div class="flex items-center space-x-3 text-amber-400 font-black text-2xl mb-2">
+                            <i class="fa-solid fa-triangle-exclamation"></i>
+                            <h4>單點故障 (SPOF)</h4>
+                        </div>
+                        <p class="text-gray-200 text-lg font-bold">如果頂端的中央 Server 故障或網路斷線，全世界所有 Client 均無法使用服務。</p>
+                    </div>
+                    <div class="glass-card p-6 rounded-2xl border-l-8 border-indigo-500">
+                        <div class="flex items-center space-x-3 text-indigo-400 font-black text-2xl mb-2">
+                            <i class="fa-solid fa-server"></i>
+                            <h4>伺服器負擔大</h4>
+                        </div>
+                        <p class="text-gray-200 text-lg font-bold">幾百萬人同時刷貼文時，Server 必須同時傳送幾百萬份拷貝，頻寬與設備成本極高。</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION 2: P2P AirDrop -->
+        <section id="sec-airdrop" class="space-y-6 hidden">
+            <div class="glass-panel rounded-3xl p-8 relative overflow-hidden">
+                <div class="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-6 mb-4">
+                    <div>
+                        <div class="inline-flex items-center px-4 py-1.5 rounded-full text-lg font-black bg-sky-500/30 text-sky-300 border border-sky-500/50 mb-2">
+                            <i class="fa-solid fa-wifi mr-2 text-xl"></i> 情境 2：AirDrop 近距離無線直連
+                        </div>
+                        <h2 class="text-2xl font-black text-white">點對點架構 (P2P) —— 面對面傳照片</h2>
+                        <p class="text-gray-200 text-xl font-bold mt-1">完全不需要網際網路或中央伺服器。設備間透過 BLE 搜尋，並以 Wi-Fi Direct 進行雙向點對點直連。</p>
+                    </div>
+                    <div class="flex flex-wrap gap-4">
+                        <button onclick="triggerAirDropSearch()" class="btn-whiteboard bg-gray-800 hover:bg-gray-700 border-2 border-gray-600 text-gray-200">
+                            <i class="fa-solid fa-radar text-xl"></i> 1. 廣播搜尋設備
+                        </button>
+                        <button onclick="triggerAirDropSingle()" class="btn-whiteboard bg-sky-600 hover:bg-sky-500 text-white shadow-sky-600/40">
+                            <i class="fa-solid fa-paper-plane text-xl"></i> 2. 單傳照片給小華
+                        </button>
+                        <button onclick="triggerAirDropMulti()" class="btn-whiteboard bg-indigo-600 hover:bg-indigo-500 text-white shadow-indigo-600/40">
+                            <i class="fa-solid fa-share-nodes text-xl"></i> 3. 群發照片給所有人
+                        </button>
+                    </div>
+                </div>
+
+                <div class="relative w-full h-[600px] bg-gray-950/90 rounded-2xl border-2 border-gray-800 overflow-hidden my-4" id="airdrop-canvas-container">
+                    <canvas id="airdrop-canvas" class="w-full h-full block"></canvas>
+                </div>
+
+                <div class="glass-card rounded-2xl p-4 font-mono h-36 overflow-y-auto" id="airdrop-log-box">
+                    <div class="text-gray-300 font-black text-xl flex items-center gap-2 mb-2 sticky top-0 bg-slate-900/90 py-1">
+                        <i class="fa-solid fa-terminal text-sky-400 text-xl"></i>
+                        <span>Bluetooth / Wi-Fi Direct (P2P) 傳輸日誌</span>
+                    </div>
+                    <div id="airdrop-logs" class="space-y-1 text-xl font-bold">
+                        <p class="text-gray-400">> 點擊「1. 廣播搜尋」或「2. 單傳/群發照片」發射高亮光束...</p>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
+                    <div class="glass-card p-6 rounded-2xl border-l-8 border-sky-500">
+                        <div class="flex items-center space-x-3 text-sky-400 font-black text-2xl mb-2">
+                            <i class="fa-solid fa-bolt"></i>
+                            <h4>不需要伺服器與外網</h4>
+                        </div>
+                        <p class="text-gray-200 text-lg font-bold">即使在山頂、地下室或完全無基地台訊號的地方，兩台手機依然可以互相對傳檔案。</p>
+                    </div>
+                    <div class="glass-card p-6 rounded-2xl border-l-8 border-emerald-500">
+                        <div class="flex items-center space-x-3 text-emerald-400 font-black text-2xl mb-2">
+                            <i class="fa-solid fa-shield-halved"></i>
+                            <h4>傳輸快速與高隱私</h4>
+                        </div>
+                        <p class="text-gray-200 text-lg font-bold">檔案直接從 A 點點對點飛向 B 點，不經過任何雲端 Server 儲存，保護個人隱私。</p>
+                    </div>
+                    <div class="glass-card p-6 rounded-2xl border-l-8 border-amber-500">
+                        <div class="flex items-center space-x-3 text-amber-400 font-black text-2xl mb-2">
+                            <i class="fa-solid fa-ruler"></i>
+                            <h4>距離物理限制</h4>
+                        </div>
+                        <p class="text-gray-200 text-lg font-bold">受限於無線電波距離（通常在 10 公尺內），且雙方必須同時啟用相同的 P2P 協定。</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION 3: P2P BitTorrent -->
+        <section id="sec-bt" class="space-y-6 hidden">
+            <div class="glass-panel rounded-3xl p-8 relative overflow-hidden">
+                <div class="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-6 mb-4">
+                    <div>
+                        <div class="inline-flex items-center px-4 py-1.5 rounded-full text-lg font-black bg-emerald-500/30 text-emerald-300 border border-emerald-500/50 mb-2">
+                            <i class="fa-solid fa-cubes mr-2 text-xl"></i> 情境 3：BT 種子檔案碎片互傳 (BitTorrent)
+                        </div>
+                        <h2 class="text-2xl font-black text-white">點對點架構 (P2P) —— 人人為我，我為人人</h2>
+                        <p class="text-gray-200 text-xl font-bold mt-1">大檔案被切割成多個彩色區塊（Pieces）。大家一邊下載，一邊把手頭有的區塊分享給其他同學。</p>
+                    </div>
+                    <div class="flex flex-wrap gap-4">
+                        <button id="bt-reset-btn" onclick="resetBTDemo()" class="btn-whiteboard bg-gray-800 hover:bg-gray-700 border-2 border-gray-600 text-gray-200">
+                            <i class="fa-solid fa-rotate-left text-xl"></i> 重置碎片
+                        </button>
+                        <button id="bt-step-btn" onclick="stepBTDownload()" class="btn-whiteboard bg-emerald-800 hover:bg-emerald-700 text-emerald-100">
+                            <i class="fa-solid fa-forward-step text-xl"></i> 逐步交換
+                        </button>
+                        <button id="bt-auto-btn" onclick="autoBTDownload()" class="btn-whiteboard bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-600/40">
+                            <i class="fa-solid fa-play text-xl"></i> 一鍵自動完全互傳
+                        </button>
+                    </div>
+                </div>
+
+                <div class="relative w-full h-[620px] bg-gray-950/90 rounded-2xl border-2 border-gray-800 overflow-hidden my-4" id="bt-canvas-container">
+                    <canvas id="bt-canvas" class="w-full h-full block"></canvas>
+                </div>
+
+                <div class="glass-card rounded-2xl p-4 font-mono h-36 overflow-y-auto" id="bt-log-box">
+                    <div class="text-gray-300 font-black text-xl flex items-center gap-2 mb-2 sticky top-0 bg-slate-900/90 py-1">
+                        <i class="fa-solid fa-terminal text-emerald-400 text-xl"></i>
+                        <span>BitTorrent Piece Exchange ( Swarm 檔案區塊交換日誌 )</span>
+                    </div>
+                    <div id="bt-logs" class="space-y-1 text-xl font-bold">
+                        <p class="text-gray-400">> 初始狀態：Peer A 為做種者 (Seeder 100%)，擁有一切區塊。</p>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
+                    <div class="glass-card p-6 rounded-2xl border-l-8 border-emerald-500">
+                        <div class="flex items-center space-x-3 text-emerald-400 font-black text-2xl mb-2">
+                            <i class="fa-solid fa-users-viewfinder"></i>
+                            <h4>越多人下載，速度反而越快</h4>
+                        </div>
+                        <p class="text-gray-200 text-lg font-bold">不同於 Client-Server 人多會塞車，BT 中每個新下載者同時也是上傳者，網路總上傳頻寬爆發成長！</p>
+                    </div>
+                    <div class="glass-card p-6 rounded-2xl border-l-8 border-sky-500">
+                        <div class="flex items-center space-x-3 text-sky-400 font-black text-2xl mb-2">
+                            <i class="fa-solid fa-puzzle-piece"></i>
+                            <h4>檔案碎片化 (Chunk Sharing)</h4>
+                        </div>
+                        <p class="text-gray-200 text-lg font-bold">檔案切成獨立碎片，不用等 100% 下載完，只要拿到 25% 就可以立刻上傳分享給別人。</p>
+                    </div>
+                    <div class="glass-card p-6 rounded-2xl border-l-8 border-amber-500">
+                        <div class="flex items-center space-x-3 text-amber-400 font-black text-2xl mb-2">
+                            <i class="fa-solid fa-seedling"></i>
+                            <h4>依賴做種者 (Seeder)</h4>
+                        </div>
+                        <p class="text-gray-200 text-lg font-bold">如果擁有 100% 完整檔案的做種者全部離線且區塊不齊全，下載就會停滯（俗稱死種）。</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION 4: Architecture Comparison Table -->
+        <section id="sec-compare" class="space-y-6 hidden">
+            <div class="glass-panel rounded-3xl p-8">
+                <div class="mb-6">
+                    <h2 class="text-3xl font-black text-white mb-2">主從式 (Client-Server) vs 點對點 (P2P) 完整對比表</h2>
+                    <p class="text-gray-200 text-xl font-bold">專為教學與電子白板講解設計的大字對照表。</p>
+                </div>
+
+                <div class="overflow-x-auto rounded-2xl border-2 border-gray-800">
+                    <table class="w-full text-left text-xl text-gray-200 border-collapse">
+                        <thead>
+                            <tr class="border-b-2 border-gray-700 bg-gray-900/90 text-2xl font-black">
+                                <th class="p-5 text-gray-200 w-1/4">比較項目</th>
+                                <th class="p-5 text-pink-400 w-3/8"><i class="fa-solid fa-server mr-3"></i>主從式架構 (Client-Server)</th>
+                                <th class="p-5 text-emerald-400 w-3/8"><i class="fa-solid fa-share-nodes mr-3"></i>點對點架構 (P2P)</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y-2 divide-gray-800 font-bold">
+                            <tr class="hover:bg-gray-800/40">
+                                <td class="p-5 text-white bg-gray-900/40 font-black">代表性應用場景</td>
+                                <td class="p-5">Instagram、網頁瀏覽、網路銀行、原神、YouTube 影片串流</td>
+                                <td class="p-5">AirDrop 傳照片、BT 種子下載、區塊鏈 (Bitcoin)、Skype 早期語音</td>
+                            </tr>
+                            <tr class="hover:bg-gray-800/40">
+                                <td class="p-5 text-white bg-gray-900/40 font-black">中央伺服器需求</td>
+                                <td class="p-5"><span class="px-3 py-1 rounded-xl bg-pink-950 border border-pink-700 text-pink-300 font-black">極度依賴</span> 大型雲端伺服器機房</td>
+                                <td class="p-5"><span class="px-3 py-1 rounded-xl bg-emerald-950 border border-emerald-700 text-emerald-300 font-black">完全不需要</span> 或僅需少量配對機房</td>
+                            </tr>
+                            <tr class="hover:bg-gray-800/40">
+                                <td class="p-5 text-white bg-gray-900/40 font-black">用戶暴增時影響</td>
+                                <td class="p-5 text-rose-400"><i class="fa-solid fa-triangle-exclamation mr-2"></i>伺服器極易塞車、延遲卡頓，甚至坍塌 (炸服)</td>
+                                <td class="p-5 text-emerald-400"><i class="fa-solid fa-circle-check mr-2"></i>下載與上傳節點同步變多，總頻寬反而飆升</td>
+                            </tr>
+                            <tr class="hover:bg-gray-800/40">
+                                <td class="p-5 text-white bg-gray-900/40 font-black">單點故障 (SPOF)</td>
+                                <td class="p-5 text-rose-400"><i class="fa-solid fa-xmark mr-2"></i>風險極高 (中央 Server 掛掉時全體癱瘓)</td>
+                                <td class="p-5 text-emerald-400"><i class="fa-solid fa-check mr-2"></i>風險極低 (個別電腦離線不影響其他電腦傳輸)</td>
+                            </tr>
+                            <tr class="hover:bg-gray-800/40">
+                                <td class="p-5 text-white bg-gray-900/40 font-black">資料管理與安全</td>
+                                <td class="p-5 text-emerald-400"><i class="fa-solid fa-lock mr-2"></i>容易管理 (集中於 Server，易於統一驗證與備份)</td>
+                                <td class="p-5 text-amber-400"><i class="fa-solid fa-triangle-exclamation mr-2"></i>分散於各用戶電腦，需額外防範惡意病毒與作弊</td>
+                            </tr>
+                            <tr class="hover:bg-gray-800/40">
+                                <td class="p-5 text-white bg-gray-900/40 font-black">營運與頻寬成本</td>
+                                <td class="p-5">機房電費與專線頻寬費用極為昂貴</td>
+                                <td class="p-5 text-emerald-400 font-black">硬體與頻寬成本極低 (借用使用者的設備)</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <script>
+        // Global State & Tab Control
+        let activeTab = 'cs';
+
+        function switchTab(tab) {
+            activeTab = tab;
+            document.getElementById('sec-cs').classList.add('hidden');
+            document.getElementById('sec-airdrop').classList.add('hidden');
+            document.getElementById('sec-bt').classList.add('hidden');
+            document.getElementById('sec-compare').classList.add('hidden');
+
+            const inactiveBtn = "btn-whiteboard bg-gray-800 text-gray-300 hover:text-white";
+            document.getElementById('tab-cs').className = inactiveBtn;
+            document.getElementById('tab-airdrop').className = inactiveBtn;
+            document.getElementById('tab-bt').className = inactiveBtn;
+            document.getElementById('tab-compare').className = inactiveBtn;
+
+            if (tab === 'cs') {
+                document.getElementById('sec-cs').classList.remove('hidden');
+                document.getElementById('tab-cs').className = "btn-whiteboard bg-pink-600 text-white shadow-pink-600/40";
+                resizeCSCanvas();
+            } else if (tab === 'airdrop') {
+                document.getElementById('sec-airdrop').classList.remove('hidden');
+                document.getElementById('tab-airdrop').className = "btn-whiteboard bg-sky-600 text-white shadow-sky-600/40";
+                resizeAirDropCanvas();
+            } else if (tab === 'bt') {
+                document.getElementById('sec-bt').classList.remove('hidden');
+                document.getElementById('tab-bt').className = "btn-whiteboard bg-emerald-600 text-white shadow-emerald-600/40";
+                resizeBTCanvas();
+            } else {
+                document.getElementById('sec-compare').classList.remove('hidden');
+                document.getElementById('tab-compare').className = "btn-whiteboard bg-purple-600 text-white shadow-purple-600/40";
+            }
+        }
+
+        function logMessage(boxId, msg, type = 'info') {
+            const container = document.getElementById(boxId);
+            const p = document.createElement('p');
+            const time = new Date().toLocaleTimeString().split(' ')[0];
+            let colorClass = 'text-gray-200';
+            if (type === 'success') colorClass = 'text-emerald-400 font-extrabold';
+            if (type === 'warn') colorClass = 'text-amber-400 font-extrabold';
+            if (type === 'error') colorClass = 'text-rose-400 font-extrabold';
+            if (type === 'pink') colorClass = 'text-pink-300 font-extrabold';
+            if (type === 'sky') colorClass = 'text-sky-300 font-extrabold';
+
+            p.className = `${colorClass} text-xl`;
+            p.innerHTML = `<span class="text-gray-500">[${time}]</span> ${msg}`;
+            container.appendChild(p);
+            container.scrollTop = container.scrollHeight;
+        }
+
+        /* ----------------------------------------------------
+           1. Client-Server (IG) Logic with LARGE Canvas Text
+        ---------------------------------------------------- */
+        const csCanvas = document.getElementById('cs-canvas');
+        const csCtx = csCanvas.getContext('2d');
+        let csPackets = [];
+        let csServerCrashed = false;
+
+        let csServer = { x: 0, y: 0, label: 'IG Central Server', ip: '157.240.22.63' };
+        let csClients = [];
+
+        function resizeCSCanvas() {
+            const container = document.getElementById('cs-canvas-container');
+            if (!container) return;
+            csCanvas.width = container.clientWidth;
+            csCanvas.height = container.clientHeight;
+
+            csServer.x = csCanvas.width * 0.5;
+            csServer.y = csCanvas.height * 0.22;
+
+            const clientNames = ['小明 (創作者)', '粉絲 A (小華)', '粉絲 B (小美)', '粉絲 C (阿強)'];
+            const total = clientNames.length;
+            csClients = [];
+
+            const spacing = csCanvas.width / (total + 1);
+            for (let i = 0; i < total; i++) {
+                csClients.push({
+                    id: i,
+                    isCreator: i === 0,
+                    x: spacing * (i + 1),
+                    y: csCanvas.height * 0.72,
+                    label: clientNames[i],
+                    hasNewPost: false
+                });
+            }
+        }
+
+        function toggleCSCrash() {
+            csServerCrashed = !csServerCrashed;
+            const btn = document.getElementById('cs-toggle-crash-btn');
+            if (csServerCrashed) {
+                btn.innerHTML = `<i class="fa-solid fa-wrench text-2xl"></i> 恢復 IG 伺服器正常運作`;
+                btn.className = "btn-whiteboard bg-emerald-950/90 hover:bg-emerald-900 border-2 border-emerald-600 text-emerald-200";
+                logMessage('cs-logs', '🚨 IG 中央伺服器停機 (Server Down)！所有 Client 請求連線失敗！', 'error');
+            } else {
+                btn.innerHTML = `<i class="fa-solid fa-burst text-2xl"></i> 模擬「IG 伺服器當機/維護」`;
+                btn.className = "btn-whiteboard bg-rose-950/90 hover:bg-rose-900 border-2 border-rose-600 text-rose-200";
+                logMessage('cs-logs', '✅ IG 伺服器已恢復線上營運。', 'success');
+            }
+        }
+
+        function triggerCSPublish() {
+            if (csServerCrashed) {
+                logMessage('cs-logs', '❌ 連線失敗：無法連接至 IG 伺服器 (503 Service Unavailable)', 'error');
+                return;
+            }
+
+            const creator = csClients[0];
+            logMessage('cs-logs', '小明手機點擊「發布貼文」➔ 傳送圖片資料至頂端 IG 中央 Server...', 'pink');
+
+            createCSPacket(creator, csServer, 'POST 照片', '#ff2a7a', () => {
+                logMessage('cs-logs', 'IG 中央 Server 收到圖片：儲存資料庫並通知所有粉絲...', 'warn');
+
+                setTimeout(() => {
+                    logMessage('cs-logs', 'Server 向下推送 (Broadcast) 照片給所有線上粉絲 Client...', 'sky');
+                    for (let i = 1; i < csClients.length; i++) {
+                        createCSPacket(csServer, csClients[i], '新貼文推播', '#a855f7', () => {
+                            csClients[i].hasNewPost = true;
+                            logMessage('cs-logs', `${csClients[i].label} 的 IG 畫面刷新成功！`, 'success');
+                        });
+                    }
+                }, 900);
+            });
+        }
+
+        function createCSPacket(from, to, label, color, onComplete) {
+            csPackets.push({
+                fromX: from.x, fromY: from.y,
+                toX: to.x, toY: to.y,
+                x: from.x, y: from.y,
+                progress: 0, speed: 0.02,
+                label: label, color: color, onComplete: onComplete
+            });
+        }
+
+        function drawCS() {
+            csCtx.clearRect(0, 0, csCanvas.width, csCanvas.height);
+            if (csClients.length === 0) return;
+
+            // Connection lines
+            csClients.forEach(c => {
+                csCtx.beginPath();
+                csCtx.moveTo(c.x, c.y - 85);
+                csCtx.lineTo(csServer.x, csServer.y + 70);
+                csCtx.strokeStyle = csServerCrashed ? 'rgba(244, 63, 94, 0.5)' : (c.isCreator ? 'rgba(255, 42, 122, 0.7)' : 'rgba(255, 255, 255, 0.25)');
+                csCtx.lineWidth = c.isCreator ? 6 : 4;
+                csCtx.setLineDash([10, 10]);
+                csCtx.stroke();
+                csCtx.setLineDash([]);
+            });
+
+            // Top Server Node - LARGE WHITEBOARD TEXT
+            csCtx.save();
+            csCtx.shadowColor = csServerCrashed ? '#f43f5e' : '#ff2a7a';
+            csCtx.shadowBlur = csServerCrashed ? 40 : 35;
+            csCtx.fillStyle = csServerCrashed ? '#450a0a' : '#1e1b4b';
+            csCtx.strokeStyle = csServerCrashed ? '#f43f5e' : '#ff2a7a';
+            csCtx.lineWidth = 5;
+            csCtx.beginPath();
+            csCtx.roundRect(csServer.x - 180, csServer.y - 70, 360, 140, 28);
+            csCtx.fill();
+            csCtx.stroke();
+
+            // Large Server Text
+            csCtx.fillStyle = '#ffffff';
+            csCtx.font = '900 30px "Noto Sans TC", sans-serif'; // 30px Large
+            csCtx.textAlign = 'center';
+            csCtx.fillText(csServerCrashed ? '🚨 SERVER CRASHED' : '🖥️ IG Central Server', csServer.x, csServer.y - 10);
+            csCtx.font = '900 22px monospace'; // 22px Large IP
+            csCtx.fillStyle = csServerCrashed ? '#fca5a5' : '#ff75a8';
+            csCtx.fillText(csServer.ip, csServer.x, csServer.y + 35);
+            csCtx.restore();
+
+            // Bottom Clients (Phone Mockups & Large Labels)
+            csClients.forEach(c => {
+                csCtx.save();
+                csCtx.fillStyle = c.isCreator ? '#181825' : '#0f172a';
+                csCtx.strokeStyle = c.isCreator ? '#ff2a7a' : (c.hasNewPost ? '#a855f7' : '#64748b');
+                csCtx.lineWidth = c.isCreator || c.hasNewPost ? 5 : 3;
+                csCtx.shadowColor = c.isCreator ? '#ff2a7a' : (c.hasNewPost ? '#a855f7' : 'transparent');
+                csCtx.shadowBlur = 25;
+
+                csCtx.beginPath();
+                csCtx.roundRect(c.x - 85, c.y - 110, 170, 220, 28);
+                csCtx.fill();
+                csCtx.stroke();
+
+                csCtx.fillStyle = '#030712';
+                csCtx.beginPath();
+                csCtx.roundRect(c.x - 72, c.y - 98, 144, 165, 16);
+                csCtx.fill();
+
+                if (c.isCreator) {
+                    csCtx.fillStyle = '#ff2a7a';
+                    csCtx.font = '900 22px "Noto Sans TC"';
+                    csCtx.textAlign = 'center';
+                    csCtx.fillText('發文手機', c.x, c.y - 60);
+                    csCtx.fillStyle = 'rgba(255, 42, 122, 0.3)';
+                    csCtx.fillRect(c.x - 55, c.y - 42, 110, 85);
+                    csCtx.fillStyle = '#ffffff';
+                    csCtx.font = '40px sans-serif';
+                    csCtx.fillText('📸', c.x, c.y + 12);
+                } else {
+                    if (c.hasNewPost) {
+                        csCtx.fillStyle = 'rgba(168, 85, 247, 0.3)';
+                        csCtx.fillRect(c.x - 55, c.y - 42, 110, 85);
+                        csCtx.fillStyle = '#ff2a7a';
+                        csCtx.font = '900 22px "Noto Sans TC"';
+                        csCtx.textAlign = 'center';
+                        csCtx.fillText('❤️ 收到貼文', c.x, c.y + 10);
+                    } else {
+                        csCtx.fillStyle = '#64748b';
+                        csCtx.font = 'bold 20px "Noto Sans TC"';
+                        csCtx.textAlign = 'center';
+                        csCtx.fillText('等待動態...', c.x, c.y + 10);
+                    }
+                }
+
+                // 26px Large Client Device Label
+                csCtx.font = '900 26px "Noto Sans TC", sans-serif';
+                csCtx.fillStyle = c.isCreator ? '#ff85b3' : '#f9fafb';
+                csCtx.textAlign = 'center';
+                csCtx.fillText(c.label, c.x, c.y + 150);
+                csCtx.restore();
+            });
+
+            // Packets (22px Large Label)
+            for (let i = csPackets.length - 1; i >= 0; i--) {
+                const p = csPackets[i];
+                p.progress += p.speed;
+                p.x = p.fromX + (p.toX - p.fromX) * p.progress;
+                p.y = p.fromY + (p.toY - p.fromY) * p.progress;
+
+                csCtx.save();
+                csCtx.shadowColor = p.color;
+                csCtx.shadowBlur = 25;
+                csCtx.fillStyle = p.color;
+                csCtx.beginPath();
+                csCtx.arc(p.x, p.y, 16, 0, Math.PI * 2);
+                csCtx.fill();
+
+                csCtx.font = '900 22px "Noto Sans TC"';
+                csCtx.fillStyle = '#ffffff';
+                csCtx.fillText(p.label, p.x + 24, p.y + 8);
+                csCtx.restore();
+
+                if (p.progress >= 1) {
+                    if (p.onComplete) p.onComplete();
+                    csPackets.splice(i, 1);
+                }
+            }
+        }
+
+        /* ----------------------------------------------------
+           2. P2P AirDrop Scenario
+        ---------------------------------------------------- */
+        const airdropCanvas = document.getElementById('airdrop-canvas');
+        const airdropCtx = airdropCanvas.getContext('2d');
+
+        let airdropPeers = [];
+        let airdropPackets = [];
+        let airdropSearching = false;
+
+        function resizeAirDropCanvas() {
+            const container = document.getElementById('airdrop-canvas-container');
+            if (!container) return;
+            airdropCanvas.width = container.clientWidth;
+            airdropCanvas.height = container.clientHeight;
+
+            const names = ['小明 (Sender)', '小華', '小美', '阿強'];
+            const total = names.length;
+            const cx = airdropCanvas.width * 0.5;
+            const cy = airdropCanvas.height * 0.5;
+            const radius = Math.min(airdropCanvas.width, airdropCanvas.height) * 0.32;
+
+            airdropPeers = names.map((name, idx) => {
+                const angle = (idx * (2 * Math.PI / total)) - Math.PI / 2;
+                return {
+                    id: idx,
+                    name: name,
+                    isSender: idx === 0,
+                    x: cx + Math.cos(angle) * radius,
+                    y: cy + Math.sin(angle) * radius,
+                    receivedPhoto: idx === 0
+                };
+            });
+        }
+
+        function triggerAirDropSearch() {
+            airdropSearching = true;
+            logMessage('airdrop-logs', '小明啟動 BLE 藍牙與 Wi-Fi Direct 廣播，搜尋周圍設備...', 'sky');
+            setTimeout(() => {
+                logMessage('airdrop-logs', '搜尋成功：發現 3 台可建立 AirDrop 直連的周圍設備！', 'success');
+            }, 1000);
+        }
+
+        function triggerAirDropSingle() {
+            const sender = airdropPeers[0];
+            const receiver = airdropPeers[1];
+            logMessage('airdrop-logs', '小明 ➔ 小華：發送點對點無線封包 [IMG_2026.JPG]', 'sky');
+
+            createAirDropPacket(sender, receiver, 'AirDrop 照片', '#00a3ff', () => {
+                receiver.receivedPhoto = true;
+                logMessage('airdrop-logs', '小華的手機接收完成！', 'success');
+            });
+        }
+
+        function triggerAirDropMulti() {
+            const sender = airdropPeers[0];
+            logMessage('airdrop-logs', '小明啟動「群發」：向全體周圍設備發射 AirDrop 直連光束...', 'sky');
+
+            for (let i = 1; i < airdropPeers.length; i++) {
+                const receiver = airdropPeers[i];
+                createAirDropPacket(sender, receiver, '群發照片', '#818cf8', () => {
+                    receiver.receivedPhoto = true;
+                    logMessage('airdrop-logs', `${receiver.name} 點對點接收成功！`, 'success');
+                });
+            }
+        }
+
+        function createAirDropPacket(from, to, label, color, onComplete) {
+            airdropPackets.push({
+                fromX: from.x, fromY: from.y,
+                toX: to.x, toY: to.y,
+                x: from.x, y: from.y,
+                progress: 0, speed: 0.018,
+                label: label, color: color, onComplete: onComplete
+            });
+        }
+
+        function drawAirDrop() {
+            airdropCtx.clearRect(0, 0, airdropCanvas.width, airdropCanvas.height);
+            if (airdropPeers.length === 0) return;
+
+            for (let i = 0; i < airdropPeers.length; i++) {
+                for (let j = i + 1; j < airdropPeers.length; j++) {
+                    const p1 = airdropPeers[i];
+                    const p2 = airdropPeers[j];
+                    airdropCtx.beginPath();
+                    airdropCtx.moveTo(p1.x, p1.y);
+                    airdropCtx.lineTo(p2.x, p2.y);
+                    airdropCtx.strokeStyle = 'rgba(0, 163, 255, 0.35)';
+                    airdropCtx.lineWidth = 4;
+                    airdropCtx.setLineDash([8, 8]);
+                    airdropCtx.stroke();
+                    airdropCtx.setLineDash([]);
+                }
+            }
+
+            if (airdropSearching) {
+                const s = airdropPeers[0];
+                const time = Date.now() * 0.002;
+                const waveR = (time % 1) * 180;
+                airdropCtx.save();
+                airdropCtx.beginPath();
+                airdropCtx.arc(s.x, s.y, waveR, 0, Math.PI * 2);
+                airdropCtx.strokeStyle = `rgba(0, 163, 255, ${1 - (time % 1)})`;
+                airdropCtx.lineWidth = 5;
+                airdropCtx.stroke();
+                airdropCtx.restore();
+            }
+
+            airdropPeers.forEach(p => {
+                airdropCtx.save();
+                airdropCtx.shadowColor = p.isSender ? '#00a3ff' : (p.receivedPhoto ? '#10b981' : '#475569');
+                airdropCtx.shadowBlur = 30;
+                airdropCtx.fillStyle = '#0f172a';
+                airdropCtx.strokeStyle = p.isSender ? '#00a3ff' : (p.receivedPhoto ? '#10b981' : '#475569');
+                airdropCtx.lineWidth = 5;
+
+                airdropCtx.beginPath();
+                airdropCtx.arc(p.x, p.y, 60, 0, Math.PI * 2);
+                airdropCtx.fill();
+                airdropCtx.stroke();
+
+                airdropCtx.font = '42px sans-serif';
+                airdropCtx.textAlign = 'center';
+                airdropCtx.textBaseline = 'middle';
+                airdropCtx.fillText(p.receivedPhoto ? '🖼️' : '📱', p.x, p.y);
+
+                // 28px Large Peer Label
+                airdropCtx.font = '900 28px "Noto Sans TC", sans-serif';
+                airdropCtx.fillStyle = p.isSender ? '#7dd3fc' : '#ffffff';
+                airdropCtx.fillText(p.name, p.x, p.y + 95);
+                airdropCtx.restore();
+            });
+
+            for (let i = airdropPackets.length - 1; i >= 0; i--) {
+                const pkt = airdropPackets[i];
+                pkt.progress += pkt.speed;
+                pkt.x = pkt.fromX + (pkt.toX - pkt.fromX) * pkt.progress;
+                pkt.y = pkt.fromY + (pkt.toY - pkt.fromY) * pkt.progress;
+
+                airdropCtx.save();
+                airdropCtx.shadowColor = pkt.color;
+                airdropCtx.shadowBlur = 25;
+                airdropCtx.fillStyle = pkt.color;
+                airdropCtx.beginPath();
+                airdropCtx.arc(pkt.x, pkt.y, 16, 0, Math.PI * 2);
+                airdropCtx.fill();
+
+                airdropCtx.font = '900 22px "Noto Sans TC"';
+                airdropCtx.fillStyle = '#ffffff';
+                airdropCtx.fillText(pkt.label, pkt.x + 22, pkt.y + 8);
+                airdropCtx.restore();
+
+                if (pkt.progress >= 1) {
+                    if (pkt.onComplete) pkt.onComplete();
+                    airdropPackets.splice(i, 1);
+                }
+            }
+        }
+
+        /* ----------------------------------------------------
+           3. P2P BitTorrent (BT) Scenario
+        ---------------------------------------------------- */
+        const btCanvas = document.getElementById('bt-canvas');
+        const btCtx = btCanvas.getContext('2d');
+
+        const pieceColors = ['#ef4444', '#3b82f6', '#10b981', '#f59e0b'];
+        const pieceNames = ['紅塊 (1)', '藍塊 (2)', '綠塊 (3)', '黃塊 (4)'];
+
+        let btPeers = [];
+        let btPackets = [];
+        let btStep = 0;
+
+        function resizeBTCanvas() {
+            const container = document.getElementById('bt-canvas-container');
+            if (!container) return;
+            btCanvas.width = container.clientWidth;
+            btCanvas.height = container.clientHeight;
+
+            const cx = btCanvas.width * 0.5;
+            const cy = btCanvas.height * 0.5;
+            const rx = btCanvas.width * 0.32;
+            const ry = btCanvas.height * 0.28;
+
+            btPeers = [
+                { id: 0, label: 'Peer A (原創做種者 Seeder)', x: cx - rx, y: cy - ry, pieces: [true, true, true, true] },
+                { id: 1, label: 'Peer B (下載者)', x: cx + rx, y: cy - ry, pieces: [false, false, false, false] },
+                { id: 2, label: 'Peer C (下載者)', x: cx - rx, y: cy + ry, pieces: [false, false, false, false] },
+                { id: 3, label: 'Peer D (下載者)', x: cx + rx, y: cy + ry, pieces: [false, false, false, false] },
+            ];
+        }
+
+        function resetBTDemo() {
+            btStep = 0;
+            btPackets = [];
+            resizeBTCanvas();
+            document.getElementById('bt-logs').innerHTML = '<p class="text-gray-400">> 重置完成：Peer A 為唯一做種者 (100%)，其餘 Peer 均為 0% 進度。</p>';
+        }
+
+        function stepBTDownload() {
+            btStep++;
+            if (btStep === 1) {
+                logMessage('bt-logs', '【階段 1】做種者 Peer A 傳給不同同學不同碎片：紅 ➔ Peer B、藍 ➔ Peer C、綠 ➔ Peer D', 'warn');
+                createBTPacket(btPeers[0], btPeers[1], 0, () => btPeers[1].pieces[0] = true);
+                createBTPacket(btPeers[0], btPeers[2], 1, () => btPeers[2].pieces[1] = true);
+                createBTPacket(btPeers[0], btPeers[3], 2, () => btPeers[3].pieces[2] = true);
+            } else if (btStep === 2) {
+                logMessage('bt-logs', '【階段 2 (P2P核心)】Peer B, C, D 發現對方有自己缺少的碎片，開始「彼此交叉交換」！', 'sky');
+                createBTPacket(btPeers[1], btPeers[2], 0, () => btPeers[2].pieces[0] = true);
+                createBTPacket(btPeers[1], btPeers[3], 0, () => btPeers[3].pieces[0] = true);
+                createBTPacket(btPeers[2], btPeers[1], 1, () => btPeers[1].pieces[1] = true);
+                createBTPacket(btPeers[2], btPeers[3], 1, () => btPeers[3].pieces[1] = true);
+            } else if (btStep === 3) {
+                logMessage('bt-logs', '【階段 3】Peer D 將綠色碎片傳給 B 與 C；同時 Peer A 補給黃色碎片...', 'sky');
+                createBTPacket(btPeers[3], btPeers[1], 2, () => btPeers[1].pieces[2] = true);
+                createBTPacket(btPeers[3], btPeers[2], 2, () => btPeers[2].pieces[2] = true);
+                createBTPacket(btPeers[0], btPeers[1], 3, () => btPeers[1].pieces[3] = true);
+                createBTPacket(btPeers[0], btPeers[2], 3, () => btPeers[2].pieces[3] = true);
+                createBTPacket(btPeers[0], btPeers[3], 3, () => btPeers[3].pieces[3] = true);
+            } else {
+                logMessage('bt-logs', '🎉 所有 Peer 全數達到 100% 完整檔案，人人皆轉化為做種者 (Seeder)！', 'success');
+            }
+        }
+
+        function autoBTDownload() {
+            resetBTDemo();
+            setTimeout(stepBTDownload, 400);
+            setTimeout(stepBTDownload, 2200);
+            setTimeout(stepBTDownload, 4400);
+        }
+
+        function createBTPacket(from, to, pieceIdx, onComplete) {
+            btPackets.push({
+                fromX: from.x, fromY: from.y,
+                toX: to.x, toY: to.y,
+                x: from.x, y: from.y,
+                progress: 0, speed: 0.015,
+                pieceIdx: pieceIdx,
+                color: pieceColors[pieceIdx],
+                onComplete: onComplete
+            });
+        }
+
+        function drawBT() {
+            btCtx.clearRect(0, 0, btCanvas.width, btCanvas.height);
+            if (btPeers.length === 0) return;
+
+            btPeers.forEach(p => {
+                const isComplete = p.pieces.every(x => x);
+                btCtx.save();
+                btCtx.shadowColor = isComplete ? '#10b981' : '#3b82f6';
+                btCtx.shadowBlur = 25;
+                btCtx.fillStyle = '#0f172a';
+                btCtx.strokeStyle = isComplete ? '#10b981' : '#3b82f6';
+                btCtx.lineWidth = 4;
+
+                btCtx.beginPath();
+                btCtx.roundRect(p.x - 150, p.y - 90, 300, 180, 24);
+                btCtx.fill();
+                btCtx.stroke();
+
+                // Peer Title Label - 28px Large Font
+                btCtx.fillStyle = isComplete ? '#6ee7b7' : '#93c5fd';
+                btCtx.font = '900 28px "Noto Sans TC", sans-serif';
+                btCtx.textAlign = 'center';
+                btCtx.fillText(p.label, p.x, p.y - 45);
+
+                // Render 4 Color Blocks with Large "1", "2", "3", "4" Labels (22px bold)
+                for (let i = 0; i < 4; i++) {
+                    const bx = p.x - 110 + (i * 55);
+                    const by = p.y - 20;
+                    btCtx.fillStyle = p.pieces[i] ? pieceColors[i] : '#1e293b';
+                    btCtx.strokeStyle = '#64748b';
+                    btCtx.lineWidth = 3;
+                    btCtx.fillRect(bx, by, 46, 46);
+                    btCtx.strokeRect(bx, by, 46, 46);
+
+                    btCtx.fillStyle = p.pieces[i] ? '#ffffff' : '#475569';
+                    btCtx.font = '900 22px sans-serif';
+                    btCtx.fillText(i + 1, bx + 23, by + 32);
+                }
+
+                // Progress Percentage - 24px Bold Monospace
+                const count = p.pieces.filter(Boolean).length;
+                const percent = Math.round((count / 4) * 100);
+                btCtx.font = '900 24px monospace';
+                btCtx.fillStyle = isComplete ? '#34d399' : '#f3f4f6';
+                btCtx.fillText(`下載進度: ${percent}%`, p.x, p.y + 68);
+
+                btCtx.restore();
+            });
+
+            // Packets (22px Label)
+            for (let i = btPackets.length - 1; i >= 0; i--) {
+                const pkt = btPackets[i];
+                pkt.progress += pkt.speed;
+                pkt.x = pkt.fromX + (pkt.toX - pkt.fromX) * pkt.progress;
+                pkt.y = pkt.fromY + (pkt.toY - pkt.fromY) * pkt.progress;
+
+                btCtx.save();
+                btCtx.shadowColor = pkt.color;
+                btCtx.shadowBlur = 22;
+                btCtx.fillStyle = pkt.color;
+                btCtx.beginPath();
+                btCtx.arc(pkt.x, pkt.y, 16, 0, Math.PI * 2);
+                btCtx.fill();
+
+                btCtx.font = '900 22px "Noto Sans TC"';
+                btCtx.fillStyle = '#ffffff';
+                btCtx.fillText(pieceNames[pkt.pieceIdx], pkt.x + 22, pkt.y + 8);
+                btCtx.restore();
+
+                if (pkt.progress >= 1) {
+                    if (pkt.onComplete) pkt.onComplete();
+                    btPackets.splice(i, 1);
+                }
+            }
+        }
+
+        // Animation Loop
+        function animationLoop() {
+            if (activeTab === 'cs') {
+                drawCS();
+            } else if (activeTab === 'airdrop') {
+                drawAirDrop();
+            } else if (activeTab === 'bt') {
+                drawBT();
+            }
+            requestAnimationFrame(animationLoop);
+        }
+
+        window.onload = function() {
+            resizeCSCanvas();
+            resizeAirDropCanvas();
+            resizeBTCanvas();
+            animationLoop();
+
+            window.addEventListener('resize', () => {
+                resizeCSCanvas();
+                resizeAirDropCanvas();
+                resizeBTCanvas();
+            });
+        };
+    </script>
+</body>
+</html>
